@@ -1,0 +1,4 @@
+interface:
+  display_name: "JLC K230 Lushan Pi"
+  short_description: "Build and debug LCKFB K230 CanMV/e-contest projects"
+  default_prompt: "Use $jlc-k230-lushan-pi to create, debug, or deploy a Lushan Pi K230 CanMV e-contest project."
