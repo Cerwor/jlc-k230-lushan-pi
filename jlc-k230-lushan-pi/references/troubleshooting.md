@@ -13,7 +13,7 @@ Check in this order:
 5. The final file is named `main.py` and is in the TF card `sdcard` root.
 6. `boot.py` is absent or finishes quickly; it must not block `main.py`.
 7. Required files exist on the board at the paths used in code, especially `/data/...` models and labels.
-8. On the user's current firmware, prefer `print("error:", e)` over `sys.print_exception(e)` because `sys.print_exception` may be unavailable.
+8. On the tested firmware reference, prefer `print("error:", e)` over `sys.print_exception(e)` because `sys.print_exception` may be unavailable.
 
 ## No Offline Auto-Run
 

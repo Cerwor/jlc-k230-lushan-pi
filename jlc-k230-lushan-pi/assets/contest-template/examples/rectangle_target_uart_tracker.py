@@ -165,7 +165,10 @@ def rect_to_candidate(rect_obj):
     if width <= 0 or height <= 0:
         return None
 
-    aspect = width / height if width > height else height / width
+    if width > height:
+        aspect = width / height
+    else:
+        aspect = height / width
     area = width * height
     if area < MIN_AREA or aspect < MIN_ASPECT or aspect > MAX_ASPECT:
         return None

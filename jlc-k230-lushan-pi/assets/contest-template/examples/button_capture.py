@@ -51,7 +51,11 @@ try:
         if btn == 1 and last_btn == 0 and time.ticks_diff(now, last_press_time) > DEBOUNCE_MS:
             capture_on = not capture_on
             last_press_time = now
-            print("capture", "on" if capture_on else "off")
+            if capture_on:
+                capture_state = "on"
+            else:
+                capture_state = "off"
+            print("capture", capture_state)
         last_btn = btn
 
         if capture_on and time.ticks_diff(now, last_save_time) >= SAVE_INTERVAL_MS:
@@ -64,8 +68,12 @@ try:
         img.draw_string_advanced(20, 20, 48,
                                  "FPS:%d" % int(clock.fps()),
                                  color=(255, 0, 0))
+        if capture_on:
+            capture_label = "ON"
+        else:
+            capture_label = "OFF"
         img.draw_string_advanced(20, 80, 40,
-                                 "CAP:%s" % ("ON" if capture_on else "OFF"),
+                                 "CAP:%s" % capture_label,
                                  color=(255, 255, 0))
         img.draw_string_advanced(20, 140, 40,
                                  "SAVED:%d" % img_count,

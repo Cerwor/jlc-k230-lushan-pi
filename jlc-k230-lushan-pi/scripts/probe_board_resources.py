@@ -16,9 +16,17 @@ def walk(path, depth, suffixes, found):
     if depth < 0:
         return
     for name in safe_list(path):
-        full = path + "/" + name if path != "/" else "/" + name
+        if path != "/":
+            full = path + "/" + name
+        else:
+            full = "/" + name
         low = name.lower()
-        if any(low.endswith(suffix) for suffix in suffixes):
+        matched = False
+        for suffix in suffixes:
+            if low.endswith(suffix):
+                matched = True
+                break
+        if matched:
             found.append(full)
         if depth > 0:
             walk(full, depth - 1, suffixes, found)

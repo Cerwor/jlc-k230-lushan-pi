@@ -145,7 +145,7 @@ Receive:
 data = uart.read()
 if data:
     print("Received:", data)
-    uart.write("UART2 Received:{}\n".format(data))
+    uart.write("UART2 Received:%s\n" % data)
 ```
 
 Official notes mark `readline` and `readinto` examples as needing more testing. For robust contest communication, use `uart.read()` plus a small packet parser, timeout handling, and optional checksum.

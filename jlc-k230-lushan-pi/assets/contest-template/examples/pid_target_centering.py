@@ -38,7 +38,15 @@ def target_to_motor_packets(cx, cy, image_w=800, image_h=480):
     dy = pid_y.update(cy)
     packets = []
     if dx:
-        packets.append(build_step_packet(1, 1 if dx > 0 else 0, abs(dx)))
+        if dx > 0:
+            dir_x = 1
+        else:
+            dir_x = 0
+        packets.append(build_step_packet(1, dir_x, abs(dx)))
     if dy:
-        packets.append(build_step_packet(2, 1 if dy > 0 else 0, abs(dy)))
+        if dy > 0:
+            dir_y = 1
+        else:
+            dir_y = 0
+        packets.append(build_step_packet(2, dir_y, abs(dy)))
     return packets

@@ -1,10 +1,10 @@
 # Environment Notes
 
-Use these notes as known environment facts when the user has not provided a different current setup.
+Use these notes as tested environment facts when the user has not provided a different current setup.
 
 ## Firmware Reference
 
-Known current user firmware:
+Board-tested firmware reference:
 
 ```text
 CanMV_K230_LCKFB_micropython_v1.6-57-gce3418e_nncase_v2.11.0

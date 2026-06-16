@@ -86,13 +86,13 @@ Use this pattern for general detection demos:
 - draw FPS with `pl.osd_img.draw_string(5, 5, "FPS:%d" % int(fps_avg), color=(255, 0, 0), scale=4)`
 - collect garbage every 30 frames
 
-Common demo model path:
+Legacy demo model path seen in prior examples:
 
 ```python
 kmodel_path = "/data/model/yolov8/yolov8s.kmodel"
 ```
 
-Use this path only as a default demo convention; ask the user for the actual model path for project work.
+Use this path only as a legacy/demo convention. For generated project code, ask the user for the actual model path or run the board resource probe before choosing a path.
 
 ## Person Keypoint Pattern
 

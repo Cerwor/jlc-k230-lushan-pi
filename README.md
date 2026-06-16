@@ -1,12 +1,14 @@
 # JLC K230 Lushan Pi Skill
 
-This document explains how to use the `jlc-k230-lushan-pi` skill as a human-readable guide or as a knowledge pack for agents that do not automatically support Codex Skills.
+This repository distributes an installable Codex skill for LCKFB/JLC Lushan Pi K230 CanMV projects.
 
-Skill folder:
+The installable skill folder is:
 
 ```text
-E:\Codex_WorkSpace\jlc-k230-lushan-pi
+jlc-k230-lushan-pi/
 ```
+
+Copy that folder exactly into a Codex skills directory. The repository root files are only for human-facing distribution notes; Codex loads the skill from `jlc-k230-lushan-pi/SKILL.md`.
 
 ## Purpose
 
@@ -22,9 +24,42 @@ It focuses on:
 - offline `main.py` deployment
 - contest-oriented project templates and troubleshooting
 
-## How To Use With Codex
+## Install
 
-In Codex, install or expose the skill folder as a normal Skill. Codex should automatically trigger it when the user asks about Lushan Pi K230, CanMV, K230 contest projects, YOLO/KModel, camera/LCD, or related peripherals.
+### Windows PowerShell
+
+From the repository root:
+
+```powershell
+$skills = if ($env:CODEX_HOME) { Join-Path $env:CODEX_HOME "skills" } else { Join-Path $HOME ".codex\skills" }
+New-Item -ItemType Directory -Force -Path $skills | Out-Null
+Copy-Item -Recurse -Force ".\jlc-k230-lushan-pi" $skills
+```
+
+Restart Codex after copying if the skill list does not refresh automatically.
+
+### macOS/Linux
+
+From the repository root:
+
+```bash
+skills="${CODEX_HOME:-$HOME/.codex}/skills"
+mkdir -p "$skills"
+cp -R ./jlc-k230-lushan-pi "$skills/"
+```
+
+Restart Codex after copying if the skill list does not refresh automatically.
+
+## Install Check
+
+After installation, the skill should exist at one of these locations:
+
+```text
+%CODEX_HOME%\skills\jlc-k230-lushan-pi\SKILL.md
+%USERPROFILE%\.codex\skills\jlc-k230-lushan-pi\SKILL.md
+$CODEX_HOME/skills/jlc-k230-lushan-pi/SKILL.md
+$HOME/.codex/skills/jlc-k230-lushan-pi/SKILL.md
+```
 
 Typical request:
 
@@ -34,14 +69,15 @@ Use $jlc-k230-lushan-pi to write a K230 CanMV main.py for rectangle detection on
 
 ## How To Use With Other Agents
 
-For agents such as Claude Code, opencode, or other coding assistants, provide this instruction:
+For agents that do not automatically support Codex Skills, provide this instruction:
 
 ```text
-Use E:\Codex_WorkSpace\jlc-k230-lushan-pi as a K230 CanMV knowledge pack.
+Use the jlc-k230-lushan-pi folder as a K230 CanMV knowledge pack.
 First read SKILL.md completely.
 Then use the Quick Routing table in SKILL.md to choose only the needed files under references/.
 Prefer reusable templates under assets/contest-template/.
 For final CanMV main.py code, read references/canmv-micropython-compatibility.md and use conservative MicroPython syntax.
+Resolve all scripts, references, and assets relative to the folder that contains SKILL.md.
 By default, provide a ready-to-copy main.py; do not write to SD card or save to the board unless explicitly requested.
 ```
 
@@ -87,28 +123,30 @@ Important files:
 
 ## Useful Commands
 
-Validate the Skill with Codex's skill creator validator:
+Validate the skill with Codex's skill-creator validator when it is available:
 
 ```powershell
-python C:\Users\Cerwor\.codex\skills\.system\skill-creator\scripts\quick_validate.py E:\Codex_WorkSpace\jlc-k230-lushan-pi
+$codexHome = if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $HOME ".codex" }
+$validator = Join-Path $codexHome "skills\.system\skill-creator\scripts\quick_validate.py"
+python $validator ".\jlc-k230-lushan-pi"
 ```
 
 Run a temporary script on the connected K230 through raw REPL:
 
 ```powershell
-python E:\Codex_WorkSpace\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py E:\Codex_WorkSpace\jlc-k230-lushan-pi\assets\contest-template\examples\camera_lcd_preview.py
+python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\assets\contest-template\examples\camera_lcd_preview.py"
 ```
 
 Run the board resource probe on K230, not desktop Python:
 
 ```powershell
-python E:\Codex_WorkSpace\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py E:\Codex_WorkSpace\jlc-k230-lushan-pi\scripts\probe_board_resources.py
+python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\scripts\probe_board_resources.py"
 ```
 
 ## Important Notes
 
-- The user's known firmware reference is `CanMV_K230_LCKFB_micropython_v1.6-57-gce3418e_nncase_v2.11.0`.
-- Treat that firmware string as a reference, not a universal requirement.
+- The bundled compatibility notes are based partly on the tested firmware reference `CanMV_K230_LCKFB_micropython_v1.6-57-gce3418e_nncase_v2.11.0`.
+- Treat that firmware string as a tested reference, not a universal requirement.
 - Desktop `python -m py_compile` is useful but does not prove CanMV IDE parser compatibility.
 - Do not assume a fixed CanMV IDE path. Ask for or discover `canmvide.exe`.
 - Do not assume model paths such as `/data/...`; probe the board when possible.

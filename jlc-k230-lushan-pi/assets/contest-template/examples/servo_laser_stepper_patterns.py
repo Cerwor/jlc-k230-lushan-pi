@@ -61,8 +61,8 @@ def stepper_callback(timer):
     if step_dir == 0:
         return
     step_index = (step_index + step_dir) % 4
-    for pin, value in zip(motor_pins, step_status[step_index]):
-        pin.value(value)
+    for i in range(len(motor_pins)):
+        motor_pins[i].value(step_status[step_index][i])
 
 
 timer = Timer(-1)
@@ -85,8 +85,17 @@ try:
             print("mode:", mode)
         last_button = value
 
-        laser.value(1 if mode in (1, 3) else 0)
-        step_dir = 1 if mode == 2 else (-1 if mode == 3 else 0)
+        if mode == 1 or mode == 3:
+            laser.value(1)
+        else:
+            laser.value(0)
+
+        if mode == 2:
+            step_dir = 1
+        elif mode == 3:
+            step_dir = -1
+        else:
+            step_dir = 0
         servo_write_ratio((now % 2000) / 2000.0)
         time.sleep_ms(20)
 
