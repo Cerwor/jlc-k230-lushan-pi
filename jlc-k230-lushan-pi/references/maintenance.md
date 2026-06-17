@@ -45,6 +45,7 @@ Update this skill when:
 - `references/troubleshooting.md`: centralized failure diagnosis.
 - `references/usage-boundaries.md`: scope, assumptions, and escalation rules.
 - `scripts/run_canmv_raw_repl.py`: host-side helper for running MicroPython scripts from RAM over K230 raw REPL.
+- `scripts/smoke_camera_lcd.py`: board-side short smoke test for default camera and 3.1-inch LCD.
 - `assets/contest-template/`: copyable starter project.
 
 ## Revision Log
@@ -61,3 +62,4 @@ Update this skill when:
 - 2026-06-15: Self-check pass: made key templates more conservative by replacing `.format(...)` with `%` formatting, replacing a YOLO class dictionary dispatch with `if/elif`, removing remaining template list comprehensions, and making `probe_board_resources.py` warn when it is run on desktop Python instead of the K230 board.
 - 2026-06-16: Made the distribution package portable for other users by removing author-local install paths from the top-level README, documenting copy-based installation, clarifying that bundled paths are relative to `SKILL.md`, and describing the firmware string as a board-tested reference rather than a current-user requirement.
 - 2026-06-16: Debug pass: removed remaining conditional expressions from CanMV templates, removed a generator expression from the board resource probe, and kept template code closer to conservative MicroPython style.
+- 2026-06-17: Improved raw REPL host helper with retry and handshake diagnostics after a board sometimes printed `MPY: soft reboot` before accepting `Ctrl-A`; added `scripts/smoke_camera_lcd.py` for 20-frame camera/LCD validation.

@@ -15,6 +15,16 @@ Check in this order:
 7. Required files exist on the board at the paths used in code, especially `/data/...` models and labels.
 8. On the tested firmware reference, prefer `print("error:", e)` over `sys.print_exception(e)` because `sys.print_exception` may be unavailable.
 
+## Raw REPL or USB Serial Problems
+
+- On Windows, the board may enumerate as a USB composite device with both `USB Serial Device (COMx)` and `WPD CanMV`; WPD presence does not mean a normal drive letter is available.
+- If `scripts/run_canmv_raw_repl.py` fails, close CanMV IDE and any serial terminals, then retry with an explicit port such as `--port COM14`.
+- If the helper reports that no serial bytes were received, reset or replug the board before retrying; a previous interrupted upload can leave the port openable but silent.
+- If the port opens but there is no prompt, send `Ctrl-C`, wait for `MPY: soft reboot` and the ordinary `>>>` prompt, then send `Ctrl-A` to enter raw REPL. The helper script now retries this sequence and prints a handshake log on failure.
+- If the helper reports `Timed out before raw REPL completion marker`, the uploaded script did not return to raw REPL cleanly. Increase `--timeout` for slow probes, or reset the board before running another script.
+- Keep the default tested baud at `2000000`; try `115200` only when firmware or tooling proves the board was configured differently.
+- Use `scripts/smoke_camera_lcd.py` as the first hardware test when raw REPL works but camera/LCD behavior is uncertain.
+
 ## No Offline Auto-Run
 
 - Confirm green-run from IDE is not being mistaken for offline deployment.

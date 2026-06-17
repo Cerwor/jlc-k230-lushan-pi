@@ -6,6 +6,7 @@ import time
 DEFAULT_BAUD = 2000000
 DEFAULT_VID = 0x1209
 DEFAULT_PID = 0xABD1
+RAW_REPL_ATTEMPTS = 3
 
 
 def require_serial():
@@ -42,17 +43,62 @@ def read_available(ser, window_s=0.25):
     return bytes(data)
 
 
+def write_and_read(ser, data, window_s):
+    ser.write(data)
+    ser.flush()
+    return read_available(ser, window_s)
+
+
+def short_log(data):
+    text = data.decode("utf-8", "replace")
+    text = text.replace("\r", "\\r").replace("\n", "\\n")
+    if len(text) > 500:
+        return text[:500] + "..."
+    return text
+
+
 def enter_raw_repl(ser):
-    ser.write(b"\x03\x03")
-    time.sleep(0.2)
-    ser.reset_input_buffer()
-    ser.write(b"\x01")
-    time.sleep(0.2)
-    banner = read_available(ser, 0.2)
-    if b"raw REPL" not in banner:
-        sys.stdout.write(banner.decode("utf-8", "replace"))
-        raise SystemExit("Failed to enter raw REPL.")
-    sys.stdout.write(banner.decode("utf-8", "replace"))
+    log = []
+    saw_bytes = False
+    for attempt in range(1, RAW_REPL_ATTEMPTS + 1):
+        log.append("attempt %d" % attempt)
+
+        # Leave raw REPL if a previous run stopped there, then interrupt user code.
+        data = write_and_read(ser, b"\x02", 0.25)
+        if data:
+            saw_bytes = True
+            log.append("ctrl-b: " + short_log(data))
+
+        data = write_and_read(ser, b"\x03\x03", 1.0)
+        if data:
+            saw_bytes = True
+            log.append("ctrl-c: " + short_log(data))
+
+        # Some firmware prints "MPY: soft reboot" before the ordinary prompt appears.
+        if b"MPY: soft reboot" in data or b">>>" not in data:
+            extra = read_available(ser, 1.0)
+            if extra:
+                saw_bytes = True
+                data += extra
+                log.append("post-reset: " + short_log(extra))
+
+        banner = write_and_read(ser, b"\x01", 1.0)
+        if b"raw REPL" in banner:
+            sys.stdout.write(banner.decode("utf-8", "replace"))
+            return
+        if banner:
+            saw_bytes = True
+            log.append("ctrl-a: " + short_log(banner))
+
+        time.sleep(0.3)
+
+    sys.stderr.write("Failed to enter raw REPL.\n")
+    sys.stderr.write("Handshake log:\n")
+    for item in log:
+        sys.stderr.write("  " + item + "\n")
+    if not saw_bytes:
+        sys.stderr.write("No serial bytes were received. Close CanMV IDE/serial terminals, reset or replug the board, and check --port/--baud.\n")
+    raise SystemExit(1)
 
 
 def run_code(ser, code, timeout_s, chunk_size):
@@ -66,18 +112,29 @@ def run_code(ser, code, timeout_s, chunk_size):
 
     data = bytearray()
     start = time.time()
+    completed = False
     while time.time() - start < timeout_s:
         chunk = ser.read(4096)
         if chunk:
             data.extend(chunk)
             text = data.decode("utf-8", "replace")
             if "Traceback" in text or "\x04\x04>" in text:
+                completed = "\x04\x04>" in text
                 time.sleep(0.2)
                 data.extend(ser.read(4096))
                 break
         else:
             time.sleep(0.05)
-    return data.decode("utf-8", "replace")
+    output = data.decode("utf-8", "replace")
+    if not completed:
+        sys.stderr.write("Timed out before raw REPL completion marker.\n")
+        if output:
+            sys.stderr.write("Partial output:\n")
+            sys.stderr.write(output)
+            if not output.endswith("\n"):
+                sys.stderr.write("\n")
+        raise SystemExit(1)
+    return output
 
 
 def main():

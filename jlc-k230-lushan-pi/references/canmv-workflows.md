@@ -18,6 +18,8 @@ On Windows, CanMV IDE K230 may be installed in a user-chosen directory. When the
 
 When CanMV IDE UI automation is unavailable, try running a temporary script through K230 MicroPython raw REPL with `scripts/run_canmv_raw_repl.py`. The user's tested board exposes a USB serial port with `VID:PID=1209:ABD1`, and raw REPL worked at baud `2000000`. This method runs code from RAM and does not save `main.py` to the TF card.
 
+When hardware is connected and a quick camera/LCD check is needed, run `scripts/smoke_camera_lcd.py` through `scripts/run_canmv_raw_repl.py`. It initializes the default CSI camera and the 3.1-inch `Display.ST7701` LCD, shows 20 frames, prints `SMOKE_DONE`, and exits. Use this before debugging a large application or an infinite-loop template.
+
 For user-preferred example style, read `user-example-patterns.md`. It contains distilled patterns from the user's prior working code, without relying on local machine paths.
 
 For failures during bring-up, use `troubleshooting.md#first-pass` first, then the task-specific sections below.
