@@ -38,6 +38,18 @@ Copy-Item -Recurse -Force ".\jlc-k230-lushan-pi" $skills
 
 Restart Codex after copying if the skill list does not refresh automatically.
 
+### Update Existing Install
+
+After pulling or merging repository changes, copy the skill folder again so Codex uses the updated version:
+
+```powershell
+$skills = if ($env:CODEX_HOME) { Join-Path $env:CODEX_HOME "skills" } else { Join-Path $HOME ".codex\skills" }
+Remove-Item -Recurse -Force (Join-Path $skills "jlc-k230-lushan-pi") -ErrorAction SilentlyContinue
+Copy-Item -Recurse -Force ".\jlc-k230-lushan-pi" $skills
+```
+
+Restart Codex if the old skill behavior remains visible after copying.
+
 ### macOS/Linux
 
 From the repository root:
