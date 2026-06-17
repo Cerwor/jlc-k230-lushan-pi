@@ -22,6 +22,7 @@ description: Build, port, debug, and deploy LCKFB/JLC Lushan Pi K230 CanMV proje
 | Current environment, firmware, local setup facts | `references/environment-notes.md` | Known user setup without machine-specific paths |
 | Skill maintenance, version drift, official doc changes | `references/maintenance.md` | Update policy and revision log |
 | Applicability, limitations, and escalation rules | `references/usage-boundaries.md` | Scope boundaries before risky work |
+| Connected-board smoke test or raw REPL connection failure | `references/canmv-workflows.md` and `references/troubleshooting.md` | Short hardware validation and serial diagnostics |
 | Official links, firmware, IDE, downloads | `references/official-links.md` | Source-of-truth link map |
 | Official API manual lookup | `references/api-manual-routing.md` | Pick the exact API page before using unfamiliar classes/functions |
 | CanMV syntax compatibility, final `main.py` style, desktop compile mismatch | `references/canmv-micropython-compatibility.md` | Conservative MicroPython syntax rules |

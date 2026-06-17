@@ -108,6 +108,7 @@ Important files:
 - `assets/contest-template/`: copyable contest project scaffold
 - `scripts/run_canmv_raw_repl.py`: run a script on K230 through raw REPL from RAM
 - `scripts/probe_board_resources.py`: run on the board to find `.kmodel` and example files
+- `scripts/smoke_camera_lcd.py`: short connected-board camera/LCD smoke test
 
 ## Default Development Flow
 
@@ -137,6 +138,12 @@ Run a temporary script on the connected K230 through raw REPL:
 python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\assets\contest-template\examples\camera_lcd_preview.py"
 ```
 
+Run a short camera/LCD smoke test that exits automatically:
+
+```powershell
+python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\scripts\smoke_camera_lcd.py"
+```
+
 Run the board resource probe on K230, not desktop Python:
 
 ```powershell
@@ -149,6 +156,7 @@ python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-p
 - Treat that firmware string as a tested reference, not a universal requirement.
 - Desktop `python -m py_compile` is useful but does not prove CanMV IDE parser compatibility.
 - Do not assume a fixed CanMV IDE path. Ask for or discover `canmvide.exe`.
+- If raw REPL connection fails, close CanMV IDE/serial terminals and inspect the helper's handshake log. Some firmware prints `MPY: soft reboot` before the ordinary `>>>` prompt appears.
 - Do not assume model paths such as `/data/...`; probe the board when possible.
 - Do not drive actuators until camera/model/perception output is stable.
 - Do not save to the board or write the TF card unless the user explicitly asks.
@@ -157,4 +165,4 @@ python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-p
 
 The skill has been validated with `quick_validate.py`.
 
-Several templates have also been syntax-checked on desktop Python and adjusted toward conservative CanMV MicroPython style. The rectangle target tracker has been tested on a connected Lushan Pi K230 through raw REPL for a limited run; camera and LCD initialization succeeded.
+Several templates have also been syntax-checked on desktop Python and adjusted toward conservative CanMV MicroPython style. The rectangle target tracker and the short camera/LCD smoke test have been tested on a connected Lushan Pi K230 through raw REPL; camera and LCD initialization succeeded.
