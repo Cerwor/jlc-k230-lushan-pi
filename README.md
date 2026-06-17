@@ -138,6 +138,12 @@ Run a temporary script on the connected K230 through raw REPL:
 python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\assets\contest-template\examples\camera_lcd_preview.py"
 ```
 
+List serial ports before choosing `--port`:
+
+```powershell
+python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" --list-ports
+```
+
 Run a short camera/LCD smoke test that exits automatically:
 
 ```powershell
@@ -156,7 +162,7 @@ python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-p
 - Treat that firmware string as a tested reference, not a universal requirement.
 - Desktop `python -m py_compile` is useful but does not prove CanMV IDE parser compatibility.
 - Do not assume a fixed CanMV IDE path. Ask for or discover `canmvide.exe`.
-- If raw REPL connection fails, close CanMV IDE/serial terminals and inspect the helper's handshake log. Some firmware prints `MPY: soft reboot` before the ordinary `>>>` prompt appears.
+- If raw REPL connection fails, close CanMV IDE/serial terminals and inspect the helper's handshake log. Some firmware prints `MPY: soft reboot` before the ordinary `>>>` prompt appears. Use `--list-ports` to verify the selected serial port.
 - Do not assume model paths such as `/data/...`; probe the board when possible.
 - Do not drive actuators until camera/model/perception output is stable.
 - Do not save to the board or write the TF card unless the user explicitly asks.

@@ -9,6 +9,21 @@ DEFAULT_PID = 0xABD1
 RAW_REPL_ATTEMPTS = 3
 
 
+def port_vid_pid(port):
+    if port.vid is None or port.pid is None:
+        return "VID:PID unknown"
+    return "VID:PID %04X:%04X" % (port.vid, port.pid)
+
+
+def print_ports(list_ports):
+    ports = list(list_ports.comports())
+    if not ports:
+        print("No serial ports found.")
+        return
+    for port in ports:
+        print("%s  %s  %s" % (port.device, port_vid_pid(port), port.description))
+
+
 def require_serial():
     try:
         import serial
@@ -57,7 +72,7 @@ def short_log(data):
     return text
 
 
-def enter_raw_repl(ser):
+def enter_raw_repl(ser, port, baud):
     log = []
     saw_bytes = False
     for attempt in range(1, RAW_REPL_ATTEMPTS + 1):
@@ -97,7 +112,7 @@ def enter_raw_repl(ser):
     for item in log:
         sys.stderr.write("  " + item + "\n")
     if not saw_bytes:
-        sys.stderr.write("No serial bytes were received. Close CanMV IDE/serial terminals, reset or replug the board, and check --port/--baud.\n")
+        sys.stderr.write("No serial bytes were received from %s at %d baud. Close CanMV IDE/serial terminals, reset or replug the board, and check --port/--baud.\n" % (port, baud))
     raise SystemExit(1)
 
 
@@ -113,12 +128,14 @@ def run_code(ser, code, timeout_s, chunk_size):
     data = bytearray()
     start = time.time()
     completed = False
+    saw_traceback = False
     while time.time() - start < timeout_s:
         chunk = ser.read(4096)
         if chunk:
             data.extend(chunk)
             text = data.decode("utf-8", "replace")
-            if "Traceback" in text or "\x04\x04>" in text:
+            saw_traceback = "Traceback" in text
+            if saw_traceback or "\x04\x04>" in text:
                 completed = "\x04\x04>" in text
                 time.sleep(0.2)
                 data.extend(ser.read(4096))
@@ -126,6 +143,13 @@ def run_code(ser, code, timeout_s, chunk_size):
         else:
             time.sleep(0.05)
     output = data.decode("utf-8", "replace")
+    if saw_traceback:
+        sys.stderr.write("Board script raised an exception.\n")
+        if output:
+            sys.stderr.write(output)
+            if not output.endswith("\n"):
+                sys.stderr.write("\n")
+        raise SystemExit(1)
     if not completed:
         sys.stderr.write("Timed out before raw REPL completion marker.\n")
         if output:
@@ -139,21 +163,28 @@ def run_code(ser, code, timeout_s, chunk_size):
 
 def main():
     parser = argparse.ArgumentParser(description="Run a CanMV MicroPython file through K230 raw REPL.")
-    parser.add_argument("script", help="MicroPython .py file to execute from RAM")
+    parser.add_argument("script", nargs="?", help="MicroPython .py file to execute from RAM")
     parser.add_argument("--port", help="Serial port such as COM14; auto-detects VID:PID 1209:ABD1 when omitted")
     parser.add_argument("--baud", type=int, default=DEFAULT_BAUD, help="Serial baud rate, default 2000000")
     parser.add_argument("--timeout", type=float, default=30.0, help="Seconds to wait for output")
     parser.add_argument("--chunk-size", type=int, default=128, help="Write chunk size for raw REPL upload")
+    parser.add_argument("--list-ports", action="store_true", help="List detected serial ports and exit")
     args = parser.parse_args()
 
     serial, list_ports = require_serial()
+    if args.list_ports:
+        print_ports(list_ports)
+        return
+    if not args.script:
+        parser.error("script is required unless --list-ports is used")
+
     port = args.port or autodetect_port(list_ports)
     with open(args.script, "r", encoding="utf-8") as handle:
         code = handle.read()
 
     ser = serial.Serial(port, args.baud, timeout=0.2, write_timeout=5)
     try:
-        enter_raw_repl(ser)
+        enter_raw_repl(ser, port, args.baud)
         output = run_code(ser, code, args.timeout, args.chunk_size)
         sys.stdout.write(output)
     finally:
