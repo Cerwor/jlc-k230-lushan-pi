@@ -19,6 +19,8 @@ Check in this order:
 
 - On Windows, the board may enumerate as a USB composite device with both `USB Serial Device (COMx)` and `WPD CanMV`; WPD presence does not mean a normal drive letter is available.
 - If `scripts/run_canmv_raw_repl.py` fails, close CanMV IDE and any serial terminals, then retry with an explicit port such as `--port COM14`.
+- If the CanMV USB serial port disappears after removing the SD card, reinsert the SD card and retry; the tested Lushan Pi K230 setup may depend on SD-card CanMV system/resources to bring up the USB serial service.
+- If the USB serial port exists but REPL has no echo, check whether `/sdcard/main.py` or `/sdcard/boot.py` is auto-running and blocking REPL. Rename them to `main_disabled.py` or `boot_disabled.py`, reboot, then retry raw REPL.
 - If the helper reports that no serial bytes were received, reset or replug the board before retrying; a previous interrupted upload can leave the port openable but silent.
 - If the port opens but there is no prompt, send `Ctrl-C`, wait for `MPY: soft reboot` and the ordinary `>>>` prompt, then send `Ctrl-A` to enter raw REPL. The helper script now retries this sequence and prints a handshake log on failure.
 - Use `scripts/run_canmv_raw_repl.py --list-ports` to inspect available serial ports and confirm the expected `VID:PID 1209:ABD1` device before choosing `--port`.

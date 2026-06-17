@@ -79,15 +79,16 @@ def enter_raw_repl(ser, port, baud):
         log.append("attempt %d" % attempt)
 
         # Leave raw REPL if a previous run stopped there, then interrupt user code.
-        data = write_and_read(ser, b"\x02", 0.25)
+        data = write_and_read(ser, b"\x02", 0.8)
         if data:
             saw_bytes = True
             log.append("ctrl-b: " + short_log(data))
 
-        data = write_and_read(ser, b"\x03\x03", 1.0)
-        if data:
-            saw_bytes = True
-            log.append("ctrl-c: " + short_log(data))
+        if b">>>" not in data:
+            data = write_and_read(ser, b"\x03\x03", 1.0)
+            if data:
+                saw_bytes = True
+                log.append("ctrl-c: " + short_log(data))
 
         # Some firmware prints "MPY: soft reboot" before the ordinary prompt appears.
         if b"MPY: soft reboot" in data or b">>>" not in data:

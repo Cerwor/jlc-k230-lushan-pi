@@ -59,6 +59,8 @@ For contest code, make `main.py` self-contained and suitable for power-on operat
 - stop actuators safely in exception/finally paths
 - release camera/display/model/pipeline resources where practical
 
+During debugging, avoid leaving an unverified complex script as `/sdcard/main.py`. Run it from CanMV IDE or raw REPL first, or keep it under a temporary filename. If a bad auto-run script blocks REPL access, rename `/sdcard/main.py` to `main_disabled.py` and `/sdcard/boot.py` to `boot_disabled.py`, then reboot and retry.
+
 ## Save Through CanMV IDE
 
 Use this only when the user explicitly asks Codex to save to the board through IDE. Otherwise, provide the `main.py` file/content and let the user copy it manually.
