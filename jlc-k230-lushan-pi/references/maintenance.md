@@ -65,3 +65,5 @@ Update this skill when:
 - 2026-06-17: Improved raw REPL host helper with retry and handshake diagnostics after a board sometimes printed `MPY: soft reboot` before accepting `Ctrl-A`; added `scripts/smoke_camera_lcd.py` for 20-frame camera/LCD validation.
 - 2026-06-18: Regression pass: added `--list-ports` to the raw REPL helper, included target port/baud in no-byte diagnostics, and reported board-side `Traceback` separately from upload timeouts.
 - 2026-06-18: Regression pass: documented the need to recopy the skill folder after repository updates because Codex loads the installed copy under the skills directory, not the development repository.
+- 2026-06-18: Board recovery finding: removing the SD card made the CanMV USB serial disappear; reinserting the SD card while renaming a blocking `main.py` to `main_disabled.py` restored COM14, ordinary REPL, raw REPL, and the camera/LCD smoke test.
+- 2026-06-18: Raw REPL robustness pass: extended the helper's `Ctrl-B` read window and skip redundant `Ctrl-C` when the ordinary `>>>` prompt is already visible.

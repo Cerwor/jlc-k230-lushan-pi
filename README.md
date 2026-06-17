@@ -175,6 +175,7 @@ python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-p
 - Desktop `python -m py_compile` is useful but does not prove CanMV IDE parser compatibility.
 - Do not assume a fixed CanMV IDE path. Ask for or discover `canmvide.exe`.
 - If raw REPL connection fails, close CanMV IDE/serial terminals and inspect the helper's handshake log. Some firmware prints `MPY: soft reboot` before the ordinary `>>>` prompt appears. Use `--list-ports` to verify the selected serial port.
+- If removing the SD card makes the CanMV serial port disappear, reinsert the SD card; if COM exists but REPL has no echo, rename a blocking `/sdcard/main.py` to `main_disabled.py` and reboot.
 - Do not assume model paths such as `/data/...`; probe the board when possible.
 - Do not drive actuators until camera/model/perception output is stable.
 - Do not save to the board or write the TF card unless the user explicitly asks.
