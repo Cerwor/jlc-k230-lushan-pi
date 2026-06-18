@@ -36,6 +36,7 @@ Prefer:
 - Increase `x_stride` and `y_stride` for larger circles.
 - Run detection every `N` frames and reuse the last result for overlay.
 - Filter by radius and magnitude after detection.
+- If a real round target such as a bottle cap is missed, lower the Hough threshold and stride before changing the display architecture. On the tested board, `threshold=1200` and `x_stride=y_stride=2` detected a bottle cap where `threshold=2500` and stride `4` did not.
 - Disable per-frame `print(...)` in the real-time loop unless explicitly debugging.
 
 ## Dual-Channel Pattern

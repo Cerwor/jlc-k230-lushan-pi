@@ -45,8 +45,9 @@ for rect in rects:
 
 Portable guidance:
 
+- Default to full-screen `800x480` LCD output with a lower-resolution detection channel such as `400x240`; scale corners and center back to LCD coordinates.
 - Use grayscale/binary preprocessing when rectangle edges are weak.
-- Use `find_rects(threshold=...)` directly on RGB565 first; add preprocessing only if needed.
+- Avoid running `find_rects(threshold=...)` over full `800x480` by default; it can drop to only a few FPS.
 - Draw corners and center point, not only the bounding box.
 - Tune `RECT_THRESHOLD`, binary threshold, and minimum area at the contest site.
 
@@ -61,6 +62,7 @@ Use this pattern when rectangle detection must drive an external controller, las
 Portable guidance:
 
 - Start from the simple rectangle template, then add ROI, binary preprocessing, area/aspect filters, and temporal target tracking.
+- Keep the tracker on the same full-screen display plus lower-resolution detection-channel architecture as the simple rectangle template; full-frame `800x480` preprocessing can run around 8 FPS on the tested board.
 - Compute the aim point from the intersection of the two diagonals of the detected corners.
 - Send center coordinates only after the overlay is stable on the LCD.
 - Use a single-class detector only as a coarse ROI provider when traditional vision sees too many false positives.
@@ -79,7 +81,8 @@ Portable guidance:
 - Default to full-screen `800x480` LCD output on the 3.1-inch screen.
 - Run `find_circles` on a lower-resolution detection channel such as `400x240` or `320x240`.
 - Keep ROI coordinates in detection-image space, then scale center/radius back to LCD coordinates.
-- Use `DETECT_EVERY_N_FRAMES` and keep serial printing disabled or throttled.
+- Tune Hough parameters for the target size and contrast. A bottle-cap live test on the 400x240 detection channel needed `CIRCLE_THRESHOLD = 1200` and `X/Y_STRIDE = 2`; the older `2500`/`4` setting missed it.
+- Use `DETECT_EVERY_N_FRAMES`, a short miss-hold window, and keep serial printing disabled or throttled.
 - Draw the LCD-coordinate circle and center cross on the full-screen display image.
 
 Reference and template:
@@ -110,7 +113,8 @@ for blob in blobs:
 
 Portable guidance:
 
-- Downsample with `midpoint_pool(2, 2)` for line detection, then scale coordinates back.
+- Default to full-screen `800x480` LCD output with a lower-resolution detection channel such as `400x240`.
+- Downsample the detection image with `midpoint_pool(2, 2)` for line detection, then scale coordinates back to LCD coordinates.
 - Use ROI to reduce false positives and improve FPS.
 - Put LAB thresholds at the top of the file.
 - For color tasks, output blob center, area, and bounding box.
