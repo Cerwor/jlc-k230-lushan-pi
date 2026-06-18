@@ -135,6 +135,7 @@ Original useful patterns:
 Portable guidance:
 
 - Prefer UART2 for external controllers.
+- If loopback wiring is uncertain, run `scripts/probe_uart2_loopback.py`; UART2 may be mapped to `PIN5/PIN6`, `PIN11/PIN12`, or `PIN44/PIN45` depending on the connector/pads used.
 - Cross TX/RX and share GND.
 - Do not assume received bytes are valid UTF-8; catch decode failures.
 - For contest control, define a packet format and checksum.

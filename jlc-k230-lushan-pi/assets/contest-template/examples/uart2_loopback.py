@@ -6,6 +6,7 @@ from machine import FPIOA, UART
 UART_TX_PIN = 11
 UART_RX_PIN = 12
 UART_BAUDRATE = 115200
+# 如果实际短接的是另一组 UART2 FPIOA 引脚，可改成 5/6 或 44/45。
 
 fpioa = FPIOA()
 fpioa.set_function(UART_TX_PIN, FPIOA.UART2_TXD)

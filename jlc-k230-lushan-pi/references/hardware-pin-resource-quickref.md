@@ -93,6 +93,7 @@ Key resources:
 - One extra GH1.25-4P interface can be configured as `UART2` or `IIC2`.
 - The connector is intended for stable physical connection in mobile/contest projects.
 - Large 2.54 mm test pads expose power and signals, including `USB5V`, `PIN5V`, `8V-24V`, `UART3`, `UART0`, `UART2/IIC2`, and audio signals.
+- On tested firmware, `FPIOA.help(...)` reported UART2 can map to `PIN5/PIN6`, `PIN11/PIN12`, or `PIN44/PIN45`. Use the board silkscreen/schematic to match these K230 pin names to the actual connector or pad being touched.
 
 UART occupation notes from the schematic page:
 

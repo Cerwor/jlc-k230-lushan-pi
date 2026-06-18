@@ -61,6 +61,7 @@ Check in this order:
 - Use `fpioa.help(pin)` or `fpioa.help(func, func=True)` to inspect possible mappings.
 - Avoid UART0 for user peripherals; prefer UART2 or UART3.
 - For UART, cross TX/RX, share GND, and match baud/data/parity/stop settings.
+- If a UART2 loopback test reports transmit success but `rx=0`, do not assume the UART peripheral failed. First run `scripts/probe_uart2_loopback.py` to verify whether the physical short is on `PIN5/PIN6`, `PIN11/PIN12`, or `PIN44/PIN45`; tested wiring on `PIN5/PIN6` worked after changing the FPIOA mapping.
 - For PWM, use one duty representation at a time: `duty`, `duty_u16`, or `duty_ns`.
 - For motors/servos, clamp outputs and provide a neutral/stop path in exceptions.
 
