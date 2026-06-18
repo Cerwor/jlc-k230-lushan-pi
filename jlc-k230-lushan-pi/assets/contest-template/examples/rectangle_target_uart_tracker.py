@@ -11,7 +11,12 @@ from media.media import *
 DISPLAY_MODE = "lcd"
 DISPLAY_WIDTH = 800
 DISPLAY_HEIGHT = 480
+DETECT_WIDTH = 400
+DETECT_HEIGHT = 240
 SENSOR_ID = 2
+
+DISPLAY_CHN = CAM_CHN_ID_0
+DETECT_CHN = CAM_CHN_ID_1
 
 ENABLE_UART = True
 UART_ID = UART.UART2
@@ -24,14 +29,20 @@ ROI_X = ROI_MARGIN
 ROI_Y = ROI_MARGIN
 ROI_W = DISPLAY_WIDTH - 2 * ROI_MARGIN
 ROI_H = DISPLAY_HEIGHT - 2 * ROI_MARGIN
+DETECT_ROI_X = ROI_X * DETECT_WIDTH // DISPLAY_WIDTH
+DETECT_ROI_Y = ROI_Y * DETECT_HEIGHT // DISPLAY_HEIGHT
+DETECT_ROI_W = ROI_W * DETECT_WIDTH // DISPLAY_WIDTH
+DETECT_ROI_H = ROI_H * DETECT_HEIGHT // DISPLAY_HEIGHT
+DETECT_ROI = (DETECT_ROI_X, DETECT_ROI_Y, DETECT_ROI_W, DETECT_ROI_H)
 
 GAMMA = 3
 BINARY_THRESHOLD = (160, 255)
-RECT_THRESHOLD = 5000
-FALLBACK_RECT_THRESHOLD = 10000
+RECT_THRESHOLD = 2500
+FALLBACK_RECT_THRESHOLD = 5000
 MIN_AREA = 7000
 MIN_ASPECT = 0.5
 MAX_ASPECT = 2.5
+DETECT_EVERY_N_FRAMES = 2
 GC_INTERVAL_FRAMES = 30
 
 
@@ -45,6 +56,7 @@ class TargetTracker:
 
     def update(self, candidates):
         if not candidates:
+            self.last_target = None
             return None
         if self.last_target is None:
             selected = candidates[0]
@@ -84,6 +96,18 @@ def init_uart():
     fpioa.set_function(UART_RX_PIN, FPIOA.UART2_RXD)
     return UART(UART_ID, baudrate=UART_BAUD, bits=UART.EIGHTBITS,
                 parity=UART.PARITY_NONE, stop=UART.STOPBITS_ONE)
+
+
+def scale_x(x):
+    return int(x * DISPLAY_WIDTH // DETECT_WIDTH)
+
+
+def scale_y(y):
+    return int(y * DISPLAY_HEIGHT // DETECT_HEIGHT)
+
+
+def scale_point(point):
+    return scale_x(point[0]), scale_y(point[1])
 
 
 def sort_corners(corners):
@@ -142,7 +166,7 @@ def rect_to_candidate(rect_obj):
         return None
     int_corners = []
     for point in corners:
-        int_corners.append((int(point[0]), int(point[1])))
+        int_corners.append(scale_point(point))
     corners = sort_corners(int_corners)
     if not in_roi(corners):
         return None
@@ -186,12 +210,11 @@ def rect_to_candidate(rect_obj):
 
 
 def find_candidates(img):
-    gray = img.to_grayscale(copy=True)
-    gray.gamma_corr(GAMMA)
-    binary = gray.binary([BINARY_THRESHOLD], roi=(ROI_X, ROI_Y, ROI_W, ROI_H))
+    img.gamma_corr(GAMMA)
+    binary = img.binary([BINARY_THRESHOLD], roi=DETECT_ROI)
 
     candidates = []
-    for rect_obj in binary.find_rects(threshold=RECT_THRESHOLD):
+    for rect_obj in binary.find_rects(roi=DETECT_ROI, threshold=RECT_THRESHOLD):
         candidate = rect_to_candidate(rect_obj)
         if candidate:
             candidates.append(candidate)
@@ -199,7 +222,7 @@ def find_candidates(img):
     if candidates:
         return candidates
 
-    for rect_obj in binary.find_rects(threshold=FALLBACK_RECT_THRESHOLD):
+    for rect_obj in binary.find_rects(roi=DETECT_ROI, threshold=FALLBACK_RECT_THRESHOLD):
         candidate = rect_to_candidate(rect_obj)
         if candidate:
             candidates.append(candidate)
@@ -234,8 +257,10 @@ def send_target(target):
 try:
     sensor = Sensor(id=SENSOR_ID)
     sensor.reset()
-    sensor.set_framesize(width=DISPLAY_WIDTH, height=DISPLAY_HEIGHT, chn=CAM_CHN_ID_0)
-    sensor.set_pixformat(Sensor.RGB565, chn=CAM_CHN_ID_0)
+    sensor.set_framesize(width=DISPLAY_WIDTH, height=DISPLAY_HEIGHT, chn=DISPLAY_CHN)
+    sensor.set_pixformat(Sensor.RGB565, chn=DISPLAY_CHN)
+    sensor.set_framesize(width=DETECT_WIDTH, height=DETECT_HEIGHT, chn=DETECT_CHN)
+    sensor.set_pixformat(Sensor.GRAYSCALE, chn=DETECT_CHN)
 
     init_display()
     MediaManager.init()
@@ -250,9 +275,13 @@ try:
     while True:
         os.exitpoint()
         clock.tick()
-        img = sensor.snapshot(chn=CAM_CHN_ID_0)
-        candidates = find_candidates(img)
-        target = tracker.update(candidates)
+        img = sensor.snapshot(chn=DISPLAY_CHN)
+        if frame_id % DETECT_EVERY_N_FRAMES == 0:
+            detect_img = sensor.snapshot(chn=DETECT_CHN)
+            candidates = find_candidates(detect_img)
+            target = tracker.update(candidates)
+        else:
+            target = tracker.last_target
         draw_target(img, target, clock.fps())
         send_target(target)
         Display.show_image(img)

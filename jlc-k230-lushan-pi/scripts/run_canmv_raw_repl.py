@@ -3,10 +3,14 @@ import sys
 import time
 
 
-DEFAULT_BAUD = 2000000
+DEFAULT_BAUDS = (2000000, 115200)
 DEFAULT_VID = 0x1209
 DEFAULT_PID = 0xABD1
 RAW_REPL_ATTEMPTS = 3
+
+
+class RawReplEnterError(Exception):
+    pass
 
 
 def port_vid_pid(port):
@@ -108,13 +112,14 @@ def enter_raw_repl(ser, port, baud):
 
         time.sleep(0.3)
 
-    sys.stderr.write("Failed to enter raw REPL.\n")
-    sys.stderr.write("Handshake log:\n")
+    lines = []
+    lines.append("Failed to enter raw REPL.")
+    lines.append("Handshake log:")
     for item in log:
-        sys.stderr.write("  " + item + "\n")
+        lines.append("  " + item)
     if not saw_bytes:
-        sys.stderr.write("No serial bytes were received from %s at %d baud. Close CanMV IDE/serial terminals, reset or replug the board, and check --port/--baud.\n" % (port, baud))
-    raise SystemExit(1)
+        lines.append("No serial bytes were received from %s at %d baud. Close CanMV IDE/serial terminals, reset or replug the board, and check --port/--baud." % (port, baud))
+    raise RawReplEnterError("\n".join(lines))
 
 
 def run_code(ser, code, timeout_s, chunk_size):
@@ -166,7 +171,7 @@ def main():
     parser = argparse.ArgumentParser(description="Run a CanMV MicroPython file through K230 raw REPL.")
     parser.add_argument("script", nargs="?", help="MicroPython .py file to execute from RAM")
     parser.add_argument("--port", help="Serial port such as COM14; auto-detects VID:PID 1209:ABD1 when omitted")
-    parser.add_argument("--baud", type=int, default=DEFAULT_BAUD, help="Serial baud rate, default 2000000")
+    parser.add_argument("--baud", type=int, help="Serial baud rate. When omitted, tries 2000000 then 115200.")
     parser.add_argument("--timeout", type=float, default=30.0, help="Seconds to wait for output")
     parser.add_argument("--chunk-size", type=int, default=128, help="Write chunk size for raw REPL upload")
     parser.add_argument("--list-ports", action="store_true", help="List detected serial ports and exit")
@@ -183,18 +188,42 @@ def main():
     with open(args.script, "r", encoding="utf-8") as handle:
         code = handle.read()
 
-    ser = serial.Serial(port, args.baud, timeout=0.2, write_timeout=5)
-    try:
-        enter_raw_repl(ser, port, args.baud)
-        output = run_code(ser, code, args.timeout, args.chunk_size)
-        sys.stdout.write(output)
-    finally:
+    if args.baud:
+        baud_list = (args.baud,)
+    else:
+        baud_list = DEFAULT_BAUDS
+
+    last_enter_error = None
+    for baud in baud_list:
         try:
-            ser.write(b"\x03")
-            time.sleep(0.1)
-            ser.write(b"\x02")
+            ser = serial.Serial(port, baud, timeout=0.2, write_timeout=5)
+        except Exception as exc:
+            raise SystemExit("Could not open %s at %d baud: %s" % (port, baud, exc))
+        try:
+            enter_raw_repl(ser, port, baud)
+            output = run_code(ser, code, args.timeout, args.chunk_size)
+            sys.stdout.write(output)
+            return
+        except RawReplEnterError as exc:
+            last_enter_error = str(exc)
+            if len(baud_list) > 1:
+                sys.stderr.write("Raw REPL handshake failed at %d baud; trying next baud if available.\n" % baud)
+            else:
+                sys.stderr.write(last_enter_error + "\n")
+                raise SystemExit(1)
         finally:
-            ser.close()
+            try:
+                ser.write(b"\x03")
+                time.sleep(0.1)
+                ser.write(b"\x02")
+            except Exception:
+                pass
+            finally:
+                ser.close()
+
+    if last_enter_error:
+        sys.stderr.write(last_enter_error + "\n")
+    raise SystemExit(1)
 
 
 if __name__ == "__main__":

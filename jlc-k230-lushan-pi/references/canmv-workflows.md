@@ -16,7 +16,7 @@ Prefer keeping an `examples/` directory with known-good single-feature scripts a
 
 On Windows, CanMV IDE K230 may be installed in a user-chosen directory. When the user asks to launch, locate, or troubleshoot the IDE, first ask for or discover the path to `canmvide.exe` instead of assuming a fixed drive path.
 
-When CanMV IDE UI automation is unavailable, try running a temporary script through K230 MicroPython raw REPL with `scripts/run_canmv_raw_repl.py`. The user's tested board exposes a USB serial port with `VID:PID=1209:ABD1`, and raw REPL worked at baud `2000000`. This method runs code from RAM and does not save `main.py` to the TF card.
+When CanMV IDE UI automation is unavailable, try running a temporary script through K230 MicroPython raw REPL with `scripts/run_canmv_raw_repl.py`. The user's tested board exposes a USB serial port with `VID:PID=1209:ABD1`; the helper tries baud `2000000` and then `115200` when `--baud` is omitted. This method runs code from RAM and does not save `main.py` to the TF card.
 
 When hardware is connected and a quick camera/LCD check is needed, run `scripts/smoke_camera_lcd.py` through `scripts/run_canmv_raw_repl.py`. It initializes the default CSI camera and the 3.1-inch `Display.ST7701` LCD, shows 20 frames, prints `SMOKE_DONE`, and exits. Use this before debugging a large application or an infinite-loop template.
 

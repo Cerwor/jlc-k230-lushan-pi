@@ -21,16 +21,17 @@ SCALE_X = DISPLAY_WIDTH / DETECT_WIDTH
 SCALE_Y = DISPLAY_HEIGHT / DETECT_HEIGHT
 
 CIRCLE_ROI = (80, 40, 240, 160)  # Detection-image coordinates, not LCD coordinates.
-X_STRIDE = 4
-Y_STRIDE = 4
-CIRCLE_THRESHOLD = 2500
+X_STRIDE = 2
+Y_STRIDE = 2
+CIRCLE_THRESHOLD = 1200
 X_MARGIN = 10
 Y_MARGIN = 10
 R_MARGIN = 10
-MIN_RADIUS = 6
+MIN_RADIUS = 4
 MAX_RADIUS = 80
 
 DETECT_EVERY_N_FRAMES = 3
+CIRCLE_MISS_HOLD_FRAMES = 6
 ENABLE_SERIAL_PRINT = False
 PRINT_EVERY_N_FRAMES = 15
 GC_INTERVAL_FRAMES = 30
@@ -132,6 +133,7 @@ try:
 
     clock = time.clock()
     frame_id = 0
+    miss_count = 0
     print("circle detect dual-channel start")
 
     while True:
@@ -141,7 +143,14 @@ try:
 
         if frame_id % DETECT_EVERY_N_FRAMES == 0:
             detect_img = sensor.snapshot(chn=DETECT_CHN)
-            last_circles = detect_circles(detect_img)
+            detected_circles = detect_circles(detect_img)
+            if detected_circles:
+                last_circles = detected_circles
+                miss_count = 0
+            else:
+                miss_count += 1
+                if miss_count >= CIRCLE_MISS_HOLD_FRAMES:
+                    last_circles = []
 
         draw_overlay(display_img, last_circles, clock.fps())
         maybe_print(frame_id, last_circles, clock.fps())

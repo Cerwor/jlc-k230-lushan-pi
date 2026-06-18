@@ -26,7 +26,7 @@ Check in this order:
 - Use `scripts/run_canmv_raw_repl.py --list-ports` to inspect available serial ports and confirm the expected `VID:PID 1209:ABD1` device before choosing `--port`.
 - If the helper reports `Board script raised an exception`, inspect the printed traceback first; the serial connection worked and the uploaded MicroPython code failed on the board.
 - If the helper reports `Timed out before raw REPL completion marker`, the uploaded script did not return to raw REPL cleanly. Increase `--timeout` for slow probes, or reset the board before running another script.
-- Keep the default tested baud at `2000000`; try `115200` only when firmware or tooling proves the board was configured differently.
+- When `--baud` is omitted, `scripts/run_canmv_raw_repl.py` tries `2000000` and then `115200`. During board testing, the same COM14 device sometimes had no bytes at one baud but worked at the other, so prefer omitting `--baud` unless a fixed baud is being diagnosed.
 - Use `scripts/smoke_camera_lcd.py` as the first hardware test when raw REPL works but camera/LCD behavior is uncertain.
 
 ## No Offline Auto-Run
