@@ -28,6 +28,7 @@ Core rules:
 - The standard 40-pin header does not expose ADC; K230 ADC is limited to 1.8 V and is routed through FPC instead.
 - `I2C0_SCL/SDA` are `GPIO48/GPIO49`; `I2C1_SCL/SDA` are `GPIO40/GPIO41`.
 - GH1.25 UART2 is `TX: GPIO11`, `RX: GPIO12`.
+- Tested firmware also reports UART2 alternate FPIOA pairs: `TX/RX = PIN5/PIN6`, `PIN11/PIN12`, or `PIN44/PIN45`. Do not confuse K230 `PIN11/PIN12` with a 40-pin header's physical pin numbers.
 - GH1.25 UART3 is `TX: GPIO50`, `RX: GPIO51`.
 - UART0 is used as an internal RT-Smart console on the board; avoid using it in CanMV examples.
 - Current official GPIO notes say CanMV firmware does not support GPIO interrupt mode; use polling, timers, or firmware-specific verification.
@@ -149,6 +150,8 @@ if data:
 ```
 
 Official notes mark `readline` and `readinto` examples as needing more testing. For robust contest communication, use `uart.read()` plus a small packet parser, timeout handling, and optional checksum.
+
+When loopback wiring is uncertain, run `scripts/probe_uart2_loopback.py`. It scans the common UART2 FPIOA pairs before opening UART2. A live test found a user's wire on `PIN5/PIN6`; the default `PIN11/PIN12` UART2 template therefore transmitted but received `rx=0`.
 
 Debug checklist:
 

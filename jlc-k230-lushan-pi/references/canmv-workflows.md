@@ -72,6 +72,8 @@ uart.write("hello\r\n")
 
 Verify pin numbers against the official pin table or user schematic before presenting code as final.
 
+When the user is not sure which UART2 pins are shorted or wired, run `scripts/probe_uart2_loopback.py` through raw REPL. It first scans common UART2 FPIOA pairs `(5, 6)`, `(11, 12)`, and `(44, 45)` as GPIO links, then runs a bounded UART2 loopback test on the linked pair.
+
 If UART data is missing, garbled, or one-way only, use `troubleshooting.md#gpio-pwm-uart-i2c-spi-problems`.
 
 ## PWM
