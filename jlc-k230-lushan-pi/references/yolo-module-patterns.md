@@ -19,6 +19,7 @@ For final contest scripts, also use `canmv-micropython-compatibility.md`; deskto
 - Video Mode with PipeLine
 - Family-Specific Defaults From Official Examples
 - Contest-Oriented YOLO Guidance
+- Non-K230 YOLO/RKNN Samples
 
 ## Supported Classes and Tasks
 
@@ -241,6 +242,22 @@ Treat these as demo defaults, not project facts.
 - Keep `debug_mode=0` for normal runs; use `debug_mode=1` or `ScopedTiming` while profiling.
 - Call `gc.collect()` regularly in video loops.
 - Always release YOLO and pipeline resources in `finally`.
+
+## Non-K230 YOLO/RKNN Samples
+
+Linux/OpenCV/RKNN examples for RK3576 or other Rockchip boards are not directly portable to Lushan Pi K230 CanMV:
+
+- `.rknn` model files run through RKNN runtime, not K230 KPU.
+- `rknn.api.RKNN`, OpenCV camera capture, Flask/MJPEG streaming, and Linux serial paths are platform-specific.
+- ONNX files are source artifacts for conversion; they are not runnable by CanMV directly. Convert and validate a `.kmodel` for K230 instead.
+
+Useful ideas to keep from those samples:
+
+- Prefer one named target class for contest tracking, such as a ball, cap, block, or marker.
+- When multiple boxes pass threshold, score candidates by confidence plus distance to the frame center or previous target.
+- Send signed error from frame center for pan/tilt control instead of only absolute box coordinates.
+- Throttle UART output separately from display FPS.
+- Overlay target state, serial state, FPS, and center/error values before enabling actuators.
 
 ## Board-Proven YOLOv8 LCD Launcher
 

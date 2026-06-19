@@ -33,7 +33,7 @@ description: Build, port, debug, and deploy LCKFB/JLC Lushan Pi K230 CanMV proje
 | Camera/LCD/peripheral CanMV bring-up | `references/canmv-workflows.md` | General CanMV workflow and skeletons |
 | YOLOv5, YOLOv8, YOLO11, classify/detect/segment, KModel | `references/yolo-module-patterns.md` | Official YOLO lifecycle and parameters |
 | User-style LCD/capture/YOLO/keypoint examples | `references/user-example-patterns.md` | Portable patterns distilled from prior working code |
-| 2025-style rectangle target, laser aiming, ROI tracking, single-class model-assisted ROI | `references/contest-2025-rectangle-patterns.md` | Contest rectangle target strategy and enhanced UART tracker template |
+| 2025-style rectangle target, laser aiming, ROI tracking, `cv_lite` rectangle corners, single-class model-assisted ROI | `references/contest-2025-rectangle-patterns.md` | Contest rectangle target strategy and enhanced UART tracker template |
 | Contest architecture or reusable project start | `references/contest-patterns.md` and `assets/contest-template/` | Copyable project scaffold and integration rules |
 | Offline run, `boot.py`, `main.py`, TF-card deployment | `references/offline-run-patterns.md` | Power-on deployment procedure |
 | Any failure, logs, non-working hardware, no display, no model result | `references/troubleshooting.md` | Centralized debug checklist |
