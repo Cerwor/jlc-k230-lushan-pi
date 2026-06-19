@@ -160,6 +160,7 @@ LEDs and buttons:
 - Onboard RGB LED is user-controllable through three separate pins.
 - The three onboard buttons are reset, BOOT0, and user key.
 - BOOT0 can be held before power-on for USB flashing scenarios.
+- A live CanMV test mapped the physical `USR` key as `BUTTON_PAD = 52`, `FPIOA.GPIO53`, `Pin(53, Pin.IN, Pin.PULL_DOWN)`: idle is `0`, pressed is `1`. Do not use `RST` or `BOOT` as normal user-input buttons in contest templates.
 
 Audio:
 
