@@ -78,9 +78,10 @@ For color/shape/line tasks, start with classical image processing before YOLO:
 
 - ROI crop to reduce processing.
 - Threshold in LAB/RGB/gray depending on lighting.
+- For competition-site lighting drift, prefer calibration or dynamic thresholds over one fixed value: compute min/max, a histogram, or local ROI statistics, then derive the threshold per frame or per calibration step.
 - Use blob/line/circle detection where adequate.
 - Display tuning values on LCD by default. Avoid per-frame `print(...)` in real-time vision loops because serial output can dominate frame time.
-- Save a fallback threshold set for the competition site lighting.
+- Save fallback threshold presets for the competition site lighting, and make the active preset visible on LCD.
 
 For 2025-style rectangle target or laser aiming tasks, read `contest-2025-rectangle-patterns.md` before writing final code. Prefer the enhanced tracker template when the user needs stable center coordinates over UART.
 
@@ -100,6 +101,8 @@ For YOLO/model tasks:
 For UART-connected motor controllers or MCUs:
 
 - Define a packet format with header, payload, checksum or newline.
+- For target-centering controllers, send signed pixel error or normalized error when the MCU closes the loop; absolute coordinates are mainly for logging and display.
+- Use one success format and one lost-target/timeout format; avoid mixing debug strings and controller packets on the same UART stream.
 - Add timeout handling.
 - Echo or log received responses during bring-up.
 

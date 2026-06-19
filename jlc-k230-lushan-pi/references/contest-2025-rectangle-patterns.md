@@ -10,6 +10,7 @@ For failures, use `troubleshooting.md`: `#camera-problems`, `#lcd-or-display-pro
 
 - Strategy Ladder
 - Classical Rectangle Tracker
+- Optional cv_lite Rectangle Path
 - Model-Assisted ROI
 - UART Output
 - What Not To Copy Directly
@@ -22,8 +23,9 @@ Prefer this order during contest bring-up:
 1. Start with `assets/contest-template/examples/rectangle_detect.py` to prove camera, LCD, and `find_rects`.
 2. Use ROI, grayscale/gamma/binary preprocessing, area filtering, aspect-ratio filtering, and diagonal-intersection center calculation.
 3. Add temporal target tracking so the selected rectangle does not jump between false positives.
-4. If the background is too noisy, use a small single-class detector only to propose an ROI, then run classical rectangle/feature detection inside that ROI.
-5. Enable UART output only after on-screen target position is stable.
+4. If the firmware provides `cv_lite`, test it as an optional rectangle-corner path after a small `import cv_lite` probe.
+5. If the background is too noisy, use a small single-class detector only to propose an ROI, then run classical rectangle/feature detection inside that ROI.
+6. Enable UART output only after on-screen target position is stable.
 
 ## Classical Rectangle Tracker
 
@@ -39,6 +41,24 @@ Useful pattern:
 - When multiple candidates exist, choose the largest target at first, then choose the candidate closest to the previous target center.
 
 Do not rely only on `rect.rect()` center for perspective views. It is useful as a fallback, but the corner diagonal intersection is usually better for target aiming.
+
+## Optional cv_lite Rectangle Path
+
+A reviewed K230 rectangle sample used `cv_lite.rgb888_find_rectangles_with_corners(...)` on an RGB888 camera frame to return corner points directly. Treat this as an optional acceleration/accuracy path, not as a baseline dependency.
+
+Useful shape:
+
+```text
+RGB888 frame -> cv_lite rectangle candidates -> largest/most stable rectangle -> geometry checks -> diagonal-intersection center -> UART/control
+```
+
+Keep these guards when adapting it:
+
+- First run a tiny `import cv_lite` probe on the target firmware; fall back to `image.find_rects(...)` when unavailable.
+- Keep the LCD surface full-screen at `800x480`, even if detection runs at `480x320`, `400x240`, or another lower resolution.
+- Explicitly scale and rotate candidate corners into LCD coordinates before drawing or sending UART values.
+- Filter candidates by area, side-length consistency, parallel/perpendicular angle checks, and center stability.
+- Convert desktop-style f-strings, `.format(...)`, comprehensions, and complex inline calls to conservative CanMV MicroPython syntax before final `main.py` delivery.
 
 ## Model-Assisted ROI
 
@@ -71,6 +91,20 @@ For target center output, keep the first version simple and readable:
 t,<x>,<y>\n
 ```
 
+For centering control, it is often better to send signed pixel error from image center instead of absolute LCD coordinates:
+
+```text
+e,<err_x>,<err_y>\n
+```
+
+A reviewed MSPM0 pan/tilt project used a compact bracketed packet style that is useful when the external controller expects fixed-width signed errors:
+
+```text
+[+012-034*]
+```
+
+In that form the payload is four characters of signed `x` error followed by four characters of signed `y` error, framed by `[` and `*]`. If this format is used, define one consistent lost-target packet such as `[+999+999*]` or a separate `[LOST*]` state; do not mix readable debug strings with controller packets.
+
 Use UART2 only when it matches the user's wiring. The common Lushan Pi examples map:
 
 - `GPIO11 -> FPIOA.UART2_TXD`
@@ -83,6 +117,10 @@ For final contest control, consider adding a header, sequence id, checksum, or t
 
 - Do not hard-code third-party model paths such as `/sdcard/mp_deployment_source/` unless the user uses that deployment layout.
 - Do not assume the reviewed model files match the user's target or firmware.
+- Do not assume `cv_lite` exists on every CanMV firmware image; probe it before writing a final dependency.
+- Do not copy `.rknn`, `rknn.api`, OpenCV/Linux camera code, or RK3576 runtime code into a K230 CanMV script.
+- Do not keep a low-resolution camera frame centered on the `800x480` LCD without scaling; that causes the "small image in the middle" display failure.
+- Do not mix success and failure UART packet formats.
 - Do not assume `GPIO53` is the user's button pin.
 - Do not preserve temporary debug comments, Chinese mojibake, or unused imports from external examples.
 - Do not enable actuators from model output until the same coordinates are stable on LCD and serial logs.
