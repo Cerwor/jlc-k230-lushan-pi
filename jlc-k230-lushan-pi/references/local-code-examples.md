@@ -181,6 +181,7 @@ Portable guidance:
 - Save filenames with a monotonically increasing index.
 - Expect JPEG encoding and TF-card writes to temporarily reduce FPS; keep capture interval throttled.
 - Keep collection code separate from inference code.
+- For `button_capture.py`, the physical `USR` key was board-tested as `PAD52 -> FPIOA.GPIO53 -> Pin(53)` with pull-down input, idle `0`, pressed `1`; one press toggles capture on, the next press toggles it off.
 
 Built-in template:
 
