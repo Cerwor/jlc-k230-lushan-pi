@@ -12,7 +12,8 @@ BUTTON_GPIO_FUNC = FPIOA.GPIO53
 BUTTON_PIN_ID = 53
 DEBOUNCE_MS = 300
 SAVE_INTERVAL_MS = 1000
-SAVE_DIR = "/data/capture"
+# 默认保存到 TF 卡，便于离线采集后直接取卡拷贝样本。
+SAVE_DIR = "/sdcard/capture"
 
 fpioa = FPIOA()
 fpioa.set_function(BUTTON_PAD, BUTTON_GPIO_FUNC)
