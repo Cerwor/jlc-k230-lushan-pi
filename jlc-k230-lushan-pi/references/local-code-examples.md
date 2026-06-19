@@ -197,8 +197,10 @@ Original useful pattern:
 Portable guidance:
 
 - For threshold-heavy tasks, write a tuning script before writing the final autonomous script.
+- Default to full-screen `800x480` LCD output with a lower-resolution detection channel such as `400x240`; scale blob boxes and centers back to LCD coordinates.
 - Display mode, current selected parameter, and current threshold values must be visible.
 - Keep a fallback threshold set for known lighting conditions.
+- On the tested board, the template keys `GPIO53/GPIO32/GPIO34` should use pull-ups and active-low edge detection. Initialize debounce state from the current pin values; a `GPIO53` pull-down, active-high NEXT key falsely triggered after camera/LCD startup.
 
 Built-in template:
 
