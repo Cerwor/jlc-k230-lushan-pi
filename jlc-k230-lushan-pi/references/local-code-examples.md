@@ -171,7 +171,7 @@ Built-in templates:
 Original useful patterns:
 
 - Use a button to start/stop capture.
-- Save images under `/data/capture` or another known directory.
+- Save images under `/sdcard/capture` or another known TF-card directory so samples are easy to copy after offline collection.
 - Overlay capture state and saved image count.
 - For AI digit recognition, keep model path, labels, input size, and preprocessing constants at the top.
 
@@ -179,6 +179,7 @@ Portable guidance:
 
 - Collect data at the contest lighting/site when possible.
 - Save filenames with a monotonically increasing index.
+- Expect JPEG encoding and TF-card writes to temporarily reduce FPS; keep capture interval throttled.
 - Keep collection code separate from inference code.
 
 Built-in template:
