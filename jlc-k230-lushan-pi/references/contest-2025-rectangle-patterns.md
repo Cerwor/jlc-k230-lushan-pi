@@ -60,6 +60,13 @@ Keep these guards when adapting it:
 - Filter candidates by area, side-length consistency, parallel/perpendicular angle checks, and center stability.
 - Convert desktop-style f-strings, `.format(...)`, comprehensions, and complex inline calls to conservative CanMV MicroPython syntax before final `main.py` delivery.
 
+Board-tested result on the user's Lushan Pi K230 firmware:
+
+- `cv_lite` imported successfully, and `rgb888_find_rectangles_with_corners` existed.
+- Official examples were present under `/sdcard/examples/23-CV_Lite/`, including RGB888 and grayscale rectangle-corner demos.
+- A bounded RGB888 test using `480x320` detection plus full-screen `800x480` LCD display ran 120 frames without crashing and stabilized around 58-59 FPS.
+- With no intentional rectangle target, detections were sparse; tune Canny thresholds, area ratio, and angle cosine on the real contest target before using it for control.
+
 ## Model-Assisted ROI
 
 The reviewed project includes a one-class `AnchorBaseDet` KModel path generated for K230 with nncase 2.9.0. It uses `nncase_runtime`, `aicube`, and `deploy_config.json`, then calls `aicube.anchorbasedet_post_process(...)`.
