@@ -46,6 +46,7 @@ Current template files:
 - `assets/contest-template/examples/yolov8_lcd_official_launcher.py`: board-proven launcher for the official YOLOv8 object detection example on the 3.1-inch LCD.
 - `assets/contest-template/examples/rectangle_detect.py`: board-tested classical rectangle detection and annotation example using `find_rects`.
 - `assets/contest-template/examples/rectangle_target_uart_tracker.py`: contest-style rectangle center tracker with ROI, binary preprocessing, diagonal-intersection center, temporal target selection, and UART output.
+- `assets/contest-template/examples/cvlite_rectangle_target_uart_tracker.py`: high-FPS black-on-white rectangle tracker using `cv_lite` grayscale corners, strict-plus-relaxed fallback detection, previous-center target selection, LCD overlay, and UART signed-error output.
 - `assets/contest-template/examples/circle_detect.py`: full-screen LCD circle detection template using low-resolution detection, scaled overlay coordinates, ROI, throttled detection, and throttled serial print.
 - `assets/contest-template/examples/color_line_tracking.py`: color blob and line segment tracking pattern.
 - `assets/contest-template/examples/servo_laser_stepper_patterns.py`: laser GPIO, servo PWM, stepper phase-table, and button mode pattern.
@@ -83,7 +84,7 @@ For color/shape/line tasks, start with classical image processing before YOLO:
 - Display tuning values on LCD by default. Avoid per-frame `print(...)` in real-time vision loops because serial output can dominate frame time.
 - Save fallback threshold presets for the competition site lighting, and make the active preset visible on LCD.
 
-For 2025-style rectangle target or laser aiming tasks, read `contest-2025-rectangle-patterns.md` before writing final code. Prefer the enhanced tracker template when the user needs stable center coordinates over UART.
+For 2025-style rectangle target or laser aiming tasks, read `contest-2025-rectangle-patterns.md` before writing final code. Prefer `cvlite_rectangle_target_uart_tracker.py` when `cv_lite` is available; use the `find_rects` tracker as a fallback route.
 
 For circle/ring detection, read `circle-detection-patterns.md`. Prefer full-screen `800x480` display with `400x240` or `320x240` detection, ROI, coordinate scaling, and detection every `N` frames.
 

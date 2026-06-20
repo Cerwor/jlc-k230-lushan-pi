@@ -54,6 +54,7 @@ Portable guidance:
 Built-in template:
 
 - `assets/contest-template/examples/rectangle_detect.py`
+- `assets/contest-template/examples/cvlite_rectangle_target_uart_tracker.py`
 
 ## 2025-Style Rectangle Target Tracking
 
@@ -70,6 +71,7 @@ Portable guidance:
 Reference and template:
 
 - `references/contest-2025-rectangle-patterns.md`
+- `assets/contest-template/examples/cvlite_rectangle_target_uart_tracker.py`
 - `assets/contest-template/examples/rectangle_target_uart_tracker.py`
 
 ## Circle Recognition

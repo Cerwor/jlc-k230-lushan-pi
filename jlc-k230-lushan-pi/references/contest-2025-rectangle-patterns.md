@@ -148,6 +148,8 @@ For final contest control, consider adding a header, sequence id, checksum, or t
 
 ## Built-In Template
 
-Use `assets/contest-template/examples/rectangle_target_uart_tracker.py` when the user asks for a contest-ready rectangle center detector or laser-target/motor-controller coordinate sender.
+Use `assets/contest-template/examples/cvlite_rectangle_target_uart_tracker.py` first for black-on-white rectangle targets on firmware where `cv_lite` is available. It encodes the board-tested strict-plus-relaxed-fallback `cv_lite` corner strategy, previous-center candidate selection, full-screen LCD overlay, and UART signed-error output.
+
+Use `assets/contest-template/examples/rectangle_target_uart_tracker.py` when `cv_lite` is unavailable or the user needs the older `image.find_rects` route.
 
 Use the simpler `assets/contest-template/examples/rectangle_detect.py` for the first camera/LCD smoke test.
