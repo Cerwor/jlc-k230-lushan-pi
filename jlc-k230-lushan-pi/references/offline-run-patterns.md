@@ -6,6 +6,17 @@ Official source: https://wiki.lckfb.com/zh-hans/lushan-pi-k230/ide-usage/offline
 
 For failures, use `troubleshooting.md#no-offline-auto-run`.
 
+## Contents
+
+- Core Rule
+- Boot Order
+- boot.py Guidance
+- main.py Guidance
+- Save Through CanMV IDE
+- Manual Save
+- Deployment Checklist
+- Troubleshooting
+
 ## Core Rule
 
 Running a script with the green run button in CanMV IDE K230 does not save the MicroPython script to the TF card. It runs from memory, so the script is lost after power-off or reset.
