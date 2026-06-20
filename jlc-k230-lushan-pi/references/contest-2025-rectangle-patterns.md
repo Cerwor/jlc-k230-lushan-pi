@@ -66,6 +66,12 @@ Board-tested result on the user's Lushan Pi K230 firmware:
 - Official examples were present under `/sdcard/examples/23-CV_Lite/`, including RGB888 and grayscale rectangle-corner demos.
 - A bounded RGB888 test using `480x320` detection plus full-screen `800x480` LCD display ran 120 frames without crashing and stabilized around 58-59 FPS.
 - With no intentional rectangle target, detections were sparse; tune Canny thresholds, area ratio, and angle cosine on the real contest target before using it for control.
+- With a real black-tape rectangle on white paper centered in view, a 300-frame comparison showed:
+  - `cv_lite.grayscale_find_rectangles_with_corners`: 299/300 hits, final FPS about 58, average LCD center `(418,214)`, x range `418..418`, y range `210..216`.
+  - `cv_lite.rgb888_find_rectangles_with_corners`: 297/300 hits, final FPS about 59, average LCD center `(418,215)`, x range `418..418`, y range `210..216`.
+  - Traditional `image.find_rects` after black-threshold binary: 297/300 hits but selected false rectangles repeatedly, final FPS about 22-23, center range `43..420`/`42..262`.
+  - Black-threshold `find_blobs`: 300/300 hits and final FPS about 46, but the blob center `(395,279)` was biased away from the rectangle-corner center, so use it only as coarse fallback.
+- For black-on-white rectangle targets, prefer grayscale `cv_lite` corners as the first high-FPS tracker. Use RGB888 `cv_lite` when grayscale preprocessing loses useful color contrast. Keep `find_blobs` as a coarse fallback and avoid traditional `find_rects` as the primary path unless extra ROI/geometry filters are added.
 
 ## Model-Assisted ROI
 
