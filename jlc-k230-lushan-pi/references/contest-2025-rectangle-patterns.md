@@ -74,6 +74,12 @@ Board-tested result on the user's Lushan Pi K230 firmware:
 - For black-on-white rectangle targets, prefer grayscale `cv_lite` corners as the first high-FPS tracker. Use RGB888 `cv_lite` when grayscale preprocessing loses useful color contrast. Keep `find_blobs` as a coarse fallback and avoid traditional `find_rects` as the primary path unless extra ROI/geometry filters are added.
 - With the user moving, tilting, and changing distance of the same rectangle target during a 600-frame run, strict grayscale `cv_lite` corners reached 503/600 hits at about 59 FPS with no large target jumps (`max_step=26`, `big_jumps=0`). Adding a second relaxed pass only when strict detection returned no rectangles improved continuity to 578/600 hits, with 565 strict hits, 13 fallback hits, 22 misses, about 58 FPS, `max_step=13`, and no large jumps.
 - For moving rectangle targets, select candidates using the previous target center while the target has not been lost for too many frames. Use strict parameters first, then a relaxed fallback such as lower Canny thresholds, smaller area ratio, larger polygon epsilon, and larger angle cosine only on missed frames.
+- In a 1800-frame lighting robustness test with four 450-frame phases, the same strict-plus-relaxed-fallback tracker stayed stable at about 59 FPS:
+  - Normal light: 449/450 hits, all strict, one startup miss, center range `501..505`/`199..204`.
+  - Bright light: 450/450 hits, 440 strict and 10 fallback, center range `501..505`/`199..204`.
+  - Shadow: 450/450 hits, 443 strict and 7 fallback, center range `501..505`/`199..205`.
+  - Dim light: 449/450 hits, 436 strict and 13 fallback, one miss, center range `501..505`/`199..204`.
+- For contest lighting changes, keep the fallback pass enabled even if the normal-light strict pass looks perfect. The fallback pass costs little when only run on strict misses and helps absorb exposure/contrast changes without target jumps.
 
 ## Model-Assisted ROI
 
