@@ -72,6 +72,8 @@ Board-tested result on the user's Lushan Pi K230 firmware:
   - Traditional `image.find_rects` after black-threshold binary: 297/300 hits but selected false rectangles repeatedly, final FPS about 22-23, center range `43..420`/`42..262`.
   - Black-threshold `find_blobs`: 300/300 hits and final FPS about 46, but the blob center `(395,279)` was biased away from the rectangle-corner center, so use it only as coarse fallback.
 - For black-on-white rectangle targets, prefer grayscale `cv_lite` corners as the first high-FPS tracker. Use RGB888 `cv_lite` when grayscale preprocessing loses useful color contrast. Keep `find_blobs` as a coarse fallback and avoid traditional `find_rects` as the primary path unless extra ROI/geometry filters are added.
+- With the user moving, tilting, and changing distance of the same rectangle target during a 600-frame run, strict grayscale `cv_lite` corners reached 503/600 hits at about 59 FPS with no large target jumps (`max_step=26`, `big_jumps=0`). Adding a second relaxed pass only when strict detection returned no rectangles improved continuity to 578/600 hits, with 565 strict hits, 13 fallback hits, 22 misses, about 58 FPS, `max_step=13`, and no large jumps.
+- For moving rectangle targets, select candidates using the previous target center while the target has not been lost for too many frames. Use strict parameters first, then a relaxed fallback such as lower Canny thresholds, smaller area ratio, larger polygon epsilon, and larger angle cosine only on missed frames.
 
 ## Model-Assisted ROI
 
