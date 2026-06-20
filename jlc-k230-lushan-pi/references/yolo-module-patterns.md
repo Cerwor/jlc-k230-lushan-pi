@@ -20,6 +20,7 @@ For final contest scripts, also use `canmv-micropython-compatibility.md`; deskto
 - Family-Specific Defaults From Official Examples
 - Contest-Oriented YOLO Guidance
 - Non-K230 YOLO/RKNN Samples
+- Board-Proven YOLO Smoke Results
 
 ## Supported Classes and Tasks
 
@@ -258,6 +259,21 @@ Useful ideas to keep from those samples:
 - Send signed error from frame center for pan/tilt control instead of only absolute box coordinates.
 - Throttle UART output separately from display FPS.
 - Overlay target state, serial state, FPS, and center/error values before enabling actuators.
+
+## Board-Proven YOLO Smoke Results
+
+On the user's connected Lushan Pi K230, the vision capability probe confirmed:
+
+- `nncase_runtime`, `aicube`, `libs.PipeLine`, and `libs.YOLO` imported successfully.
+- `YOLOv5`, `YOLOv8`, and `YOLO11` classes were available.
+- Official examples and models existed under `/sdcard/examples/20-YOLO-Module-Examples/`, `/sdcard/examples/05-AI-Demo/`, and `/sdcard/examples/kmodel/`.
+
+Known-good YOLOv8 detection smoke tests:
+
+- Still image: `/sdcard/examples/kmodel/fruit_det_yolov8n_320.kmodel` with `/sdcard/examples/utils/test_fruit.jpg` returned three detections. Measured timing was about `read=184 ms`, `init=747 ms`, `run=21 ms`, `draw=241 ms`.
+- Video: `PipeLine(rgb888p_size=[320,320], display_size=[800,480], display_mode="lcd")` with the same fruit detection model ran 60 camera frames on the 3.1-inch LCD at about 30-32 FPS and exited cleanly.
+
+Use these as smoke baselines only. For contest control, replace labels/model paths with the user's trained `.kmodel`, re-check result structure, and keep actuator output disabled until LCD overlays are stable.
 
 ## Board-Proven YOLOv8 LCD Launcher
 
