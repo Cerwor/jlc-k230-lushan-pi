@@ -43,6 +43,7 @@ jlc-k230-lushan-pi/
 | 矩形检测 | 黑色胶布白纸矩形优先用 `cv_lite.grayscale_find_rectangles_with_corners`，约 58-59 FPS |
 | 移动矩形 | 严格参数加 relaxed fallback 的 `cv_lite` 跟踪在移动/倾斜/距离变化下更稳 |
 | 光照变化 | normal/bright/shadow/dim 四阶段测试中，fallback 可吸收曝光和对比度变化 |
+| Otsu 阈值 | `scripts/probe_otsu_threshold.py` 可短跑验证黑白目标自动阈值链路；本机实测 30 帧采样得 26 个有效样本，阈值约 `0..120` |
 | YOLO | 已测固件支持 `nncase_runtime`、`aicube`、`libs.PipeLine`、YOLOv5/YOLOv8/YOLO11 |
 | UART2 | 不要假设唯一引脚；可用 `scripts/probe_uart2_loopback.py` 扫描常见 UART2 映射 |
 
@@ -138,6 +139,7 @@ tools/
 - `jlc-k230-lushan-pi/scripts/mpremote_deploy.py`：显式把本地文件复制到板端 `/sdcard` 的 `mpremote` 部署助手
 - `jlc-k230-lushan-pi/scripts/mpremote_snapshot.py`：拉取并解码运行中快照文件的 `mpremote` 调试助手
 - `jlc-k230-lushan-pi/scripts/probe_k230_sensor_init.py`：尝试多种 K230 `Sensor` 初始化/抓帧方式的诊断脚本
+- `jlc-k230-lushan-pi/scripts/probe_otsu_threshold.py`：黑白目标 Otsu 自动阈值短跑探针
 - `jlc-k230-lushan-pi/scripts/validate_skill.py`：桌面端 Skill 预检脚本
 - `jlc-k230-lushan-pi/scripts/probe_uart2_loopback.py`：常见 UART2 映射扫描与回环测试
 - `jlc-k230-lushan-pi/scripts/smoke_camera_lcd.py`：短摄像头/LCD 冒烟测试
@@ -203,6 +205,12 @@ python ".\jlc-k230-lushan-pi\scripts\probe_uart2_loopback.py"
 
 ```powershell
 python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\scripts\probe_k230_sensor_init.py"
+```
+
+短跑验证 Otsu 自动阈值：
+
+```powershell
+python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\scripts\probe_otsu_threshold.py"
 ```
 
 显式使用 `mpremote` 部署 `main.py` 到板端 `/sdcard`：
@@ -274,4 +282,4 @@ $env:JLC_K230_LOCAL_PATH_CONFIG = "$HOME\.jlc-k230-local-paths.txt"
 
 Skill 已通过 `quick_validate.py` 校验。多个模板已经做过桌面语法检查，并按已测 CanMV MicroPython 环境调整为更保守的写法。
 
-已连接 Lushan Pi K230 实测过：摄像头/LCD、raw REPL、离线 `main.py` 自动运行、圆形检测、传统矩形检测、`cv_lite` 矩形角点检测、动态矩形跟踪、光照鲁棒性、YOLO 能力探测、数据保存、USR 按键、UART2 回环扫描。仓库也提供了桌面端 `scripts/validate_skill.py` 作为 CI/PR 前的预检入口。
+已连接 Lushan Pi K230 实测过：摄像头/LCD、raw REPL、离线 `main.py` 自动运行、圆形检测、传统矩形检测、`cv_lite` 矩形角点检测、动态矩形跟踪、光照鲁棒性、Otsu 自动阈值、YOLO 能力探测、数据保存、USR 按键、UART2 回环扫描。仓库也提供了桌面端 `scripts/validate_skill.py` 作为 CI/PR 前的预检入口。

@@ -2,6 +2,13 @@
 
 Use this file to keep the skill current as CanMV firmware, LCKFB wiki pages, and user project patterns evolve.
 
+## Contents
+
+- Update Policy
+- Update Steps
+- File Ownership Map
+- Revision Log
+
 ## Update Policy
 
 Update this skill when:
@@ -51,6 +58,7 @@ Update this skill when:
 - `scripts/mpremote_deploy.py`: host-side helper for explicit `/sdcard` file deployment through `mpremote`.
 - `scripts/mpremote_snapshot.py`: host-side helper for pulling and decoding runtime snapshot files written by explicit board hooks.
 - `scripts/probe_k230_sensor_init.py`: board-side diagnostic for trying several K230 `Sensor` construction and snapshot modes.
+- `scripts/probe_otsu_threshold.py`: board-side bounded Otsu grayscale threshold calibration probe for black/white targets.
 - `scripts/validate_skill.py`: host-side preflight checker for skill structure, Python syntax, CanMV conservative syntax, doc references, local paths, and cache artifacts.
 - `scripts/smoke_camera_lcd.py`: board-side short smoke test for default camera and 3.1-inch LCD.
 - `assets/contest-template/`: copyable starter project.
@@ -98,3 +106,4 @@ Update this skill when:
 - 2026-06-21: Added a supplemental `mpremote` debug workflow based on public K230 tooling lessons: `scripts/mpremote_deploy.py` for explicit Windows-friendly `/sdcard` deployment, `scripts/mpremote_snapshot.py` for SD-card runtime snapshot pulls/KSNP decoding, and `references/mpremote-debug-workflows.md` to keep this PC-assisted path separate from the default manual/offline contest flow.
 - 2026-06-21: Clarified that USB `VID:PID 1209:ABD1` is a tested CanMV auto-detection hint rather than a fixed K230 identity, and broadened `scripts/run_canmv_raw_repl.py` auto-detection to also use common CanMV/K230 port descriptions.
 - 2026-06-21: Reviewed `2262727886-stack/mspm0g-contest-skill` K230 material. It targets Lushan Pi K230 + GC2093 + ST7701 in a dual-chip MSPM0G contest setup, but the cloned repo did not include a root LICENSE file, so useful lessons were paraphrased and scripts were rewritten: added `canmv-api-known-issues.md`, optional Otsu grayscale calibration with verification/fallback in `offline_threshold_tuner.py`, all-UART TX sweep support in `probe_uart2_loopback.py`, `probe_k230_sensor_init.py`, and dual-chip communication guidance.
+- 2026-06-21: Board-tested the connected Lushan Pi K230 after the latest skill updates. `smoke_camera_lcd.py` reached `SMOKE_DONE frames=20 fps=72` on the 3.1-inch LCD after raw REPL fell back from 2000000 baud to 115200. `probe_k230_sensor_init.py` confirmed `Sensor(id=2)` 800x480, `Sensor(id=2)` 320x240, and `Sensor()` 320x240 can snapshot; sensor ids 0 and 1 were not present. The new `scripts/probe_otsu_threshold.py` produced 26 valid samples from 30 frames, verified blob detection, and selected grayscale threshold `0..122` in its formal run.

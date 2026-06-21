@@ -24,6 +24,8 @@ When hardware is connected and a quick camera/LCD check is needed, run `scripts/
 
 When camera identity or constructor behavior is uncertain, run `scripts/probe_k230_sensor_init.py` through `scripts/run_canmv_raw_repl.py`. It tries the Lushan default `Sensor(id=2)`, smaller QVGA modes, default `Sensor()`, and selected alternate ids, then prints which modes can snapshot. Use it before changing final camera code away from the normal `Sensor(id=2)` path.
 
+When black/white threshold calibration needs a board-side check without entering the infinite offline tuner loop, run `scripts/probe_otsu_threshold.py` through `scripts/run_canmv_raw_repl.py`. It samples 30 low-resolution grayscale frames, verifies blob detection, shows a short result screen on the 3.1-inch LCD, and exits.
+
 For user-preferred example style, read `user-example-patterns.md`. It contains distilled patterns from the user's prior working code, without relying on local machine paths.
 
 For failures during bring-up, use `troubleshooting.md#first-pass` first, then the task-specific sections below.

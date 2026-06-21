@@ -285,7 +285,7 @@ Contest guidance:
 - Add an ROI to avoid false detections.
 - Print and overlay blob center, area, and confidence-like size.
 - Tune thresholds at the actual contest lighting site.
-- For black/white targets, use an Otsu calibration pass when fixed grayscale thresholds are brittle: sample around 30 frames, discard thresholds outside a sane range, average the remaining values, verify several detection frames, then fall back to a known default if verification fails. `assets/contest-template/examples/offline_threshold_tuner.py` includes this as an optional startup path through `ENABLE_STARTUP_OTSU`.
+- For black/white targets, use an Otsu calibration pass when fixed grayscale thresholds are brittle: sample around 30 frames, discard thresholds outside a sane range, average the remaining values, verify several detection frames, then fall back to a known default if verification fails. `scripts/probe_otsu_threshold.py` is the bounded board-side probe; `assets/contest-template/examples/offline_threshold_tuner.py` includes the same idea as an optional startup path through `ENABLE_STARTUP_OTSU`.
 
 ## Feature Detection
 

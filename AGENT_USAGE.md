@@ -95,6 +95,12 @@ python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-p
 python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\scripts\probe_k230_sensor_init.py"
 ```
 
+如果黑白目标阈值需要现场自动校准，先用短跑探针确认 Otsu 链路：
+
+```powershell
+python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\scripts\probe_otsu_threshold.py"
+```
+
 运行模板时先从 RAM 测试，不要直接保存为板端 `main.py`：
 
 ```powershell

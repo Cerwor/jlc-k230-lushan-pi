@@ -95,11 +95,14 @@ def try_mode(name, sensor_id, ctor_width, ctor_height, frame_width, frame_height
 def print_sensor_attrs():
     print("SENSOR_ATTRS_BEGIN")
     for name in ATTRS:
-        try:
-            value = getattr(Sensor, name)
-            print("SENSOR_ATTR %s=%s" % (name, value))
-        except Exception as e:
-            print("SENSOR_ATTR_FAIL %s err=%s" % (name, e))
+        if name in globals():
+            print("SENSOR_GLOBAL %s=%s" % (name, globals()[name]))
+        else:
+            try:
+                value = getattr(Sensor, name)
+                print("SENSOR_ATTR %s=%s" % (name, value))
+            except Exception as e:
+                print("SENSOR_ATTR_FAIL %s err=%s" % (name, e))
     print("SENSOR_ATTRS_END")
 
 
