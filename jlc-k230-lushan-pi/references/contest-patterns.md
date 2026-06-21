@@ -116,6 +116,8 @@ def handle_frame_error(reason):
 
 For raw `Sensor`/`Display` preview code, a bounded recovery attempt can stop the sensor, deinitialize `Display` and `MediaManager`, collect garbage, sleep briefly, then re-run the same camera/LCD init path. Use `assets/contest-template/main.py` as the integrated example.
 
+Board-tested recovery result on the user's Lushan Pi K230: an injected raw preview recovery through raw REPL on COM14 showed 10 frames before recovery, then successfully ran `Sensor.stop()`, `Display.deinit()`, `MediaManager.deinit()`, reinitialized the default `gc2093_csi2` camera plus 3.1-inch `Display.ST7701` LCD, showed 10 more frames, and exited cleanly with one recovery.
+
 For YOLO/PipeLine code, prefer safe stop plus visible fault state after repeated frame/model exceptions unless the exact `PipeLine.destroy()` and recreate path has been board-tested. Recreating AI pipelines repeatedly can leak resources or fragment memory on embedded firmware, so do not promise live model recovery without a real board test.
 
 Do not hide persistent faults. After the recovery budget is exceeded, keep actuators neutral, show `FAULT` on LCD, and continue sending a simple fault/lost packet if the UART path still works.
