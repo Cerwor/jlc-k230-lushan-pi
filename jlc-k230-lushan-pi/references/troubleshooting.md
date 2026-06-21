@@ -23,8 +23,8 @@ Check in this order:
 - If the USB serial port exists but REPL has no echo, check whether `/sdcard/main.py` or `/sdcard/boot.py` is auto-running and blocking REPL. Rename them to `main_disabled.py` or `boot_disabled.py`, reboot, then retry raw REPL.
 - If the helper reports that no serial bytes were received, reset or replug the board before retrying; a previous interrupted upload can leave the port openable but silent.
 - If the port opens but there is no prompt, send `Ctrl-C`, wait for `MPY: soft reboot` and the ordinary `>>>` prompt, then send `Ctrl-A` to enter raw REPL. The helper script now retries this sequence and prints a handshake log on failure.
-- Use `scripts/run_canmv_raw_repl.py --list-ports` to inspect available serial ports and confirm the expected `VID:PID 1209:ABD1` device before choosing `--port`.
-- Use `scripts/mpremote_deploy.py --list-ports` when debugging the `mpremote` deployment path; it uses the same CanMV VID:PID heuristic but its deploy mode writes files to `/sdcard`.
+- Use `scripts/run_canmv_raw_repl.py --list-ports` to inspect available serial ports. Treat `VID:PID 1209:ABD1` as a tested CanMV hint, not a fixed K230 identity; pass `--port COMx` when the board appears under another VID/PID.
+- Use `scripts/mpremote_deploy.py --list-ports` when debugging the `mpremote` deployment path; it uses the same CanMV/K230 port heuristics but its deploy mode writes files to `/sdcard`.
 - If the helper reports `Board script raised an exception`, inspect the printed traceback first; the serial connection worked and the uploaded MicroPython code failed on the board.
 - If the helper reports `Timed out before raw REPL completion marker`, the uploaded script did not return to raw REPL cleanly. Increase `--timeout` for slow probes, or reset the board before running another script.
 - When `--baud` is omitted, `scripts/run_canmv_raw_repl.py` tries `2000000` and then `115200`. During board testing, the same COM14 device sometimes had no bytes at one baud but worked at the other, so prefer omitting `--baud` unless a fixed baud is being diagnosed.

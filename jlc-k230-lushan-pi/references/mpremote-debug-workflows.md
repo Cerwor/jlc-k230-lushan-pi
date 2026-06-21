@@ -42,7 +42,7 @@ List detected serial ports:
 python ".\jlc-k230-lushan-pi\scripts\mpremote_deploy.py" --list-ports
 ```
 
-The helper looks for the tested CanMV USB VID:PID `1209:ABD1` and common descriptions such as CanMV, Kendryte, K230, or USB Serial Device. If multiple ports exist, pass `--port COM14` or the user's current COM port.
+The helper treats the tested CanMV USB VID:PID `1209:ABD1` only as an auto-detection hint, not as a universal K230 identifier. It also checks common descriptions such as CanMV, Kendryte, K230, or USB Serial Device. If multiple ports exist, pass `--port COM14` or the user's current COM port.
 
 ## Windows-Friendly Deployment
 
