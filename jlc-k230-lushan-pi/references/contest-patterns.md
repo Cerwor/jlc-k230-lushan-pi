@@ -156,6 +156,16 @@ For UART-connected motor controllers or MCUs:
 - Add timeout handling.
 - Echo or log received responses during bring-up.
 
+For K230 plus MSPM0/MSPM0G-style dual-core contest systems:
+
+- Treat K230 as the vision processor and the MCU as the motion/control processor.
+- Keep K230 output limited to target state: found/lost, signed error, center, radius/area, confidence, or phase.
+- Put motor/servo PID, limit switches, emergency stop, and actuator safety on the MCU side whenever possible.
+- Start with a human-readable packet such as `e,<err_x>,<err_y>\n`, then move to a fixed binary frame only after wiring and direction are verified.
+- For Wheeltec-compatible bring-up, a common 8-byte test shape is `FF FE pan tilt 00 00 00 BCC`, where `BCC` is the XOR of bytes 0 through 6. Use it only when the receiver expects that frame family.
+- Verify common ground and baud rate before tuning vision. Some public dual-chip examples used 9600 baud for bring-up even when 115200 was used elsewhere.
+- Use `scripts/probe_uart2_loopback.py` to identify the K230 TX pad before blaming the MCU parser.
+
 For PWM/servo/motor outputs:
 
 - Clamp outputs.

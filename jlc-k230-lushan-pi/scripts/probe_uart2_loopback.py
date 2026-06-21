@@ -4,6 +4,7 @@ from machine import FPIOA, Pin, UART
 
 
 UART_BAUDRATE = 115200
+WHEELTEC_BAUDRATE = 9600
 LOOPBACK_PAIRS = (
     (5, 6),
     (11, 12),
@@ -11,6 +12,18 @@ LOOPBACK_PAIRS = (
 )
 GPIO_SCAN_LOOPS = 8
 UART_LOOPS = 80
+TX_SWEEP_REPEATS = 6
+
+TX_SWEEP_CANDIDATES = (
+    ("UART1_P8_GPIO3", "UART1", 3, "UART1_TXD", 111),
+    ("UART2_P11_GPIO5", "UART2", 5, "UART2_TXD", 122),
+    ("UART2_GH_GPIO11", "UART2", 11, "UART2_TXD", 123),
+    ("UART2_ALT_GPIO44", "UART2", 44, "UART2_TXD", 124),
+    ("UART3_P37_GPIO32", "UART3", 32, "UART3_TXD", 133),
+    ("UART3_GH_GPIO50", "UART3", 50, "UART3_TXD", 134),
+    ("UART4_P29_GPIO36", "UART4", 36, "UART4_TXD", 144),
+    ("UART4_P5_GPIO48", "UART4", 48, "UART4_TXD", 145),
+)
 
 
 uart = None
@@ -18,6 +31,23 @@ uart = None
 
 def gpio_func(pin_num):
     return getattr(FPIOA, "GPIO%d" % pin_num)
+
+
+def get_uart_id(name):
+    return getattr(UART, name)
+
+
+def get_fpioa_func(name):
+    return getattr(FPIOA, name)
+
+
+def make_wheeltec_frame(pan, tilt):
+    frame = bytearray([0xFF, 0xFE, pan & 0xFF, tilt & 0xFF, 0, 0, 0, 0])
+    bcc = 0
+    for i in range(7):
+        bcc ^= frame[i]
+    frame[7] = bcc
+    return frame
 
 
 def make_input(pin_num):
@@ -95,6 +125,42 @@ def run_uart_loopback(tx_pin, rx_pin):
           (tx_pin, rx_pin, tx_count, rx_count, total_bytes))
 
 
+def run_one_tx_candidate(label, uart_name, tx_pin, tx_func_name, pan):
+    local_uart = None
+    try:
+        uart_id = get_uart_id(uart_name)
+        tx_func = get_fpioa_func(tx_func_name)
+        fpioa = FPIOA()
+        fpioa.set_function(tx_pin, tx_func)
+        local_uart = UART(uart_id, baudrate=WHEELTEC_BAUDRATE,
+                          bits=UART.EIGHTBITS, parity=UART.PARITY_NONE,
+                          stop=UART.STOPBITS_ONE)
+        frame = make_wheeltec_frame(pan, 90)
+        print("UART_TX_SWEEP_BEGIN %s pin=%d baud=%d frame=%s" %
+              (label, tx_pin, WHEELTEC_BAUDRATE, list(frame)))
+        for _i in range(TX_SWEEP_REPEATS):
+            local_uart.write(frame)
+            time.sleep_ms(120)
+        print("UART_TX_SWEEP_OK %s" % label)
+    except Exception as e:
+        print("UART_TX_SWEEP_FAIL %s err=%s" % (label, e))
+    finally:
+        if local_uart:
+            try:
+                local_uart.deinit()
+            except Exception as e:
+                print("UART_TX_SWEEP_DEINIT_WARN %s err=%s" % (label, e))
+
+
+def run_all_uart_tx_sweep():
+    print("UART_TX_SWEEP_START")
+    print("UART_TX_SWEEP_NOTE connect one K230 TX candidate to external MCU RX and common GND")
+    for item in TX_SWEEP_CANDIDATES:
+        run_one_tx_candidate(item[0], item[1], item[2], item[3], item[4])
+        time.sleep_ms(120)
+    print("UART_TX_SWEEP_DONE")
+
+
 try:
     print("UART2_LOOPBACK_PROBE_START")
     pair = find_loopback_pair()
@@ -103,6 +169,7 @@ try:
     else:
         print("UART2_LOOPBACK_PAIR tx=%d rx=%d" % (pair[0], pair[1]))
         run_uart_loopback(pair[0], pair[1])
+    run_all_uart_tx_sweep()
     print("UART2_LOOPBACK_PROBE_DONE")
 except Exception as e:
     print("UART2_LOOPBACK_PROBE_ERROR:", e)

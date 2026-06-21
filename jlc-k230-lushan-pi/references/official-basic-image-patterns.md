@@ -153,6 +153,21 @@ Official notes mark `readline` and `readinto` examples as needing more testing. 
 
 When loopback wiring is uncertain, run `scripts/probe_uart2_loopback.py`. It scans the common UART2 FPIOA pairs before opening UART2. A live test found a user's wire on `PIN5/PIN6`; the default `PIN11/PIN12` UART2 template therefore transmitted but received `rx=0`.
 
+The same helper also performs a bounded all-UART TX sweep after the loopback test. It sequentially maps common header/connector TX candidates for UART1, UART2, UART3, and UART4, then sends a short Wheeltec-style `FF FE pan tilt 00 00 00 BCC` frame at 9600 baud with a different `pan` byte for each candidate. Use this when an external MCU receives nothing and the physical K230 TX pad is uncertain. Watch the MCU-side raw bytes or OLED debug page to identify which candidate arrives.
+
+Common sweep candidates:
+
+| Label | UART | K230 pad | Typical physical use |
+| --- | --- | --- | --- |
+| `UART1_P8_GPIO3` | UART1 TXD | GPIO3 | 40Pin physical pin 8 |
+| `UART2_P11_GPIO5` | UART2 TXD | GPIO5 | 40Pin physical pin 11 |
+| `UART2_GH_GPIO11` | UART2 TXD | GPIO11 | GH1.25 UART2/IIC2 connector |
+| `UART2_ALT_GPIO44` | UART2 TXD | GPIO44 | firmware-reported alternate |
+| `UART3_P37_GPIO32` | UART3 TXD | GPIO32 | 40Pin physical pin 37 |
+| `UART3_GH_GPIO50` | UART3 TXD | GPIO50 | GH1.25 UART3 connector |
+| `UART4_P29_GPIO36` | UART4 TXD | GPIO36 | 40Pin physical pin 29 |
+| `UART4_P5_GPIO48` | UART4 TXD | GPIO48 | 40Pin physical pin 5 |
+
 Debug checklist:
 
 - Cross TX/RX between devices.
@@ -270,6 +285,7 @@ Contest guidance:
 - Add an ROI to avoid false detections.
 - Print and overlay blob center, area, and confidence-like size.
 - Tune thresholds at the actual contest lighting site.
+- For black/white targets, use an Otsu calibration pass when fixed grayscale thresholds are brittle: sample around 30 frames, discard thresholds outside a sane range, average the remaining values, verify several detection frames, then fall back to a known default if verification fails. `assets/contest-template/examples/offline_threshold_tuner.py` includes this as an optional startup path through `ENABLE_STARTUP_OTSU`.
 
 ## Feature Detection
 

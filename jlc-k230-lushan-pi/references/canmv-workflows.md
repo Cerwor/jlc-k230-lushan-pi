@@ -22,6 +22,8 @@ When the user explicitly asks to deploy files to `/sdcard`, pull a runtime snaps
 
 When hardware is connected and a quick camera/LCD check is needed, run `scripts/smoke_camera_lcd.py` through `scripts/run_canmv_raw_repl.py`. It initializes the default CSI camera and the 3.1-inch `Display.ST7701` LCD, shows 20 frames, prints `SMOKE_DONE`, and exits. Use this before debugging a large application or an infinite-loop template.
 
+When camera identity or constructor behavior is uncertain, run `scripts/probe_k230_sensor_init.py` through `scripts/run_canmv_raw_repl.py`. It tries the Lushan default `Sensor(id=2)`, smaller QVGA modes, default `Sensor()`, and selected alternate ids, then prints which modes can snapshot. Use it before changing final camera code away from the normal `Sensor(id=2)` path.
+
 For user-preferred example style, read `user-example-patterns.md`. It contains distilled patterns from the user's prior working code, without relying on local machine paths.
 
 For failures during bring-up, use `troubleshooting.md#first-pass` first, then the task-specific sections below.
@@ -109,6 +111,8 @@ Use `assets/contest-template/examples/camera_lcd_preview.py` as the copyable cam
 Adjust resolution to fit the display, algorithm, and memory budget. For AI inference, a lower sensor/display stream and separate model input size are usually easier to keep real-time. For expensive classical detectors such as `find_circles`, prefer a dual-channel layout: full-screen `800x480` display on one channel and `400x240` or `320x240` detection on another channel, then scale coordinates back to the LCD.
 
 If camera initialization, frame capture, or FPS is wrong, use `troubleshooting.md#camera-problems`.
+
+If the default `Sensor(id=2)` path fails on a new firmware/camera, run `scripts/probe_k230_sensor_init.py` from RAM and use only the successful mode as a temporary workaround. Record the result in `maintenance.md` before changing templates globally.
 
 ## Display and 3.1-Inch LCD
 

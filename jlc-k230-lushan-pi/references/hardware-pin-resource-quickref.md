@@ -145,6 +145,7 @@ Common non-40Pin connectors and pads:
 | --- | --- | --- |
 | GH1.25 UART2/IIC2 | UART2_TXD `GPIO11`, UART2_RXD `GPIO12`; also IIC2_SCL/SDA on the same pair | Preferred locking connector for an external MCU when the connector is used |
 | UART2 alternate pads | `PIN5/PIN6`, `PIN11/PIN12`, `PIN44/PIN45` on tested firmware | Use `scripts/probe_uart2_loopback.py` when the physical short/wiring is uncertain |
+| UART TX sweep candidates | UART1 `GPIO3`, UART2 `GPIO5/GPIO11/GPIO44`, UART3 `GPIO32/GPIO50`, UART4 `GPIO36/GPIO48` | Same probe sends distinctive test frames on each candidate so an external MCU can identify the real TX pad |
 | GH1.25 UART3 | UART3_TXD `GPIO50`, UART3_RXD `GPIO51` | User-available serial on newer CanMV firmware; verify occupation on old Linux+RT-Smart firmware |
 | USR button | Physical USR tested as `BUTTON_PAD=52`, `FPIOA.GPIO53`, `Pin(53, Pin.PULL_DOWN)` | Idle `0`, pressed `1`; do not use `RST` or `BOOT` as normal user input |
 | Buzzer | `GPIO43 -> FPIOA.PWM1` in official examples | Passive buzzer, nominal loudest frequency around 4000 Hz |

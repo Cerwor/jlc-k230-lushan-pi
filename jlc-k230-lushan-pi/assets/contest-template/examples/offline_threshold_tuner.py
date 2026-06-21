@@ -33,6 +33,15 @@ names = ["Lmin", "Lmax", "Amin", "Amax", "Bmin", "Bmax"]
 BLOB_ROI = (0, 0, DETECT_WIDTH, DETECT_HEIGHT)
 BLOB_PIXELS_THRESHOLD = 300
 GC_INTERVAL_FRAMES = 30
+ENABLE_STARTUP_OTSU = False
+USE_GRAY_THRESHOLD = False
+GRAY_DEFAULT_THRESHOLD = (0, 100)
+GRAY_THRESHOLD = [0, 100]
+OTSU_SAMPLE_FRAMES = 30
+OTSU_VERIFY_FRAMES = 5
+OTSU_VALID_MIN = 50
+OTSU_VALID_MAX = 180
+OTSU_MARGIN = 15
 
 
 def clamp(value, low, high):
@@ -60,12 +69,87 @@ def scale_y(y):
     return int(y * SCALE_Y)
 
 
-def pack_blobs(img):
-    packed = []
-    blobs = img.find_blobs([tuple(threshold)], False, BLOB_ROI,
+def get_threshold_value(threshold_obj):
+    if hasattr(threshold_obj, "value"):
+        return int(threshold_obj.value())
+    return int(threshold_obj)
+
+
+def find_gray_blobs(img):
+    gray = img.to_grayscale(copy=True)
+    return gray.find_blobs([tuple(GRAY_THRESHOLD)], False, BLOB_ROI,
                            x_stride=5, y_stride=5,
                            pixels_threshold=BLOB_PIXELS_THRESHOLD,
                            margin=True)
+
+
+def verify_gray_threshold(img):
+    try:
+        blobs = find_gray_blobs(img)
+        if blobs:
+            return True
+    except Exception:
+        pass
+    return False
+
+
+def auto_calibrate_gray_otsu(sensor_obj):
+    global GRAY_THRESHOLD
+    samples = []
+    last_img = None
+    print("OTSU_CAL_START frames=%d" % OTSU_SAMPLE_FRAMES)
+    for i in range(OTSU_SAMPLE_FRAMES):
+        os.exitpoint()
+        img = sensor_obj.snapshot(chn=DETECT_CHN)
+        last_img = img
+        try:
+            gray = img.to_grayscale(copy=True)
+            hist = gray.get_histogram()
+            value = get_threshold_value(hist.get_threshold())
+            if OTSU_VALID_MIN < value and value < OTSU_VALID_MAX:
+                samples.append(value)
+        except Exception as e:
+            print("OTSU_SAMPLE_WARN frame=%d err=%s" % (i, e))
+        time.sleep_ms(20)
+
+    if len(samples) >= 5:
+        total = 0
+        for value in samples:
+            total += value
+        avg = total // len(samples)
+        if OTSU_VALID_MIN < avg and avg < OTSU_VALID_MAX:
+            GRAY_THRESHOLD[0] = 0
+            GRAY_THRESHOLD[1] = clamp(avg + OTSU_MARGIN, 0, 255)
+
+    verified = False
+    for _i in range(OTSU_VERIFY_FRAMES):
+        os.exitpoint()
+        img = sensor_obj.snapshot(chn=DETECT_CHN)
+        last_img = img
+        if verify_gray_threshold(img):
+            verified = True
+            break
+        time.sleep_ms(30)
+
+    if not verified:
+        GRAY_THRESHOLD[0] = GRAY_DEFAULT_THRESHOLD[0]
+        GRAY_THRESHOLD[1] = GRAY_DEFAULT_THRESHOLD[1]
+        print("OTSU_CAL_FALLBACK threshold=%d..%d" % (GRAY_THRESHOLD[0], GRAY_THRESHOLD[1]))
+    else:
+        print("OTSU_CAL_OK threshold=%d..%d samples=%d" %
+              (GRAY_THRESHOLD[0], GRAY_THRESHOLD[1], len(samples)))
+    return verified
+
+
+def pack_blobs(img):
+    packed = []
+    if USE_GRAY_THRESHOLD:
+        blobs = find_gray_blobs(img)
+    else:
+        blobs = img.find_blobs([tuple(threshold)], False, BLOB_ROI,
+                               x_stride=5, y_stride=5,
+                               pixels_threshold=BLOB_PIXELS_THRESHOLD,
+                               margin=True)
     for blob in blobs:
         packed.append((scale_x(blob.x()), scale_y(blob.y()),
                        scale_x(blob.w()), scale_y(blob.h()),
@@ -81,6 +165,11 @@ def draw_ui(img, blobs, fps):
 
     line1 = "%s=%d FPS:%d" % (names[selected], threshold[selected], int(fps))
     line2 = str(threshold)
+    if USE_GRAY_THRESHOLD:
+        line1 = "GRAY=%d..%d FPS:%d" % (GRAY_THRESHOLD[0], GRAY_THRESHOLD[1], int(fps))
+        line2 = "OTSU:%d DEFAULT:%d..%d" % (int(ENABLE_STARTUP_OTSU),
+                                            GRAY_DEFAULT_THRESHOLD[0],
+                                            GRAY_DEFAULT_THRESHOLD[1])
     line3 = "B:%d  NEXT:%d INC:%d DEC:%d" % (len(blobs), KEY_NEXT_PIN, KEY_INC_PIN, KEY_DEC_PIN)
     img.draw_string_advanced(10, 10, 28, line1, color=(255, 0, 0))
     img.draw_string_advanced(10, 45, 24, line2, color=(255, 255, 0))
@@ -111,6 +200,9 @@ try:
     Display.init(Display.ST7701, width=DISPLAY_WIDTH, height=DISPLAY_HEIGHT, to_ide=True)
     MediaManager.init()
     sensor.run()
+    if ENABLE_STARTUP_OTSU:
+        USE_GRAY_THRESHOLD = True
+        auto_calibrate_gray_otsu(sensor)
 
     def next_param():
         global selected
