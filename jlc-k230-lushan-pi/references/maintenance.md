@@ -31,6 +31,7 @@ Update this skill when:
 - `agents/openai.yaml`: UI metadata only; not an operational prompt.
 - `references/official-links.md`: source link index.
 - `references/api-manual-routing.md`: official API manual routing table.
+- `references/canmv-api-known-issues.md`: compact K230 CanMV API pitfall and cross-firmware behavior notes.
 - `references/canmv-micropython-compatibility.md`: conservative CanMV MicroPython syntax style and validation limits.
 - `references/local-code-examples.md`: built-in contest-oriented training patterns.
 - `references/environment-notes.md`: known user setup and firmware references.
@@ -49,6 +50,7 @@ Update this skill when:
 - `scripts/run_canmv_raw_repl.py`: host-side helper for running MicroPython scripts from RAM over K230 raw REPL.
 - `scripts/mpremote_deploy.py`: host-side helper for explicit `/sdcard` file deployment through `mpremote`.
 - `scripts/mpremote_snapshot.py`: host-side helper for pulling and decoding runtime snapshot files written by explicit board hooks.
+- `scripts/probe_k230_sensor_init.py`: board-side diagnostic for trying several K230 `Sensor` construction and snapshot modes.
 - `scripts/validate_skill.py`: host-side preflight checker for skill structure, Python syntax, CanMV conservative syntax, doc references, local paths, and cache artifacts.
 - `scripts/smoke_camera_lcd.py`: board-side short smoke test for default camera and 3.1-inch LCD.
 - `assets/contest-template/`: copyable starter project.
@@ -95,3 +97,4 @@ Update this skill when:
 - 2026-06-21: Added root repository maintenance scripts `tools/validate.ps1` and `tools/publish.ps1` to shorten validation, PR, merge, and installed-skill sync workflow. Generalized `scripts/validate_skill.py` so it rejects Windows absolute paths and can load optional machine-private path patterns from `JLC_K230_LOCAL_PATH_CONFIG`, without hard-coding maintainer-local directories in the installable skill.
 - 2026-06-21: Added a supplemental `mpremote` debug workflow based on public K230 tooling lessons: `scripts/mpremote_deploy.py` for explicit Windows-friendly `/sdcard` deployment, `scripts/mpremote_snapshot.py` for SD-card runtime snapshot pulls/KSNP decoding, and `references/mpremote-debug-workflows.md` to keep this PC-assisted path separate from the default manual/offline contest flow.
 - 2026-06-21: Clarified that USB `VID:PID 1209:ABD1` is a tested CanMV auto-detection hint rather than a fixed K230 identity, and broadened `scripts/run_canmv_raw_repl.py` auto-detection to also use common CanMV/K230 port descriptions.
+- 2026-06-21: Reviewed `2262727886-stack/mspm0g-contest-skill` K230 material. It targets Lushan Pi K230 + GC2093 + ST7701 in a dual-chip MSPM0G contest setup, but the cloned repo did not include a root LICENSE file, so useful lessons were paraphrased and scripts were rewritten: added `canmv-api-known-issues.md`, optional Otsu grayscale calibration with verification/fallback in `offline_threshold_tuner.py`, all-UART TX sweep support in `probe_uart2_loopback.py`, `probe_k230_sensor_init.py`, and dual-chip communication guidance.

@@ -89,6 +89,12 @@ python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" --list-ports
 python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\scripts\smoke_camera_lcd.py"
 ```
 
+如果摄像头 id、构造方式或固件兼容性不确定，先跑：
+
+```powershell
+python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\scripts\probe_k230_sensor_init.py"
+```
+
 运行模板时先从 RAM 测试，不要直接保存为板端 `main.py`：
 
 ```powershell
@@ -148,6 +154,7 @@ python ".\jlc-k230-lushan-pi\scripts\mpremote_deploy.py" --port COM14 main.py
 - 不要假设 UART2 固定在某一组引脚。
 - 不要假设模型、标签、例程路径固定。
 - 不要假设 `cv_lite` 在所有固件都存在；先 probe，不能用时 fallback。
+- 不要假设第三方 K230 速查表中的 API 结论适用于所有固件；先看 `references/canmv-api-known-issues.md` 的边界说明。
 - 不要把 RKNN、RK3576、OpenCV/Linux 摄像头代码直接搬进 K230 CanMV。
 - 不要在视觉坐标未稳定前驱动执行器。
 - 不要在用户未授权时写 SD 卡或覆盖板端文件。

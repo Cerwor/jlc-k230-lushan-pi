@@ -43,6 +43,7 @@ Check in this order:
 ## Camera Problems
 
 - Default board camera is usually `CSI2`; `Sensor()` is equivalent to `Sensor(id=2)` in official notes.
+- If a new camera/firmware rejects the normal constructor, run `scripts/probe_k230_sensor_init.py` through raw REPL. Use the first snapshot-capable mode only as a local workaround until it is board-tested.
 - Check FPC orientation, seating, and whether the selected connector matches the code.
 - Start with a raw camera/LCD preview before adding AI.
 - Reduce resolution if memory pressure or frame drops appear.
@@ -64,8 +65,17 @@ Check in this order:
 - Avoid UART0 for user peripherals; prefer UART2 or UART3.
 - For UART, cross TX/RX, share GND, and match baud/data/parity/stop settings.
 - If a UART2 loopback test reports transmit success but `rx=0`, do not assume the UART peripheral failed. First run `scripts/probe_uart2_loopback.py` to verify whether the physical short is on `PIN5/PIN6`, `PIN11/PIN12`, or `PIN44/PIN45`; tested wiring on `PIN5/PIN6` worked after changing the FPIOA mapping.
+- If an external MCU receives nothing, use the all-UART TX sweep inside `scripts/probe_uart2_loopback.py`. Each candidate sends a different Wheeltec-style frame at 9600 baud, so the MCU-side raw-byte/OLED view can identify the actual K230 TX pad.
 - For PWM, use one duty representation at a time: `duty`, `duty_u16`, or `duty_ns`.
 - For motors/servos, clamp outputs and provide a neutral/stop path in exceptions.
+
+## CanMV API or Firmware Quirks
+
+- Read `canmv-api-known-issues.md` before changing working templates because of a single API failure.
+- If `img.to_lab()` or `img.get_pixel(...)` is missing, prefer ROI `copy(...)` plus `get_statistics()` instead of per-pixel sampling.
+- If dual-channel capture fails on a different firmware, fall back to single-channel full-screen capture with ROI/stride/skip-frame processing; do not discard the dual-channel templates that were board-tested on the user's firmware.
+- If `Display.bind_layer(...)` fails, return to the simpler `snapshot -> draw -> Display.show_image(img)` path before debugging OSD/video layers.
+- If thresholding is unstable after moving to contest lighting, use a calibration path such as the optional Otsu startup calibration in `offline_threshold_tuner.py`, then keep a visible fallback threshold on LCD.
 
 ## YOLO, KModel, or AI Problems
 

@@ -124,6 +124,7 @@ tools/
 
 - `jlc-k230-lushan-pi/SKILL.md`：Skill 入口、快速路由表、全局规则
 - `jlc-k230-lushan-pi/references/canmv-micropython-compatibility.md`：CanMV MicroPython 保守语法规则
+- `jlc-k230-lushan-pi/references/canmv-api-known-issues.md`：K230 CanMV API 坑点、跨固件差异和代码生成检查
 - `jlc-k230-lushan-pi/references/canmv-workflows.md`：摄像头、LCD、外设 bring-up 流程
 - `jlc-k230-lushan-pi/references/mpremote-debug-workflows.md`：`mpremote` 部署、运行中截图拉取和 SD 卡侧信道调试
 - `jlc-k230-lushan-pi/references/official-basic-image-patterns.md`：GPIO/FPIOA/PWM/UART 与基础图像处理模式
@@ -136,6 +137,7 @@ tools/
 - `jlc-k230-lushan-pi/scripts/run_canmv_raw_repl.py`：通过 raw REPL 从 RAM 临时运行脚本
 - `jlc-k230-lushan-pi/scripts/mpremote_deploy.py`：显式把本地文件复制到板端 `/sdcard` 的 `mpremote` 部署助手
 - `jlc-k230-lushan-pi/scripts/mpremote_snapshot.py`：拉取并解码运行中快照文件的 `mpremote` 调试助手
+- `jlc-k230-lushan-pi/scripts/probe_k230_sensor_init.py`：尝试多种 K230 `Sensor` 初始化/抓帧方式的诊断脚本
 - `jlc-k230-lushan-pi/scripts/validate_skill.py`：桌面端 Skill 预检脚本
 - `jlc-k230-lushan-pi/scripts/probe_uart2_loopback.py`：常见 UART2 映射扫描与回环测试
 - `jlc-k230-lushan-pi/scripts/smoke_camera_lcd.py`：短摄像头/LCD 冒烟测试
@@ -195,6 +197,12 @@ python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-p
 
 ```powershell
 python ".\jlc-k230-lushan-pi\scripts\probe_uart2_loopback.py"
+```
+
+诊断摄像头初始化方式：
+
+```powershell
+python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\scripts\probe_k230_sensor_init.py"
 ```
 
 显式使用 `mpremote` 部署 `main.py` 到板端 `/sdcard`：

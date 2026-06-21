@@ -26,6 +26,7 @@ description: Build, port, debug, and deploy LCKFB/JLC Lushan Pi K230 CanMV proje
 | mpremote deployment, board file copy, runtime screenshot pull | `references/mpremote-debug-workflows.md`, `references/offline-run-patterns.md`, and `references/troubleshooting.md` | Explicit board-write workflow and SD-card snapshot side-channel |
 | Official links, firmware, IDE, downloads | `references/official-links.md` | Source-of-truth link map |
 | Official API manual lookup | `references/api-manual-routing.md` | Pick the exact API page before using unfamiliar classes/functions |
+| K230 CanMV API pitfalls, known issues, cross-firmware quirks | `references/canmv-api-known-issues.md`, `references/canmv-micropython-compatibility.md`, and `references/troubleshooting.md` | Avoid known-bad API assumptions before writing final code |
 | CanMV syntax compatibility, final `main.py` style, desktop compile mismatch | `references/canmv-micropython-compatibility.md` | Conservative MicroPython syntax rules |
 | Built-in training examples | `references/local-code-examples.md` | Reuse absorbed contest-oriented patterns without depending on an external code folder |
 | Hardware pins, power, connectors, camera/DSI/touch, voltage safety | `references/hardware-pin-resource-quickref.md` | Wiring and resource constraints |
