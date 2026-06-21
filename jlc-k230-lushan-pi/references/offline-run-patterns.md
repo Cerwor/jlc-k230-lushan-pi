@@ -25,6 +25,8 @@ For standalone/e-contest deployment, save the final program as `main.py` in the 
 
 User preference: normally provide the final `main.py` program only. The user will manually copy it to the SD card. Do not use CanMV IDE to save to board or modify the TF card unless the user explicitly asks.
 
+If the user explicitly asks for PC-assisted deployment, `references/mpremote-debug-workflows.md` documents `scripts/mpremote_deploy.py` as a supplemental path. It can copy files to `/sdcard` through `mpremote`, but this is still a board-write operation and should not become the default final-answer workflow.
+
 ## Boot Order
 
 CanMV firmware starts MicroPython on boot and looks in the `sdcard` directory for:

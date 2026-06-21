@@ -36,6 +36,7 @@ Update this skill when:
 - `references/environment-notes.md`: known user setup and firmware references.
 - `references/hardware-pin-resource-quickref.md`: hardware resources, power, voltage, connectors, camera/DSI/touch.
 - `references/official-basic-image-patterns.md`: official GPIO/FPIOA/PWM/UART and image-recognition example patterns.
+- `references/mpremote-debug-workflows.md`: optional host-side `mpremote` deployment and runtime snapshot workflows.
 - `references/circle-detection-patterns.md`: circle/ring detection strategy, dual-channel display/detection mode, ROI/coordinate rules, and FPS cautions.
 - `references/canmv-workflows.md`: normal CanMV bring-up workflows and skeletons.
 - `references/yolo-module-patterns.md`: official YOLO module lifecycle and parameters.
@@ -46,6 +47,8 @@ Update this skill when:
 - `references/troubleshooting.md`: centralized failure diagnosis.
 - `references/usage-boundaries.md`: scope, assumptions, and escalation rules.
 - `scripts/run_canmv_raw_repl.py`: host-side helper for running MicroPython scripts from RAM over K230 raw REPL.
+- `scripts/mpremote_deploy.py`: host-side helper for explicit `/sdcard` file deployment through `mpremote`.
+- `scripts/mpremote_snapshot.py`: host-side helper for pulling and decoding runtime snapshot files written by explicit board hooks.
 - `scripts/validate_skill.py`: host-side preflight checker for skill structure, Python syntax, CanMV conservative syntax, doc references, local paths, and cache artifacts.
 - `scripts/smoke_camera_lcd.py`: board-side short smoke test for default camera and 3.1-inch LCD.
 - `assets/contest-template/`: copyable starter project.
@@ -90,3 +93,4 @@ Update this skill when:
 - 2026-06-21: Board-tested the updated installed skill on a connected Lushan Pi K230 through raw REPL on COM14. `scripts/smoke_camera_lcd.py` initialized `gc2093_csi2`, displayed 20 frames on the 3.1-inch `800x480` ST7701 LCD, and printed `SMOKE_DONE frames=20 fps=70`. An injected runtime-recovery probe displayed 10 frames, stopped and deinitialized `Sensor`/`Display`/`MediaManager`, reinitialized the same camera/LCD path, displayed 10 more frames, and exited cleanly with `recoveries=1`.
 - 2026-06-21: Reduced routing-table drift by making `SKILL.md#Quick Routing` the single routing source for distribution docs, and hardened `yolov8_lcd_official_launcher.py` so it checks the official example path, verifies that the HDMI-to-LCD replacement actually happened, and fails if an HDMI `display_mode` assignment remains.
 - 2026-06-21: Added root repository maintenance scripts `tools/validate.ps1` and `tools/publish.ps1` to shorten validation, PR, merge, and installed-skill sync workflow. Generalized `scripts/validate_skill.py` so it rejects Windows absolute paths and can load optional machine-private path patterns from `JLC_K230_LOCAL_PATH_CONFIG`, without hard-coding maintainer-local directories in the installable skill.
+- 2026-06-21: Added a supplemental `mpremote` debug workflow based on public K230 tooling lessons: `scripts/mpremote_deploy.py` for explicit Windows-friendly `/sdcard` deployment, `scripts/mpremote_snapshot.py` for SD-card runtime snapshot pulls/KSNP decoding, and `references/mpremote-debug-workflows.md` to keep this PC-assisted path separate from the default manual/offline contest flow.
