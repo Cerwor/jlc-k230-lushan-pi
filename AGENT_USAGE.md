@@ -19,6 +19,7 @@
 - 如果需要连接开发板测试，优先使用 `scripts/run_canmv_raw_repl.py` 从 RAM 临时运行。
 - 对电赛项目，先验证摄像头/LCD，再验证识别，再验证串口，再进入执行器控制。
 - 涉及执行器、激光、电机、舵机时，必须先给出安全开关、限幅和失联/丢目标保护。
+- 集成型比赛 `main.py` 应包含安全停机输出、目标丢失状态、连续帧异常预算和可见 `FAULT` 状态。
 
 ## 路由速查
 
@@ -129,14 +130,16 @@ python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-p
 3. 影响路由时更新 `SKILL.md`。
 4. 影响可复用代码时更新 `assets/contest-template/`。
 5. 新测试或重要修复写入 `references/maintenance.md` 的 Revision Log。
-6. 运行 `quick_validate.py`。
-7. 对所有 `.py` 模板做桌面语法检查。
-8. 如有开发板，尽量用 raw REPL 跑 smoke test 或相关模板。
-9. 修改仓库后重新复制 `jlc-k230-lushan-pi` 到 Codex skills 安装目录。
+6. 运行 `scripts/validate_skill.py`。
+7. 运行 `quick_validate.py`。
+8. 对所有 `.py` 模板做桌面语法检查。
+9. 如有开发板，尽量用 raw REPL 跑 smoke test 或相关模板。
+10. 修改仓库后重新复制 `jlc-k230-lushan-pi` 到 Codex skills 安装目录。
 
 推荐校验命令：
 
 ```powershell
+python ".\jlc-k230-lushan-pi\scripts\validate_skill.py" ".\jlc-k230-lushan-pi"
 $codexHome = if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $HOME ".codex" }
 $validator = Join-Path $codexHome "skills\.system\skill-creator\scripts\quick_validate.py"
 python $validator ".\jlc-k230-lushan-pi"

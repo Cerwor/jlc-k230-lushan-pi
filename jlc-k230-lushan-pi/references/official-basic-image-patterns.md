@@ -291,7 +291,7 @@ It does not support compressed or Bayer images.
 
 ## Circle Detection
 
-Official circle detection uses `image.find_circles(...)`, a Hough-transform style method. It is useful for circles, rings, round marks, balls, coins, and circular target centers.
+Official circle detection uses `image.find_circles(...)`, a Hough-transform style method. It is useful for circles, rings, round marks, balls, coins, and circular target centers. Keep this section as the official API baseline; for contest strategy, board-tested parameters, LCD scaling, and FPS tradeoffs, route to `circle-detection-patterns.md`.
 
 Core API shape:
 
@@ -308,8 +308,7 @@ circles = img.find_circles(roi=ROI,
 Performance warning:
 
 - Do not run `find_circles` over full `800x480` by default; it can make FPS too low for live contest control.
-- Prefer `400x240` or `320x240` detection, a smaller ROI, larger strides, and detection every `N` frames.
-- Use `assets/contest-template/examples/circle_detect.py` for full-screen LCD display plus low-resolution circle detection.
+- Use `assets/contest-template/examples/circle_detect.py` and `circle-detection-patterns.md` for full-screen LCD display plus low-resolution circle detection.
 - ROI coordinates belong to the detection image. Scale circle center/radius back to LCD coordinates before drawing or sending control coordinates.
 
 `find_circles` does not support compressed or Bayer images.

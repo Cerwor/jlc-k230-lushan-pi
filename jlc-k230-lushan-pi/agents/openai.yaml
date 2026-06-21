@@ -1,4 +1,7 @@
 interface:
   display_name: "JLC K230 Lushan Pi"
-  short_description: "Build and debug LCKFB K230 CanMV/e-contest projects"
-  default_prompt: "Use $jlc-k230-lushan-pi to create, debug, or deploy a Lushan Pi K230 CanMV e-contest project."
+  short_description: "Build K230 CanMV vision and contest code"
+  default_prompt: "Use $jlc-k230-lushan-pi to build or debug a Lushan Pi K230 CanMV contest project with camera, LCD, vision, UART, and offline main.py deployment."
+
+policy:
+  allow_implicit_invocation: true

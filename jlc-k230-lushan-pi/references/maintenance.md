@@ -20,9 +20,10 @@ Update this skill when:
 3. If the change affects routing, update `SKILL.md`.
 4. If the change affects reusable project code, update `assets/contest-template/`.
 5. Move troubleshooting facts to `troubleshooting.md`, not task-specific reference files.
-6. Run `quick_validate.py` on the skill folder.
-7. Syntax-check any Python files in `assets/contest-template/` where possible.
-8. When hardware is available, run final-style templates in CanMV IDE or with `scripts/run_canmv_raw_repl.py`; desktop `py_compile` alone does not prove CanMV parser compatibility.
+6. Run `scripts/validate_skill.py` from this skill for local preflight checks.
+7. Run `quick_validate.py` on the skill folder.
+8. Syntax-check any Python files in `assets/contest-template/` where possible.
+9. When hardware is available, run final-style templates in CanMV IDE or with `scripts/run_canmv_raw_repl.py`; desktop `py_compile` alone does not prove CanMV parser compatibility.
 
 ## File Ownership Map
 
@@ -45,6 +46,7 @@ Update this skill when:
 - `references/troubleshooting.md`: centralized failure diagnosis.
 - `references/usage-boundaries.md`: scope, assumptions, and escalation rules.
 - `scripts/run_canmv_raw_repl.py`: host-side helper for running MicroPython scripts from RAM over K230 raw REPL.
+- `scripts/validate_skill.py`: host-side preflight checker for skill structure, Python syntax, CanMV conservative syntax, doc references, local paths, and cache artifacts.
 - `scripts/smoke_camera_lcd.py`: board-side short smoke test for default camera and 3.1-inch LCD.
 - `assets/contest-template/`: copyable starter project.
 
@@ -84,3 +86,4 @@ Update this skill when:
 - 2026-06-20: Board-tested moving black-tape rectangle tracking through raw REPL on COM14 while the user moved, tilted, and changed target distance. Strict grayscale `cv_lite` corners reached 503/600 hits at about 59 FPS with no large jumps; strict-plus-relaxed-fallback detection reached 578/600 hits at about 58 FPS, with 565 strict hits, 13 fallback hits, 22 misses, `max_step=13`, and `big_jumps=0`.
 - 2026-06-20: Board-tested lighting robustness for the black-tape rectangle tracker through raw REPL on COM14. Four 450-frame phases at `480x320` detection plus full-screen `800x480` LCD gave normal light 449/450 hits, bright light 450/450 hits, shadow 450/450 hits, and dim light 449/450 hits; strict detection handled most frames, relaxed fallback contributed 10 bright, 7 shadow, and 13 dim hits; all phases held center ranges within about 5 x-pixels and 6 y-pixels with no large jumps.
 - 2026-06-20: Skill self-check found that `cv_lite` rectangle guidance had outgrown the bundled templates. Added `cvlite_rectangle_target_uart_tracker.py` so future contest rectangle code can start from the board-tested strict-plus-relaxed-fallback `cv_lite` path instead of rewriting it from notes, and added a contents table to `offline-run-patterns.md`.
+- 2026-06-21: Improvement pass from external-agent review: added `scripts/validate_skill.py` local preflight checks, expanded `contest-patterns.md` with runtime safe-stop/recovery guidance, added bounded frame-error recovery to the integrated contest `main.py` template, added a 40Pin/common connector quick table to `hardware-pin-resource-quickref.md`, reduced circle-detection duplication by routing strategy details to `circle-detection-patterns.md`, and refreshed `agents/openai.yaml` metadata.

@@ -6,6 +6,7 @@ For integration failures, use `troubleshooting.md#contest-integration-problems`.
 
 - Default Architecture
 - Competition Priorities
+- Runtime Resilience
 - Vision Tasks
 - Actuation and Communication
 - Debugging
@@ -72,6 +73,52 @@ When the template changes because of firmware or API updates, record the reason 
 - Put all thresholds and pin mappings at the top of the file.
 - Keep data flow deterministic: camera frame -> result -> decision -> output.
 - Use simple state machines for tasks such as tracking, sorting, line following, target locking, and timed actions.
+
+## Runtime Resilience
+
+Contest code should fail safe before it fails loud. For any integrated `main.py` that owns actuators or communicates with an external controller, include a bounded runtime recovery pattern instead of a single top-level `try/finally`.
+
+Required states:
+
+- `BOOT`: show startup status, initialize outputs to neutral.
+- `READY`: camera/display/model/peripherals initialized.
+- `TRACK`: perception is valid and control output is enabled.
+- `SEARCH`: perception is temporarily missing; output should be neutral, slow, or scan-limited.
+- `LOST`: target timeout exceeded; send a single consistent lost-target packet.
+- `RECOVER`: frame/model/display error occurred; stop outputs, attempt bounded recovery.
+- `FAULT`: recovery budget exceeded; hold neutral output and show the failure reason.
+
+Use small counters and timeouts:
+
+- `target_miss_count`: consecutive frames without a valid target.
+- `frame_error_count`: consecutive `sensor.snapshot()`, `pl.get_frame()`, model, or drawing failures.
+- `recover_count`: number of pipeline restart attempts since boot.
+- `last_target_ms`: timestamp of the last valid target.
+- `uart_rx_deadline_ms`: timeout for external MCU acknowledgments if used.
+
+Useful inline shape for final CanMV code:
+
+```python
+def safe_stop_outputs(reason):
+    # 比赛中任何异常都先让输出回到安全状态
+    set_pwm_output(PWM_NEUTRAL_DUTY_U16)
+    if uart is not None:
+        uart.write("STATE:SAFE_STOP,REASON:%s\r\n" % reason)
+
+
+def handle_frame_error(reason):
+    global frame_error_count
+    frame_error_count += 1
+    safe_stop_outputs(reason)
+    if frame_error_count >= RUNTIME_ERROR_LIMIT:
+        recover_camera_or_raise(reason)
+```
+
+For raw `Sensor`/`Display` preview code, a bounded recovery attempt can stop the sensor, deinitialize `Display` and `MediaManager`, collect garbage, sleep briefly, then re-run the same camera/LCD init path. Use `assets/contest-template/main.py` as the integrated example.
+
+For YOLO/PipeLine code, prefer safe stop plus visible fault state after repeated frame/model exceptions unless the exact `PipeLine.destroy()` and recreate path has been board-tested. Recreating AI pipelines repeatedly can leak resources or fragment memory on embedded firmware, so do not promise live model recovery without a real board test.
+
+Do not hide persistent faults. After the recovery budget is exceeded, keep actuators neutral, show `FAULT` on LCD, and continue sending a simple fault/lost packet if the UART path still works.
 
 ## Vision Tasks
 

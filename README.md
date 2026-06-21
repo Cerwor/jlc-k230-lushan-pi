@@ -127,6 +127,7 @@ AGENT_USAGE.md
 - `jlc-k230-lushan-pi/references/troubleshooting.md`：集中排障清单
 - `jlc-k230-lushan-pi/assets/contest-template/`：可复制的电赛项目模板
 - `jlc-k230-lushan-pi/scripts/run_canmv_raw_repl.py`：通过 raw REPL 从 RAM 临时运行脚本
+- `jlc-k230-lushan-pi/scripts/validate_skill.py`：桌面端 Skill 预检脚本
 - `jlc-k230-lushan-pi/scripts/probe_uart2_loopback.py`：常见 UART2 映射扫描与回环测试
 - `jlc-k230-lushan-pi/scripts/smoke_camera_lcd.py`：短摄像头/LCD 冒烟测试
 
@@ -192,6 +193,7 @@ python ".\jlc-k230-lushan-pi\scripts\probe_uart2_loopback.py"
 修改 Skill 后建议至少执行：
 
 ```powershell
+python ".\jlc-k230-lushan-pi\scripts\validate_skill.py" ".\jlc-k230-lushan-pi"
 $codexHome = if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $HOME ".codex" }
 $validator = Join-Path $codexHome "skills\.system\skill-creator\scripts\quick_validate.py"
 python $validator ".\jlc-k230-lushan-pi"
@@ -203,7 +205,7 @@ python $validator ".\jlc-k230-lushan-pi"
 python -c "import pathlib; root=pathlib.Path(r'.\jlc-k230-lushan-pi'); files=list(root.rglob('*.py')); [compile(p.read_text(encoding='utf-8'), str(p), 'exec') for p in files]; print('PY_SYNTAX_OK files=%d' % len(files))"
 ```
 
-注意：桌面 Python 语法检查不能证明 CanMV IDE 或 CanMV MicroPython 一定能运行。最终 `main.py` 仍应遵循 `references/canmv-micropython-compatibility.md` 的保守语法规则，并尽量在开发板上用 CanMV IDE 或 raw REPL 验证。
+`scripts/validate_skill.py` 会检查 Skill 结构、所有 Python 语法、CanMV 模板保守语法、Python 文件是否被文档引用、本机路径残留和缓存产物。注意：桌面 Python 语法检查不能证明 CanMV IDE 或 CanMV MicroPython 一定能运行。最终 `main.py` 仍应遵循 `references/canmv-micropython-compatibility.md` 的保守语法规则，并尽量在开发板上用 CanMV IDE 或 raw REPL 验证。
 
 更新原则：
 
@@ -225,4 +227,4 @@ python -c "import pathlib; root=pathlib.Path(r'.\jlc-k230-lushan-pi'); files=lis
 
 Skill 已通过 `quick_validate.py` 校验。多个模板已经做过桌面语法检查，并按已测 CanMV MicroPython 环境调整为更保守的写法。
 
-已连接 Lushan Pi K230 实测过：摄像头/LCD、raw REPL、离线 `main.py` 自动运行、圆形检测、传统矩形检测、`cv_lite` 矩形角点检测、动态矩形跟踪、光照鲁棒性、YOLO 能力探测、数据保存、USR 按键、UART2 回环扫描。
+已连接 Lushan Pi K230 实测过：摄像头/LCD、raw REPL、离线 `main.py` 自动运行、圆形检测、传统矩形检测、`cv_lite` 矩形角点检测、动态矩形跟踪、光照鲁棒性、YOLO 能力探测、数据保存、USR 按键、UART2 回环扫描。仓库也提供了桌面端 `scripts/validate_skill.py` 作为 CI/PR 前的预检入口。
