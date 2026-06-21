@@ -54,7 +54,7 @@ These notes are distilled from this skill's board tests plus a reviewed public M
 - `find_rects` and `find_circles` are expensive. Use smaller detection images or strong ROIs unless board testing proves the frame rate is acceptable.
 - `merge=True` in blob detection can cost time and can merge nearby targets. Keep it off unless it solves a real fragmentation problem.
 - `img.to_lab()` and `img.get_pixel(...)` are not safe cross-firmware assumptions. For offline color calibration, prefer ROI `copy(...)` plus `get_statistics()` when available.
-- For black/white targets, Otsu histogram calibration is a useful startup or user-triggered path: sample about 30 frames, discard out-of-range thresholds, average valid thresholds, verify detection for several frames, then fall back to a known-safe default if verification fails.
+- For black/white targets, Otsu histogram calibration is a useful startup or user-triggered path: sample about 30 frames, discard out-of-range thresholds, average valid thresholds, verify detection for several frames, then fall back to a known-safe default if verification fails. Use `scripts/probe_otsu_threshold.py` as a bounded board-side probe before enabling startup Otsu in a long-running contest template.
 - JPEG or image-file save operations are slow. Throttle capture or snapshot saving and keep it out of the per-frame control loop.
 - Periodic `print(...)`, complex text drawing, and frequent `gc.collect()` can dominate the frame loop. Throttle them.
 
