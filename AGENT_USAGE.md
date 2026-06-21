@@ -17,6 +17,7 @@
 - 默认交付可复制的 `main.py` 内容或文件。
 - 除非用户明确要求，不主动写入 SD 卡、不通过 IDE 保存到开发板、不覆盖板端文件。
 - 如果需要连接开发板测试，优先使用 `scripts/run_canmv_raw_repl.py` 从 RAM 临时运行。
+- 如果用户明确要求部署到板端或拉取运行中截图，再读取 `references/mpremote-debug-workflows.md` 并使用 `scripts/mpremote_deploy.py` / `scripts/mpremote_snapshot.py`。
 - 对电赛项目，先验证摄像头/LCD，再验证识别，再验证串口，再进入执行器控制。
 - 涉及执行器、激光、电机、舵机时，必须先给出安全开关、限幅和失联/丢目标保护。
 - 集成型比赛 `main.py` 应包含安全停机输出、目标丢失状态、连续帧异常预算和可见 `FAULT` 状态。
@@ -94,6 +95,14 @@ python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-p
 python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\assets\contest-template\examples\camera_lcd_preview.py"
 ```
 
+只有用户明确要求写板端文件时，才使用 `mpremote` 部署：
+
+```powershell
+python ".\jlc-k230-lushan-pi\scripts\mpremote_deploy.py" --port COM14 main.py
+```
+
+需要保留 Ctrl-C 前的运行中画面时，先让用户把 `mpremote_snapshot.py --emit-hook image` 或 `--emit-hook chw` 输出的钩子加入 `main.py`，再拉取 `/sdcard/codex_snap.jpg` 或 `/sdcard/codex_snap.bin`。
+
 如果串口无回显：
 
 - 关闭 CanMV IDE 和其他串口终端。
@@ -142,6 +151,7 @@ python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-p
 - 不要把 RKNN、RK3576、OpenCV/Linux 摄像头代码直接搬进 K230 CanMV。
 - 不要在视觉坐标未稳定前驱动执行器。
 - 不要在用户未授权时写 SD 卡或覆盖板端文件。
+- 不要为了截图自动改写未知 `/sdcard/main.py`；优先使用显式快照钩子。
 
 ## 一句话使用提示
 

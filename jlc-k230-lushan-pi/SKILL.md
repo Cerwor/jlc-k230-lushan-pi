@@ -1,6 +1,6 @@
 ---
 name: jlc-k230-lushan-pi
-description: Build, port, debug, and deploy LCKFB/JLC Lushan Pi K230 CanMV projects for e-contest use. Use for CanMV MicroPython, K230 SDK, camera/LCD/image processing, GPIO/FPIOA/PWM/UART/I2C/SPI, YOLO/KModel, 3.1-inch LCD, offline main.py boot, official examples, and hardware troubleshooting.
+description: Build, port, debug, and deploy LCKFB/JLC Lushan Pi K230 CanMV projects for e-contest use. Use for CanMV MicroPython, K230 SDK, camera/LCD/image processing, GPIO/FPIOA/PWM/UART/I2C/SPI, YOLO/KModel, 3.1-inch LCD, offline main.py boot, mpremote deployment/snapshot pulls, official examples, and hardware troubleshooting.
 ---
 
 # JLC K230 Lushan Pi
@@ -23,6 +23,7 @@ description: Build, port, debug, and deploy LCKFB/JLC Lushan Pi K230 CanMV proje
 | Skill maintenance, version drift, official doc changes | `references/maintenance.md` and `scripts/validate_skill.py` | Update policy, revision log, and local preflight checks |
 | Applicability, limitations, and escalation rules | `references/usage-boundaries.md` | Scope boundaries before risky work |
 | Connected-board smoke test or raw REPL connection failure | `references/canmv-workflows.md` and `references/troubleshooting.md` | Short hardware validation and serial diagnostics |
+| mpremote deployment, board file copy, runtime screenshot pull | `references/mpremote-debug-workflows.md`, `references/offline-run-patterns.md`, and `references/troubleshooting.md` | Explicit board-write workflow and SD-card snapshot side-channel |
 | Official links, firmware, IDE, downloads | `references/official-links.md` | Source-of-truth link map |
 | Official API manual lookup | `references/api-manual-routing.md` | Pick the exact API page before using unfamiliar classes/functions |
 | CanMV syntax compatibility, final `main.py` style, desktop compile mismatch | `references/canmv-micropython-compatibility.md` | Conservative MicroPython syntax rules |
@@ -52,6 +53,8 @@ description: Build, port, debug, and deploy LCKFB/JLC Lushan Pi K230 CanMV proje
 - For integrated contest `main.py`, include safe output defaults, target-lost behavior, bounded frame-error recovery, and a visible fault state before enabling actuators.
 - For real-time vision loops, default to LCD overlays and throttled prints; do not print every frame unless the user explicitly requests serial debugging.
 - For final delivery, provide a ready-to-copy `main.py`; mention SD-card placement, but leave copying/flashing to the user unless explicitly requested.
+- Treat `scripts/mpremote_deploy.py` and snapshot pull/delete options as explicit board-file operations. Do not run them unless the user asks to deploy, pull, patch, or delete board files.
+- For runtime screenshots, prefer adding an explicit snapshot hook from `scripts/mpremote_snapshot.py --emit-hook ...` over automatically patching an unknown `/sdcard/main.py`.
 - For ready-to-copy CanMV `main.py`, use conservative MicroPython syntax: avoid f-strings, `lambda`, comprehensions, generator expressions, and complex multi-line inline calls unless the target firmware has been tested with them.
 - For YOLO work, probe the board for actual `.kmodel` and official example paths before assuming `/data/...`; current LCKFB SD-card images may store examples and models under `/sdcard/examples/`.
 - For contest features similar to the user's training examples, consult `references/local-code-examples.md` and use the corresponding `assets/contest-template/examples/` template before writing final code.

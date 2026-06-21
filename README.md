@@ -37,6 +37,7 @@ jlc-k230-lushan-pi/
 | 3.1 寸屏 | 默认使用 `Display.ST7701`、`800x480`、全屏显示 |
 | 显示缩小问题 | 不要把低分辨率检测帧直接居中显示到 LCD；应 LCD 全屏显示，检测低分辨率后把坐标缩放回屏幕坐标 |
 | raw REPL | `scripts/run_canmv_raw_repl.py` 可从 RAM 临时运行脚本，已加入串口列举、握手诊断、`2000000/115200` 自动尝试 |
+| mpremote 调试 | 提供 `scripts/mpremote_deploy.py` 和 `scripts/mpremote_snapshot.py` 作为显式授权后的板端文件部署、运行中截图拉取补充方案 |
 | 离线运行 | TF 卡根目录 `main.py` 可上电自动运行；坏脚本阻塞时可改名为 `main_disabled.py` 后重启 |
 | 圆形检测 | 瓶盖目标长测约 63 FPS，适合低分辨率检测加结果保持 |
 | 矩形检测 | 黑色胶布白纸矩形优先用 `cv_lite.grayscale_find_rectangles_with_corners`，约 58-59 FPS |
@@ -124,6 +125,7 @@ tools/
 - `jlc-k230-lushan-pi/SKILL.md`：Skill 入口、快速路由表、全局规则
 - `jlc-k230-lushan-pi/references/canmv-micropython-compatibility.md`：CanMV MicroPython 保守语法规则
 - `jlc-k230-lushan-pi/references/canmv-workflows.md`：摄像头、LCD、外设 bring-up 流程
+- `jlc-k230-lushan-pi/references/mpremote-debug-workflows.md`：`mpremote` 部署、运行中截图拉取和 SD 卡侧信道调试
 - `jlc-k230-lushan-pi/references/official-basic-image-patterns.md`：GPIO/FPIOA/PWM/UART 与基础图像处理模式
 - `jlc-k230-lushan-pi/references/circle-detection-patterns.md`：圆形/圆环检测与低分辨率检测坐标缩放策略
 - `jlc-k230-lushan-pi/references/contest-2025-rectangle-patterns.md`：2025 风格矩形靶、`cv_lite`、ROI、串口输出策略
@@ -132,6 +134,8 @@ tools/
 - `jlc-k230-lushan-pi/references/troubleshooting.md`：集中排障清单
 - `jlc-k230-lushan-pi/assets/contest-template/`：可复制的电赛项目模板
 - `jlc-k230-lushan-pi/scripts/run_canmv_raw_repl.py`：通过 raw REPL 从 RAM 临时运行脚本
+- `jlc-k230-lushan-pi/scripts/mpremote_deploy.py`：显式把本地文件复制到板端 `/sdcard` 的 `mpremote` 部署助手
+- `jlc-k230-lushan-pi/scripts/mpremote_snapshot.py`：拉取并解码运行中快照文件的 `mpremote` 调试助手
 - `jlc-k230-lushan-pi/scripts/validate_skill.py`：桌面端 Skill 预检脚本
 - `jlc-k230-lushan-pi/scripts/probe_uart2_loopback.py`：常见 UART2 映射扫描与回环测试
 - `jlc-k230-lushan-pi/scripts/smoke_camera_lcd.py`：短摄像头/LCD 冒烟测试
@@ -191,6 +195,19 @@ python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-p
 
 ```powershell
 python ".\jlc-k230-lushan-pi\scripts\probe_uart2_loopback.py"
+```
+
+显式使用 `mpremote` 部署 `main.py` 到板端 `/sdcard`：
+
+```powershell
+python ".\jlc-k230-lushan-pi\scripts\mpremote_deploy.py" --port COM14 main.py
+```
+
+输出运行中截图钩子并拉取快照：
+
+```powershell
+python ".\jlc-k230-lushan-pi\scripts\mpremote_snapshot.py" --emit-hook image
+python ".\jlc-k230-lushan-pi\scripts\mpremote_snapshot.py" --port COM14 --remote /sdcard/codex_snap.jpg --delete --open
 ```
 
 ## 维护与验证
