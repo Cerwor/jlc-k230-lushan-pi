@@ -4,8 +4,9 @@ import time
 
 
 DEFAULT_BAUDS = (2000000, 115200)
-DEFAULT_VID = 0x1209
-DEFAULT_PID = 0xABD1
+TESTED_CANMV_VID = 0x1209
+TESTED_CANMV_PID = 0xABD1
+PORT_KEYWORDS = ("canmv", "kendryte", "k230", "usb serial device")
 RAW_REPL_ATTEMPTS = 3
 
 
@@ -19,13 +20,33 @@ def port_vid_pid(port):
     return "VID:PID %04X:%04X" % (port.vid, port.pid)
 
 
+def is_likely_canmv_port(port):
+    if port.vid == TESTED_CANMV_VID and port.pid == TESTED_CANMV_PID:
+        return True
+
+    haystack = " ".join(
+        str(value)
+        for value in (
+            getattr(port, "description", ""),
+            getattr(port, "manufacturer", ""),
+            getattr(port, "product", ""),
+            getattr(port, "hwid", ""),
+        )
+    ).lower()
+    for keyword in PORT_KEYWORDS:
+        if keyword in haystack:
+            return True
+    return False
+
+
 def print_ports(list_ports):
     ports = list(list_ports.comports())
     if not ports:
         print("No serial ports found.")
         return
     for port in ports:
-        print("%s  %s  %s" % (port.device, port_vid_pid(port), port.description))
+        marker = "*" if is_likely_canmv_port(port) else " "
+        print("%s %s  %s  %s" % (marker, port.device, port_vid_pid(port), port.description))
 
 
 def require_serial():
@@ -40,13 +61,13 @@ def require_serial():
 def autodetect_port(list_ports):
     matches = []
     for port in list_ports.comports():
-        if port.vid == DEFAULT_VID and port.pid == DEFAULT_PID:
+        if is_likely_canmv_port(port):
             matches.append(port.device)
     if len(matches) == 1:
         return matches[0]
     if not matches:
-        raise SystemExit("No CanMV/K230 USB serial port found. Pass --port COMx.")
-    raise SystemExit("Multiple CanMV/K230 ports found: %s. Pass --port COMx." % ", ".join(matches))
+        raise SystemExit("No likely CanMV/K230 USB serial port found. Pass --port COMx.")
+    raise SystemExit("Multiple likely CanMV/K230 ports found: %s. Pass --port COMx." % ", ".join(matches))
 
 
 def read_available(ser, window_s=0.25):
@@ -170,7 +191,7 @@ def run_code(ser, code, timeout_s, chunk_size):
 def main():
     parser = argparse.ArgumentParser(description="Run a CanMV MicroPython file through K230 raw REPL.")
     parser.add_argument("script", nargs="?", help="MicroPython .py file to execute from RAM")
-    parser.add_argument("--port", help="Serial port such as COM14; auto-detects VID:PID 1209:ABD1 when omitted")
+    parser.add_argument("--port", help="Serial port such as COM14; when omitted, auto-detects the tested VID:PID 1209:ABD1 or common CanMV/K230 port descriptions")
     parser.add_argument("--baud", type=int, help="Serial baud rate. When omitted, tries 2000000 then 115200.")
     parser.add_argument("--timeout", type=float, default=30.0, help="Seconds to wait for output")
     parser.add_argument("--chunk-size", type=int, default=128, help="Write chunk size for raw REPL upload")

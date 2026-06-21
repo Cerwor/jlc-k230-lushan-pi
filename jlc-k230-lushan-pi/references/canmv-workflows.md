@@ -16,7 +16,7 @@ Prefer keeping an `examples/` directory with known-good single-feature scripts a
 
 On Windows, CanMV IDE K230 may be installed in a user-chosen directory. When the user asks to launch, locate, or troubleshoot the IDE, first ask for or discover the path to `canmvide.exe` instead of assuming a fixed drive path.
 
-When CanMV IDE UI automation is unavailable, try running a temporary script through K230 MicroPython raw REPL with `scripts/run_canmv_raw_repl.py`. The user's tested board exposes a USB serial port with `VID:PID=1209:ABD1`; the helper tries baud `2000000` and then `115200` when `--baud` is omitted. This method runs code from RAM and does not save `main.py` to the TF card.
+When CanMV IDE UI automation is unavailable, try running a temporary script through K230 MicroPython raw REPL with `scripts/run_canmv_raw_repl.py`. The user's tested board exposed a USB serial port with `VID:PID=1209:ABD1`, but that ID is a tested auto-detection hint rather than a universal K230 guarantee; pass `--port COMx` whenever auto-detection is uncertain. The helper tries baud `2000000` and then `115200` when `--baud` is omitted. This method runs code from RAM and does not save `main.py` to the TF card.
 
 When the user explicitly asks to deploy files to `/sdcard`, pull a runtime snapshot, or iterate with `mpremote`, read `mpremote-debug-workflows.md` and use `scripts/mpremote_deploy.py` or `scripts/mpremote_snapshot.py`. Keep this separate from RAM-only raw REPL testing because `mpremote_deploy.py` writes board files.
 

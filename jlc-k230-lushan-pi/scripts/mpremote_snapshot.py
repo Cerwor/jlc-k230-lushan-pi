@@ -28,7 +28,7 @@ HEADER_SIZE = 20
 LAYOUT_HWC = 0
 LAYOUT_CHW = 1
 LAYOUT_GRAY = 2
-K230_VID_PID = (0x1209, 0xABD1)
+TESTED_CANMV_VID_PID = (0x1209, 0xABD1)
 PORT_KEYWORDS = ("canmv", "kendryte", "k230", "usb serial device")
 
 
@@ -126,7 +126,7 @@ def describe_port(port_info) -> str:
 def is_likely_k230(port_info) -> bool:
     vid = getattr(port_info, "vid", None)
     pid = getattr(port_info, "pid", None)
-    if vid == K230_VID_PID[0] and pid == K230_VID_PID[1]:
+    if vid == TESTED_CANMV_VID_PID[0] and pid == TESTED_CANMV_VID_PID[1]:
         return True
 
     haystack = " ".join(
