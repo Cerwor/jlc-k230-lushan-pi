@@ -10,6 +10,8 @@ jlc-k230-lushan-pi/
 
 仓库根目录的 `README.md` 和 `AGENT_USAGE.md` 只用于说明、分发和交给其他 Agent 使用。安装时请复制整个 `jlc-k230-lushan-pi` 文件夹。
 
+任务路由以 `jlc-k230-lushan-pi/SKILL.md` 的 `Quick Routing` 表为唯一信源。README 和 AGENT_USAGE 不复制完整路由表，避免新增 reference 时多处维护。
+
 ## 适用场景
 
 这个 Skill 主要覆盖：
