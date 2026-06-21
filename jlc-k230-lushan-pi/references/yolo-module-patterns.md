@@ -288,13 +288,45 @@ Before assuming a model path, run `scripts/probe_board_resources.py` as a tempor
 The official `object_detect_yolov8n.py` example may default to HDMI and fail on the 3.1-inch LCD with `RuntimeError: init panel failed`. For the 3.1-inch LCD, use this launcher pattern instead of editing the official SD-card example:
 
 ```python
+import os
+
+
 path = "/sdcard/examples/05-AI-Demo/object_detect_yolov8n.py"
+
+try:
+    os.stat(path)
+except Exception as e:
+    raise OSError("official YOLOv8 example not found: %s" % path)
+
 code = open(path).read()
-code = code.replace('display_mode="hdmi"', 'display_mode="lcd"')
-code = code.replace("display_mode='hdmi'", "display_mode='lcd'")
-code = code.replace('display_mode = "hdmi"', 'display_mode = "lcd"')
-code = code.replace("display_mode = 'hdmi'", "display_mode = 'lcd'")
+original_code = code
+
+replacements = (
+    ('display_mode="hdmi"', 'display_mode="lcd"'),
+    ("display_mode='hdmi'", "display_mode='lcd'"),
+    ('display_mode = "hdmi"', 'display_mode = "lcd"'),
+    ("display_mode = 'hdmi'", "display_mode = 'lcd'"),
+)
+
+index = 0
+while index < len(replacements):
+    pair = replacements[index]
+    code = code.replace(pair[0], pair[1])
+    index += 1
+
+if code == original_code:
+    raise RuntimeError("display_mode hdmi pattern was not replaced; official example may have changed")
+
+if 'display_mode="hdmi"' in code:
+    raise RuntimeError("display_mode hdmi remains after replacement")
+if "display_mode='hdmi'" in code:
+    raise RuntimeError("display_mode hdmi remains after replacement")
+if 'display_mode = "hdmi"' in code:
+    raise RuntimeError("display_mode hdmi remains after replacement")
+if "display_mode = 'hdmi'" in code:
+    raise RuntimeError("display_mode hdmi remains after replacement")
+
 exec(code)
 ```
 
-This launcher was run through CanMV IDE on the user's connected board and produced a live camera preview at about 29 FPS without model-load errors.
+This launcher was run through CanMV IDE on the user's connected board and produced a live camera preview at about 29 FPS without model-load errors. The bundled template now fails fast if the official file is missing, if no HDMI-to-LCD replacement occurred, or if a known HDMI `display_mode` assignment remains after replacement.

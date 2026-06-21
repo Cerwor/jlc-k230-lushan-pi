@@ -21,20 +21,9 @@
 - 涉及执行器、激光、电机、舵机时，必须先给出安全开关、限幅和失联/丢目标保护。
 - 集成型比赛 `main.py` 应包含安全停机输出、目标丢失状态、连续帧异常预算和可见 `FAULT` 状态。
 
-## 路由速查
+## 路由来源
 
-| 任务 | 先读 |
-| --- | --- |
-| 摄像头、LCD、raw REPL、板端冒烟测试 | `references/canmv-workflows.md`、`references/troubleshooting.md` |
-| 3.1 寸屏显示、画面缩小、坐标缩放 | `references/canmv-workflows.md`、`references/circle-detection-patterns.md` |
-| 最终 CanMV 语法风格 | `references/canmv-micropython-compatibility.md` |
-| 圆形、瓶盖、圆环检测 | `references/circle-detection-patterns.md` |
-| 2025 风格矩形靶、黑白矩形、UART 坐标 | `references/contest-2025-rectangle-patterns.md` |
-| YOLO、KModel、PipeLine、AI2D | `references/yolo-module-patterns.md` |
-| GPIO、FPIOA、PWM、UART、基础图像处理 | `references/official-basic-image-patterns.md` |
-| TF 卡 `main.py`、`boot.py`、离线自启动 | `references/offline-run-patterns.md` |
-| 引脚、电源、连接器、原理图沉积信息 | `references/hardware-pin-resource-quickref.md` |
-| 修改 Skill、沉积新结论 | `references/maintenance.md` |
+任务到参考文件的映射只维护在 `jlc-k230-lushan-pi/SKILL.md` 的 `Quick Routing` 表里。其他 Agent 使用本仓库时，应先读完整 `SKILL.md`，再按那张表选择 `references/` 文件；不要在这里复制或维护第二张路由表。
 
 ## 视觉任务默认决策
 
