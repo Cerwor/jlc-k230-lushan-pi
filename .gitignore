@@ -8,3 +8,6 @@ env/
 
 .DS_Store
 Thumbs.db
+
+# Local-only maintenance config. Keep machine-private paths out of the skill.
+.local-paths.txt
