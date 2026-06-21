@@ -20,8 +20,8 @@ Update this skill when:
 3. If the change affects routing, update `SKILL.md`.
 4. If the change affects reusable project code, update `assets/contest-template/`.
 5. Move troubleshooting facts to `troubleshooting.md`, not task-specific reference files.
-6. Run `scripts/validate_skill.py` from this skill for local preflight checks.
-7. Run `quick_validate.py` on the skill folder.
+6. In the distribution repository, prefer root `tools/validate.ps1`; it calls this skill's `scripts/validate_skill.py`, the system `quick_validate.py`, and desktop Python syntax checks.
+7. If the root tools are unavailable, run `scripts/validate_skill.py` from this skill, then run `quick_validate.py` on the skill folder.
 8. Syntax-check any Python files in `assets/contest-template/` where possible.
 9. When hardware is available, run final-style templates in CanMV IDE or with `scripts/run_canmv_raw_repl.py`; desktop `py_compile` alone does not prove CanMV parser compatibility.
 
@@ -89,3 +89,4 @@ Update this skill when:
 - 2026-06-21: Improvement pass from external-agent review: added `scripts/validate_skill.py` local preflight checks, expanded `contest-patterns.md` with runtime safe-stop/recovery guidance, added bounded frame-error recovery to the integrated contest `main.py` template, added a 40Pin/common connector quick table to `hardware-pin-resource-quickref.md`, reduced circle-detection duplication by routing strategy details to `circle-detection-patterns.md`, and refreshed `agents/openai.yaml` metadata.
 - 2026-06-21: Board-tested the updated installed skill on a connected Lushan Pi K230 through raw REPL on COM14. `scripts/smoke_camera_lcd.py` initialized `gc2093_csi2`, displayed 20 frames on the 3.1-inch `800x480` ST7701 LCD, and printed `SMOKE_DONE frames=20 fps=70`. An injected runtime-recovery probe displayed 10 frames, stopped and deinitialized `Sensor`/`Display`/`MediaManager`, reinitialized the same camera/LCD path, displayed 10 more frames, and exited cleanly with `recoveries=1`.
 - 2026-06-21: Reduced routing-table drift by making `SKILL.md#Quick Routing` the single routing source for distribution docs, and hardened `yolov8_lcd_official_launcher.py` so it checks the official example path, verifies that the HDMI-to-LCD replacement actually happened, and fails if an HDMI `display_mode` assignment remains.
+- 2026-06-21: Added root repository maintenance scripts `tools/validate.ps1` and `tools/publish.ps1` to shorten validation, PR, merge, and installed-skill sync workflow. Generalized `scripts/validate_skill.py` so it rejects Windows absolute paths and can load optional machine-private path patterns from `JLC_K230_LOCAL_PATH_CONFIG`, without hard-coding maintainer-local directories in the installable skill.

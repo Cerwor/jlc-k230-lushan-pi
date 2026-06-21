@@ -12,6 +12,8 @@ jlc-k230-lushan-pi/
 
 任务路由以 `jlc-k230-lushan-pi/SKILL.md` 的 `Quick Routing` 表为唯一信源。README 和 AGENT_USAGE 不复制完整路由表，避免新增 reference 时多处维护。
 
+仓库根目录的 `tools/` 是维护仓库用的脚本，不属于可安装 Skill 本体。
+
 ## 适用场景
 
 这个 Skill 主要覆盖：
@@ -114,6 +116,7 @@ jlc-k230-lushan-pi/
   scripts/
 README.md
 AGENT_USAGE.md
+tools/
 ```
 
 关键文件：
@@ -195,10 +198,7 @@ python ".\jlc-k230-lushan-pi\scripts\probe_uart2_loopback.py"
 修改 Skill 后建议至少执行：
 
 ```powershell
-python ".\jlc-k230-lushan-pi\scripts\validate_skill.py" ".\jlc-k230-lushan-pi"
-$codexHome = if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $HOME ".codex" }
-$validator = Join-Path $codexHome "skills\.system\skill-creator\scripts\quick_validate.py"
-python $validator ".\jlc-k230-lushan-pi"
+.\tools\validate.ps1
 ```
 
 对模板做桌面语法检查：
@@ -207,7 +207,27 @@ python $validator ".\jlc-k230-lushan-pi"
 python -c "import pathlib; root=pathlib.Path(r'.\jlc-k230-lushan-pi'); files=list(root.rglob('*.py')); [compile(p.read_text(encoding='utf-8'), str(p), 'exec') for p in files]; print('PY_SYNTAX_OK files=%d' % len(files))"
 ```
 
-`scripts/validate_skill.py` 会检查 Skill 结构、所有 Python 语法、CanMV 模板保守语法、Python 文件是否被文档引用、本机路径残留和缓存产物。注意：桌面 Python 语法检查不能证明 CanMV IDE 或 CanMV MicroPython 一定能运行。最终 `main.py` 仍应遵循 `references/canmv-micropython-compatibility.md` 的保守语法规则，并尽量在开发板上用 CanMV IDE 或 raw REPL 验证。
+`tools/validate.ps1` 会调用 `scripts/validate_skill.py`、系统 `quick_validate.py` 和桌面 Python 语法检查。注意：桌面 Python 语法检查不能证明 CanMV IDE 或 CanMV MicroPython 一定能运行。最终 `main.py` 仍应遵循 `references/canmv-micropython-compatibility.md` 的保守语法规则，并尽量在开发板上用 CanMV IDE 或 raw REPL 验证。
+
+`scripts/validate_skill.py` 不再硬编码维护者本机路径。它会拒绝通用 Windows 绝对路径；如果需要追加本机私有路径模式，把这些模式放在仓库外的 UTF-8 文本文件中，并设置：
+
+```powershell
+$env:JLC_K230_LOCAL_PATH_CONFIG = "$HOME\.jlc-k230-local-paths.txt"
+```
+
+发布并合并到 GitHub 的常用命令：
+
+```powershell
+.\tools\publish.ps1 -Message "Harden YOLO launcher" -Files @("README.md", "jlc-k230-lushan-pi\SKILL.md")
+```
+
+如果确认整个工作区都属于本次改动，可以显式使用：
+
+```powershell
+.\tools\publish.ps1 -Message "Update skill docs" -All
+```
+
+`tools/publish.ps1` 会运行校验、建分支、提交、推送、创建 PR、确认 PR 可 clean merge、squash 合并、拉回 `master`、同步安装目录并校验安装副本。
 
 更新原则：
 

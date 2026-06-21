@@ -31,11 +31,7 @@ CANMV_FORBIDDEN_NAMES = {
     ast.SetComp: "set comprehension",
 }
 
-LOCAL_PATH_PATTERNS = [
-    re.compile(r"C:\\Users\\Cerwor", re.IGNORECASE),
-    re.compile(r"E:\\MyData", re.IGNORECASE),
-    re.compile(r"E:\\Codex_WorkSpace", re.IGNORECASE),
-]
+WINDOWS_ABSOLUTE_PATH_RE = re.compile(r"\b[A-Za-z]:\\[^\s`'\"<>|]+")
 
 
 def rel(path: Path, root: Path) -> str:
@@ -158,13 +154,33 @@ def check_reference_contents(root: Path, warnings: list[str]) -> None:
                 warnings.append("%s is longer than 100 lines but has no early Contents section" % rel(path, root))
 
 
-def check_no_local_paths(root: Path, failures: list[str]) -> None:
+def load_extra_local_path_patterns(config_path: str | None, warnings: list[str]) -> list[str]:
+    if not config_path:
+        return []
+
+    path = Path(config_path).expanduser()
+    if not path.exists():
+        warnings.append("local path config does not exist: %s" % path)
+        return []
+
+    patterns: list[str] = []
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        patterns.append(line)
+    return patterns
+
+
+def check_no_local_paths(root: Path, failures: list[str], extra_patterns: list[str]) -> None:
     checked_suffixes = (".md", ".py", ".yaml", ".yml")
     for path in collect_files(root, checked_suffixes):
         text = read_text(path)
-        for pattern in LOCAL_PATH_PATTERNS:
-            if pattern.search(text):
-                failures.append("%s contains local machine path pattern %s" % (rel(path, root), pattern.pattern))
+        for match in WINDOWS_ABSOLUTE_PATH_RE.finditer(text):
+            failures.append("%s contains Windows absolute path: %s" % (rel(path, root), match.group(0)))
+        for pattern in extra_patterns:
+            if pattern in text:
+                failures.append("%s contains configured local path pattern: %s" % (rel(path, root), pattern))
 
 
 def check_no_pycache(root: Path, failures: list[str]) -> None:
@@ -177,6 +193,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Validate the jlc-k230-lushan-pi skill package.")
     parser.add_argument("skill_root", nargs="?", default=str(Path(__file__).resolve().parents[1]))
     parser.add_argument("--strict-warnings", action="store_true", help="treat warnings as failures")
+    parser.add_argument(
+        "--local-path-config",
+        default=os.environ.get("JLC_K230_LOCAL_PATH_CONFIG"),
+        help="optional UTF-8 file outside the skill; each non-comment line is a literal local path pattern to reject",
+    )
     args = parser.parse_args()
 
     root = Path(args.skill_root).resolve()
@@ -187,6 +208,7 @@ def main() -> int:
         print("skill root does not exist: %s" % root)
         return 2
 
+    extra_local_path_patterns = load_extra_local_path_patterns(args.local_path_config, warnings)
     py_files = collect_files(root, (".py",))
     check_skill_frontmatter(root, failures)
     check_openai_yaml(root, failures, warnings)
@@ -194,7 +216,7 @@ def main() -> int:
     check_canmv_conservative_style(root, py_files, failures)
     check_python_documentation_links(root, py_files, failures)
     check_reference_contents(root, warnings)
-    check_no_local_paths(root, failures)
+    check_no_local_paths(root, failures, extra_local_path_patterns)
     check_no_pycache(root, failures)
 
     print("SKILL_ROOT %s" % root)
