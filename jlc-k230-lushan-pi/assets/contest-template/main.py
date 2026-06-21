@@ -42,6 +42,9 @@ PWM_MAX_DUTY_U16 = 65535
 
 TARGET_TIMEOUT_MS = 500
 GC_INTERVAL_FRAMES = 30
+RUNTIME_ERROR_LIMIT = 3
+RECOVERY_PAUSE_MS = 300
+MAX_RECOVERY_COUNT = 3
 
 
 # =========================
@@ -56,6 +59,7 @@ yolo = None
 frame_id = 0
 last_target_ms = 0
 last_result = None
+recovery_count = 0
 
 
 def ticks_ms():
@@ -135,6 +139,12 @@ def set_pwm_output(duty_u16):
     pwm.duty_u16(safe)
 
 
+def safe_stop_outputs(reason):
+    set_pwm_output(PWM_NEUTRAL_DUTY_U16)
+    if uart is not None:
+        uart.write("STATE:SAFE_STOP,REASON:%s\r\n" % reason)
+
+
 def init_preview_camera_lcd():
     global sensor
     from media.sensor import Sensor
@@ -155,6 +165,38 @@ def init_preview_camera_lcd():
 
     MediaManager.init()
     sensor.run()
+
+
+def recover_preview_camera_lcd(reason):
+    global sensor, recovery_count
+    from media.display import Display
+    from media.media import MediaManager
+
+    safe_stop_outputs(reason)
+    recovery_count += 1
+    print("recover preview:", reason, recovery_count)
+
+    if recovery_count > MAX_RECOVERY_COUNT:
+        raise RuntimeError("too many preview recoveries")
+
+    try:
+        if sensor is not None:
+            sensor.stop()
+    except Exception as e:
+        print("sensor recover stop error:", e)
+
+    try:
+        Display.deinit()
+        os.exitpoint(os.EXITPOINT_ENABLE_SLEEP)
+        time.sleep_ms(100)
+        MediaManager.deinit()
+    except Exception as e:
+        print("media recover deinit error:", e)
+
+    sensor = None
+    gc.collect()
+    time.sleep_ms(RECOVERY_PAUSE_MS)
+    init_preview_camera_lcd()
 
 
 def init_yolo_pipeline():
@@ -245,45 +287,67 @@ def run_preview_loop():
     from media.display import Display
 
     clock = time.clock()
+    frame_errors = 0
     while True:
-        os.exitpoint()
-        clock.tick()
-        img = sensor.snapshot(chn=CAM_CHN_ID_0)
-        telemetry_preview(img, clock)
-        Display.show_image(img)
-        frame_id += 1
-        if frame_id % GC_INTERVAL_FRAMES == 0:
-            gc.collect()
+        try:
+            os.exitpoint()
+            clock.tick()
+            img = sensor.snapshot(chn=CAM_CHN_ID_0)
+            telemetry_preview(img, clock)
+            Display.show_image(img)
+            frame_id += 1
+            frame_errors = 0
+            if frame_id % GC_INTERVAL_FRAMES == 0:
+                gc.collect()
+        except Exception as e:
+            print("preview frame error:", e)
+            frame_errors += 1
+            safe_stop_outputs("PREVIEW_FRAME_ERROR")
+            if frame_errors >= RUNTIME_ERROR_LIMIT:
+                recover_preview_camera_lcd("PREVIEW_FRAME_ERROR")
+                frame_errors = 0
+            else:
+                time.sleep_ms(RECOVERY_PAUSE_MS)
 
 
 def run_yolo_loop():
     global frame_id, last_result, last_target_ms
     from libs.PipeLine import ScopedTiming
 
+    frame_errors = 0
     while True:
-        os.exitpoint()
-        with ScopedTiming("total", 1):
-            img = pl.get_frame()
+        try:
+            os.exitpoint()
+            with ScopedTiming("total", 1):
+                img = pl.get_frame()
 
-            if frame_id % 2 == 0:
-                last_result = yolo.run(img)
+                if frame_id % 2 == 0:
+                    last_result = yolo.run(img)
 
-            target = parse_target(last_result)
-            if target.get("found"):
-                last_target_ms = ticks_ms()
+                target = parse_target(last_result)
+                if target.get("found"):
+                    last_target_ms = ticks_ms()
 
-            command = decision_step(target)
-            actuation_step(command)
+                command = decision_step(target)
+                actuation_step(command)
 
-            if last_result is not None:
-                yolo.draw_result(last_result, pl.osd_img)
-            pl.osd_img.draw_string(5, 5, "STATE:%s" % command.get("state"),
-                                   color=(255, 0, 0), scale=3)
-            pl.show_image()
+                if last_result is not None:
+                    yolo.draw_result(last_result, pl.osd_img)
+                pl.osd_img.draw_string(5, 5, "STATE:%s" % command.get("state"),
+                                       color=(255, 0, 0), scale=3)
+                pl.show_image()
 
-            frame_id += 1
-            if frame_id % GC_INTERVAL_FRAMES == 0:
-                gc.collect()
+                frame_id += 1
+                frame_errors = 0
+                if frame_id % GC_INTERVAL_FRAMES == 0:
+                    gc.collect()
+        except Exception as e:
+            print("yolo frame error:", e)
+            frame_errors += 1
+            safe_stop_outputs("YOLO_FRAME_ERROR")
+            if frame_errors >= RUNTIME_ERROR_LIMIT:
+                raise
+            time.sleep_ms(RECOVERY_PAUSE_MS)
 
 
 def cleanup():

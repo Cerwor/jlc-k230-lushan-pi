@@ -13,6 +13,7 @@ For wiring, voltage, and peripheral failures, use `troubleshooting.md#gpio-pwm-u
 - Boot and Storage
 - USB Resources
 - GPIO and Header Resources
+- Common Pin and Connector Quick Table
 - UART and I2C Physical Connectors
 - Camera Interfaces
 - DSI Display and Touch
@@ -83,6 +84,72 @@ Hardware-level notes:
 - The schematic page notes CSI camera connectors also follow Raspberry Pi 5 / Raspberry Pi Zero style mechanical definitions.
 
 Use `official-basic-image-patterns.md` for common GPIO/FPIOA, I2C, PWM, and UART mappings extracted from the official examples.
+
+## Common Pin and Connector Quick Table
+
+Use this as a first-pass wiring map, not as the final authority. It is condensed from the official GPIO/FPIOA 40Pin image and schematic notes. Verify the exact board silkscreen, connector, and active FPIOA mapping before connecting external hardware.
+
+40Pin header notes:
+
+- Physical pin numbers are the Raspberry Pi-style 40Pin header positions.
+- `GPIOxx` is the pad label shown by the official 40Pin image. In code, the first argument to `fpioa.set_function(...)` is the pad number; the selected function may be `FPIOA.GPIOxx` or a peripheral constant and is not always numerically identical on every board resource.
+- One physical pad can expose many possible functions, but only one function can be active at a time.
+- All normal 40Pin GPIO signals are 3.3 V logic. The 40Pin header does not expose ADC.
+
+| Physical pin | CanMV/FPIOA pad | Common functions shown by official 40Pin image | Notes |
+| --- | --- | --- | --- |
+| 1 | 3V3 | Power | 3.3 V output |
+| 2 | 5V | Power | 5 V rail |
+| 3 | GPIO49 | I2C0_SDA, UART4_RXD | I2C0 also used around camera resources; verify external pull-ups |
+| 4 | 5V | Power | 5 V rail |
+| 5 | GPIO48 | I2C0_SCL, UART4_TXD | I2C0 SCL |
+| 6 | GND | Ground | Common ground |
+| 7 | GPIO2 | GPIO2, JTAG_TCK | Avoid JTAG use unless needed |
+| 8 | GPIO3 | UART1_TXD, JTAG_TDI | UART1 possible, not the usual contest UART |
+| 9 | GND | Ground | Common ground |
+| 10 | GPIO4 | UART1_RXD, JTAG_TDO | UART1 possible, not the usual contest UART |
+| 11 | GPIO5 | UART2_TXD, JTAG_TMS | Board-tested UART2 alternate TX pad |
+| 12 | GPIO47 | PWM3, I2C4_SDA, UART2_CTS | PWM-capable header pin |
+| 13 | GPIO6 | UART2_RXD, JTAG_RST | Board-tested UART2 alternate RX pad |
+| 14 | GND | Ground | Common ground |
+| 15 | GPIO26 | PDM_CLK | Audio/PDM-related pad |
+| 16 | GPIO18 | QSPI0_D2, QSPI1_CS2 | Avoid QSPI functions unless deliberate |
+| 17 | 3V3 | Power | 3.3 V output |
+| 18 | GPIO19 | QSPI0_D3, QSPI1_CS1 | Avoid QSPI functions unless deliberate |
+| 19 | GPIO16 | QSPI0_D0, QSPI1_CS4 | SPI/QSPI-style function |
+| 20 | GND | Ground | Common ground |
+| 21 | GPIO17 | QSPI0_D1, QSPI1_CS3 | SPI/QSPI-style function |
+| 22 | GPIO27 | PDM_IN0 | General input possible after FPIOA mapping |
+| 23 | GPIO15 | QSPI0_CLK | SPI/QSPI-style clock |
+| 24 | GPIO14 | QSPI0_CS0 | SPI/QSPI-style chip select |
+| 25 | GND | Ground | Common ground |
+| 26 | GPIO61 | PWM1, I2C0_SDA, QSPI0_CS1 | PWM-capable header pin |
+| 27 | GPIO41 | I2C1_SDA, UART1_RXD | I2C1 SDA |
+| 28 | GPIO40 | I2C1_SCL, UART1_TXD | I2C1 SCL |
+| 29 | GPIO36 | I2C3_SCL, UART4_TXD, PDM_IN2, IIS_D_IN1 | Multi-function pad |
+| 30 | GND | Ground | Common ground |
+| 31 | GPIO37 | I2C3_SDA, UART4_RXD, PDM_IN0, IIS_D_OUT1 | Multi-function pad |
+| 32 | GPIO46 | PWM2, I2C4_SCL, UART2_RTS | PWM-capable header pin |
+| 33 | GPIO52 | PWM4, UART3_RTS | Board-tested USR key uses pad 52 as `FPIOA.GPIO53`, so do not reuse blindly |
+| 34 | GND | Ground | Common ground |
+| 35 | GPIO42 | PWM0, UART1_RTS, QSPI1_D2 | Common PWM0 example pad |
+| 36 | GPIO35 | I2C1_SDA, UART3_CTS, IIS_D_OUT0, PDM_IN1 | Multi-function pad |
+| 37 | GPIO32 | UART3_TXD, I2C0_SCL, IIS_CLK | UART3 TX alternate on header |
+| 38 | GPIO34 | I2C1_SCL, UART3_RTS, IIS_D_IN0, PDM_IN3 | Multi-function pad |
+| 39 | GND | Ground | Common ground |
+| 40 | GPIO33 | UART3_RXD, I2C0_SDA, IIS_WS | UART3 RX alternate on header |
+
+Common non-40Pin connectors and pads:
+
+| Resource | Known signal/pad | Use |
+| --- | --- | --- |
+| GH1.25 UART2/IIC2 | UART2_TXD `GPIO11`, UART2_RXD `GPIO12`; also IIC2_SCL/SDA on the same pair | Preferred locking connector for an external MCU when the connector is used |
+| UART2 alternate pads | `PIN5/PIN6`, `PIN11/PIN12`, `PIN44/PIN45` on tested firmware | Use `scripts/probe_uart2_loopback.py` when the physical short/wiring is uncertain |
+| GH1.25 UART3 | UART3_TXD `GPIO50`, UART3_RXD `GPIO51` | User-available serial on newer CanMV firmware; verify occupation on old Linux+RT-Smart firmware |
+| USR button | Physical USR tested as `BUTTON_PAD=52`, `FPIOA.GPIO53`, `Pin(53, Pin.PULL_DOWN)` | Idle `0`, pressed `1`; do not use `RST` or `BOOT` as normal user input |
+| Buzzer | `GPIO43 -> FPIOA.PWM1` in official examples | Passive buzzer, nominal loudest frequency around 4000 Hz |
+| LCD backlight | `GPIO25 -> FPIOA.PWM5` in board-side examples | Backlight enable/PWM, verify with display hardware |
+| ADC FPC | 4 ADC channels, max 1.8 V | Not on 40Pin header; suitable for two joystick potentiometers with level awareness |
 
 ## UART and I2C Physical Connectors
 

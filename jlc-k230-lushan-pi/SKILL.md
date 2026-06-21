@@ -20,7 +20,7 @@ description: Build, port, debug, and deploy LCKFB/JLC Lushan Pi K230 CanMV proje
 | User task | Read first | Use this result |
 | --- | --- | --- |
 | Current environment, firmware, local setup facts | `references/environment-notes.md` | Known user setup without machine-specific paths |
-| Skill maintenance, version drift, official doc changes | `references/maintenance.md` | Update policy and revision log |
+| Skill maintenance, version drift, official doc changes | `references/maintenance.md` and `scripts/validate_skill.py` | Update policy, revision log, and local preflight checks |
 | Applicability, limitations, and escalation rules | `references/usage-boundaries.md` | Scope boundaries before risky work |
 | Connected-board smoke test or raw REPL connection failure | `references/canmv-workflows.md` and `references/troubleshooting.md` | Short hardware validation and serial diagnostics |
 | Official links, firmware, IDE, downloads | `references/official-links.md` | Source-of-truth link map |
@@ -34,7 +34,7 @@ description: Build, port, debug, and deploy LCKFB/JLC Lushan Pi K230 CanMV proje
 | YOLOv5, YOLOv8, YOLO11, classify/detect/segment, KModel | `references/yolo-module-patterns.md` | Official YOLO lifecycle and parameters |
 | User-style LCD/capture/YOLO/keypoint examples | `references/user-example-patterns.md` | Portable patterns distilled from prior working code |
 | 2025-style rectangle target, laser aiming, ROI tracking, `cv_lite` rectangle corners, single-class model-assisted ROI | `references/contest-2025-rectangle-patterns.md` | Contest rectangle target strategy and enhanced UART tracker template |
-| Contest architecture or reusable project start | `references/contest-patterns.md` and `assets/contest-template/` | Copyable project scaffold and integration rules |
+| Contest architecture, runtime recovery, or reusable project start | `references/contest-patterns.md` and `assets/contest-template/` | Copyable project scaffold, integration rules, and safe-stop/recovery patterns |
 | Offline run, `boot.py`, `main.py`, TF-card deployment | `references/offline-run-patterns.md` | Power-on deployment procedure |
 | Any failure, logs, non-working hardware, no display, no model result | `references/troubleshooting.md` | Centralized debug checklist |
 
@@ -49,8 +49,10 @@ description: Build, port, debug, and deploy LCKFB/JLC Lushan Pi K230 CanMV proje
 - Keep constants at the top: display mode, frame size, pins, UART baud rate, thresholds, model path, labels, and control limits.
 - For camera/display code, include cleanup for `Sensor.stop()`, `Display.deinit()`, `MediaManager.deinit()`, `pl.destroy()`, `yolo.deinit()`, and `os.exitpoint(...)` where applicable.
 - For contest code, separate hardware init, perception, decision, actuation, telemetry, and cleanup.
+- For integrated contest `main.py`, include safe output defaults, target-lost behavior, bounded frame-error recovery, and a visible fault state before enabling actuators.
 - For real-time vision loops, default to LCD overlays and throttled prints; do not print every frame unless the user explicitly requests serial debugging.
 - For final delivery, provide a ready-to-copy `main.py`; mention SD-card placement, but leave copying/flashing to the user unless explicitly requested.
 - For ready-to-copy CanMV `main.py`, use conservative MicroPython syntax: avoid f-strings, `lambda`, comprehensions, generator expressions, and complex multi-line inline calls unless the target firmware has been tested with them.
 - For YOLO work, probe the board for actual `.kmodel` and official example paths before assuming `/data/...`; current LCKFB SD-card images may store examples and models under `/sdcard/examples/`.
 - For contest features similar to the user's training examples, consult `references/local-code-examples.md` and use the corresponding `assets/contest-template/examples/` template before writing final code.
+- After modifying this skill, run `scripts/validate_skill.py` plus the system `quick_validate.py` before publishing or syncing the installed copy.
