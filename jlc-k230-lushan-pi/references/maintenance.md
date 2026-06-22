@@ -38,7 +38,7 @@ Update this skill when:
 
 These scripts live in the distribution repository root and are not part of the installed skill folder:
 
-- `tools/test.ps1`: layered test entrypoint. Default runs offline validation only; `-ListPorts` enumerates serial ports; `-Board` runs RAM-only raw REPL tests; `-Vision all-core` runs camera/LCD smoke, Sensor mode probing, and Otsu threshold probing; `-Vision resources` runs the bounded board resource probe.
+- `tools/test.ps1`: layered test entrypoint. Default runs offline validation only; `-ListPorts` enumerates serial ports; `-Board` runs RAM-only raw REPL tests; `-Vision all-core` runs camera/LCD smoke, Sensor mode probing, and Otsu threshold probing; `-Vision resources` runs the bounded board resource probe; `-Vision rect-target` and `-Vision circle-target` run target-specific bounded probes.
 - `tools/validate.ps1`: offline preflight that calls this skill's `scripts/validate_skill.py`, the system `quick_validate.py`, and desktop Python syntax checks.
 - `tools/publish.ps1`: validation, branch, commit, PR, squash-merge, local sync, installed-skill sync, and installed-copy validation.
 
@@ -67,6 +67,8 @@ These scripts live in the distribution repository root and are not part of the i
 - `scripts/mpremote_snapshot.py`: host-side helper for pulling and decoding runtime snapshot files written by explicit board hooks.
 - `scripts/probe_k230_sensor_init.py`: board-side diagnostic for trying several K230 `Sensor` construction and snapshot modes.
 - `scripts/probe_otsu_threshold.py`: board-side bounded Otsu grayscale threshold calibration probe for black/white targets.
+- `scripts/probe_cvlite_rectangle_target.py`: board-side bounded 300-frame cv_lite rectangle target probe with hit count, FPS, candidate, center-range, jump, and memory telemetry.
+- `scripts/probe_circle_target.py`: board-side bounded 300-frame circle target probe with detection-hit, overlay, FPS, center/radius range, jump, and memory telemetry.
 - `scripts/validate_skill.py`: host-side preflight checker for skill structure, Python syntax, CanMV conservative syntax, doc references, local paths, and cache artifacts.
 - `scripts/smoke_camera_lcd.py`: board-side short smoke test for default camera and 3.1-inch LCD.
 - `assets/contest-template/`: copyable starter project.
@@ -120,3 +122,4 @@ These scripts live in the distribution repository root and are not part of the i
 - 2026-06-22: Added root `tools/test.ps1` as a layered test entrypoint so routine skill checks start with offline validation, hardware access is explicit through `-Board`, and common camera/LCD, Sensor, and Otsu probes can be run as one bounded `all-core` board test without writing `/sdcard/main.py`.
 - 2026-06-22: Follow-up testing found that the board resource probe could time out while recursively scanning a populated SD card before printing useful diagnostics, leaving the raw REPL silent until board reset. Reworked `probe_board_resources.py` into a bounded single-pass collector with progress/truncation output and exposed it through `tools/test.ps1 -Board -Vision resources`. Board retest on COM14 found 63 `.kmodel` files and 68 AI/detection-related Python examples across 48 scanned directories with `truncated=0`, then a camera/LCD smoke test still passed at about 70 FPS.
 - 2026-06-22: Additional no-write workflow testing confirmed raw REPL auto-port selection can choose COM14 without `--port`, and the installed skill's `all-core` board test passes. It also found that `mpremote_deploy.py --dry-run` unnecessarily required `mpremote`; changed dry-run mode to print planned commands with a placeholder when `mpremote` is not installed.
+- 2026-06-22: Productized previously temporary target tests into reusable board-side probes: `probe_cvlite_rectangle_target.py` for 300-frame black-tape rectangle telemetry and `probe_circle_target.py` for 300-frame bottle-cap/circle telemetry, both exposed through root `tools/test.ps1`. Board retest on COM14: rectangle probe reached 299/300 hits at about 63 FPS, `raw_max=2`, `valid_max=2`, center range `438..441`/`213..214`, and `big_jumps=0`; circle probe after adding radius filtering and previous-center gating reported `raw_hits=62/100`, `track_hits=42/100`, `overlay_frames=279/300`, about 64 FPS, center range `432..492`/`150..262`, and `big_jumps=1`, confirming the circle probe is more useful as a raw-vs-tracked target quality diagnostic than as a strict always-hit assertion.
