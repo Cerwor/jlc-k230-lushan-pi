@@ -24,11 +24,13 @@ Prefer `scripts/run_canmv_raw_repl.py` for RAM-only smoke tests that should not 
 
 ## Prerequisites
 
-Install host dependencies:
+Install host dependencies for real board-file deployment:
 
 ```powershell
 python -m pip install mpremote pyserial
 ```
+
+`--dry-run` can preview the deployment commands before `mpremote` is installed. Port listing and Ctrl-C/Ctrl-D recovery still need `pyserial`.
 
 For raw `.bin` snapshot decoding, also install:
 
