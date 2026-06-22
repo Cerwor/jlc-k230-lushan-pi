@@ -110,7 +110,7 @@ def resolve_port(explicit_port: str | None) -> str:
     raise SystemExit("No K230 port auto-detected; pass --port.\n%s" % choices)
 
 
-def resolve_mpremote(explicit: str | None) -> list[str]:
+def resolve_mpremote(explicit: str | None, required: bool = True) -> list[str]:
     if explicit:
         return [explicit]
 
@@ -124,6 +124,9 @@ def resolve_mpremote(explicit: str | None) -> list[str]:
 
     if importlib.util.find_spec("mpremote") is not None:
         return [sys.executable, "-m", "mpremote"]
+
+    if not required:
+        return ["mpremote"]
 
     raise SystemExit("mpremote is required: python -m pip install mpremote")
 
@@ -255,7 +258,7 @@ def main() -> int:
         return 0
 
     port = resolve_port(args.port)
-    mpremote = resolve_mpremote(args.mpremote)
+    mpremote = resolve_mpremote(args.mpremote, required=(not args.dry_run))
     files = collect_files(args.files, args.src_dir, args.all_py)
     reset_mode = "none" if args.no_reset else args.reset
 
