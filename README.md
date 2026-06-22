@@ -168,6 +168,40 @@ tools/
 7. 最终交付优先给 `main.py` 内容；除非用户明确要求，不主动写入 SD 卡或开发板。
 8. 离线运行前，确认 TF 卡根目录存在最终 `main.py`，并经过完整断电/复位测试。
 
+## 分层测试流程
+
+仓库根目录提供统一入口 `tools/test.ps1`。默认模式只做本地预检，不连接开发板、不写 SD 卡：
+
+```powershell
+.\tools\test.ps1
+```
+
+连接开发板后，先只列出串口：
+
+```powershell
+.\tools\test.ps1 -ListPorts -SkipValidate
+```
+
+从 RAM 临时运行摄像头和 3.1 寸 LCD 冒烟测试：
+
+```powershell
+.\tools\test.ps1 -Board -Port COM14
+```
+
+运行基础硬件视觉链路测试：摄像头/LCD、`Sensor` 初始化探测、Otsu 阈值链路。
+
+```powershell
+.\tools\test.ps1 -Board -Vision all-core -Port COM14
+```
+
+测试已安装到 Codex 的 Skill 副本：
+
+```powershell
+.\tools\test.ps1 -Installed -Board -Vision smoke -Port COM14
+```
+
+`tools/test.ps1` 的上板模式只使用 raw REPL 从 RAM 运行脚本，不会覆盖 `/sdcard/main.py`。圆形、矩形、移动靶、光照变化、UART 回环、离线自启动这类依赖现场摆放或接线的测试，仍按对应 reference 的专门步骤执行，并把新的实测结论写入 `references/maintenance.md`。
+
 ## 连接开发板时的常用命令
 
 列出串口：
@@ -230,7 +264,7 @@ python ".\jlc-k230-lushan-pi\scripts\mpremote_snapshot.py" --port COM14 --remote
 修改 Skill 后建议至少执行：
 
 ```powershell
-.\tools\validate.ps1
+.\tools\test.ps1
 ```
 
 对模板做桌面语法检查：
