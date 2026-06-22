@@ -1,5 +1,26 @@
 # CanMV Workflows
 
+## Contents
+
+- Firmware And Host Assumptions
+- Project Bring-Up
+- FPIOA and GPIO
+- UART
+- PWM
+- I2C and SPI
+- Camera
+- Display and 3.1-Inch LCD
+- YOLO and Image Recognition
+
+## Firmware And Host Assumptions
+
+Use these as tested defaults when the user has not provided a different current setup:
+
+- Board-tested firmware reference: `CanMV_K230_LCKFB_micropython_v1.6-57-gce3418e_nncase_v2.11.0`.
+- Treat the firmware string as a compatibility/debugging reference, not a universal requirement.
+- If API behavior differs, ask the user to confirm the board firmware string and compare with the official wiki/API pages.
+- When this firmware reference changes, update this file and add a short note to `maintenance.md#revision-log`.
+
 ## Project Bring-Up
 
 For a new contest project, start with one verified subsystem at a time:
@@ -29,17 +50,6 @@ When black/white threshold calibration needs a board-side check without entering
 For user-preferred example style, read `user-example-patterns.md`. It contains distilled patterns from the user's prior working code, without relying on local machine paths.
 
 For failures during bring-up, use `troubleshooting.md#first-pass` first, then the task-specific sections below.
-
-## Contents
-
-- Project Bring-Up
-- FPIOA and GPIO
-- UART
-- PWM
-- I2C and SPI
-- Camera
-- Display and 3.1-Inch LCD
-- YOLO and Image Recognition
 
 ## FPIOA and GPIO
 

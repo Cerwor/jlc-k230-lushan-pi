@@ -6,7 +6,7 @@ Official API source: https://wiki.lckfb.com/zh-hans/lushan-pi-k230/api/aidemo/yo
 
 For failures, use `troubleshooting.md#yolo-kmodel-or-ai-problems`. For firmware/API drift, use `maintenance.md#update-policy`.
 
-For final contest scripts, also use `canmv-micropython-compatibility.md`; desktop Python syntax compatibility does not guarantee CanMV IDE compatibility.
+For final contest scripts, also use `canmv-api-known-issues.md#conservative-syntax-and-validation`; desktop Python syntax compatibility does not guarantee CanMV IDE compatibility.
 
 ## Contents
 

@@ -19,26 +19,27 @@ description: Build, port, debug, and deploy LCKFB/JLC Lushan Pi K230 CanMV proje
 
 | User task | Read first | Use this result |
 | --- | --- | --- |
-| Current environment, firmware, local setup facts | `references/environment-notes.md` | Known user setup without machine-specific paths |
-| Skill maintenance, version drift, official doc changes | `references/maintenance.md` and `scripts/validate_skill.py` | Update policy, revision log, and local preflight checks |
-| Applicability, limitations, and escalation rules | `references/usage-boundaries.md` | Scope boundaries before risky work |
-| Connected-board smoke test or raw REPL connection failure | `references/canmv-workflows.md` and `references/troubleshooting.md` | Short hardware validation and serial diagnostics |
-| mpremote deployment, board file copy, runtime screenshot pull | `references/mpremote-debug-workflows.md`, `references/offline-run-patterns.md`, and `references/troubleshooting.md` | Explicit board-write workflow and SD-card snapshot side-channel |
-| Official links, firmware, IDE, downloads | `references/official-links.md` | Source-of-truth link map |
-| Official API manual lookup | `references/api-manual-routing.md` | Pick the exact API page before using unfamiliar classes/functions |
-| K230 CanMV API pitfalls, known issues, cross-firmware quirks | `references/canmv-api-known-issues.md`, `references/canmv-micropython-compatibility.md`, and `references/troubleshooting.md` | Avoid known-bad API assumptions before writing final code |
-| CanMV syntax compatibility, final `main.py` style, desktop compile mismatch | `references/canmv-micropython-compatibility.md` | Conservative MicroPython syntax rules |
-| Built-in training examples | `references/local-code-examples.md` | Reuse absorbed contest-oriented patterns without depending on an external code folder |
-| Hardware pins, power, connectors, camera/DSI/touch, voltage safety | `references/hardware-pin-resource-quickref.md` | Wiring and resource constraints |
-| GPIO/FPIOA, PWM, UART, image drawing/processing/color/feature/code recognition | `references/official-basic-image-patterns.md` | Official example rules and code shapes |
-| Circle/ring detection, Hough `find_circles`, full-screen LCD with low-res detection | `references/circle-detection-patterns.md` | Dual-channel circle detection strategy and template |
-| Camera/LCD/peripheral CanMV bring-up | `references/canmv-workflows.md` | General CanMV workflow and skeletons |
-| YOLOv5, YOLOv8, YOLO11, classify/detect/segment, KModel | `references/yolo-module-patterns.md` | Official YOLO lifecycle and parameters |
-| User-style LCD/capture/YOLO/keypoint examples | `references/user-example-patterns.md` | Portable patterns distilled from prior working code |
-| 2025-style rectangle target, laser aiming, ROI tracking, `cv_lite` rectangle corners, single-class model-assisted ROI | `references/contest-2025-rectangle-patterns.md` | Contest rectangle target strategy and enhanced UART tracker template |
-| Contest architecture, runtime recovery, or reusable project start | `references/contest-patterns.md` and `assets/contest-template/` | Copyable project scaffold, integration rules, and safe-stop/recovery patterns |
-| Offline run, `boot.py`, `main.py`, TF-card deployment | `references/offline-run-patterns.md` | Power-on deployment procedure |
-| Any failure, logs, non-working hardware, no display, no model result | `references/troubleshooting.md` | Centralized debug checklist |
+| Bring-up, connected-board smoke tests, camera/LCD, raw REPL, setup facts | `references/canmv-workflows.md` and `references/troubleshooting.md` | Known firmware/setup facts, safe hardware validation, and failure diagnosis |
+| Final CanMV `main.py`, API quirks, syntax compatibility, unfamiliar API calls | `references/canmv-api-known-issues.md` and `references/api-manual-routing.md` | Conservative MicroPython style plus official API page selection |
+| Classical vision, circles, rectangles, colors, thresholds, template choice | This `Template Selection` table, then `references/circle-detection-patterns.md`, `references/contest-2025-rectangle-patterns.md`, or `references/official-basic-image-patterns.md` | Pick the right tested template before writing new code |
+| Contest integration, UART/control output, pins, power, actuators, runtime recovery | `references/contest-patterns.md`, `references/hardware-pin-resource-quickref.md`, and `references/official-basic-image-patterns.md` | Safe control architecture and verified wiring/resource constraints |
+| YOLO/KModel/PipeLine/model paths | `references/yolo-module-patterns.md` | Model lifecycle, display adaptation, and board resource probing |
+| Offline boot, TF-card `main.py`, mpremote deploy, runtime snapshot pull | `references/offline-run-patterns.md`, `references/mpremote-debug-workflows.md`, and `references/troubleshooting.md` | Deployment path, board-write boundaries, and recovery steps |
+| Skill maintenance, scope, official sources, version drift | `references/maintenance.md`, `references/usage-boundaries.md`, `references/official-links.md`, and `scripts/validate_skill.py` | Update policy, limitations, source links, and preflight checks |
+
+## Template Selection
+
+Prefer this table before browsing every file under `assets/contest-template/examples/`.
+
+| Need | Start with | Read if needed |
+| --- | --- | --- |
+| Camera/LCD sanity check | `scripts/smoke_camera_lcd.py`, then `assets/contest-template/examples/camera_lcd_preview.py` | `references/canmv-workflows.md` |
+| Bottle cap, ring, circle center | `assets/contest-template/examples/circle_detect.py` | `references/circle-detection-patterns.md` |
+| Black-tape rectangle target for control | `assets/contest-template/examples/cvlite_rectangle_target_uart_tracker.py` | `references/contest-2025-rectangle-patterns.md` |
+| Rectangle smoke test or no `cv_lite` fallback | `assets/contest-template/examples/rectangle_detect.py`, then `assets/contest-template/examples/rectangle_target_uart_tracker.py` | `references/contest-2025-rectangle-patterns.md` |
+| Field threshold calibration without a PC | `scripts/probe_otsu_threshold.py`, then `assets/contest-template/examples/offline_threshold_tuner.py` | `references/official-basic-image-patterns.md` |
+| UART, servo, laser, PID control pieces | `assets/contest-template/examples/uart2_loopback.py`, `servo_laser_stepper_patterns.py`, `pid_target_centering.py` | `references/contest-patterns.md` and `references/hardware-pin-resource-quickref.md` |
+| YOLO official example on 3.1-inch LCD | `assets/contest-template/examples/yolov8_lcd_official_launcher.py` | `references/yolo-module-patterns.md` |
 
 ## Working Rules
 
@@ -56,7 +57,7 @@ description: Build, port, debug, and deploy LCKFB/JLC Lushan Pi K230 CanMV proje
 - For final delivery, provide a ready-to-copy `main.py`; mention SD-card placement, but leave copying/flashing to the user unless explicitly requested.
 - Treat `scripts/mpremote_deploy.py` and snapshot pull/delete options as explicit board-file operations. Do not run them unless the user asks to deploy, pull, patch, or delete board files.
 - For runtime screenshots, prefer adding an explicit snapshot hook from `scripts/mpremote_snapshot.py --emit-hook ...` over automatically patching an unknown `/sdcard/main.py`.
-- For ready-to-copy CanMV `main.py`, use conservative MicroPython syntax: avoid f-strings, `lambda`, comprehensions, generator expressions, and complex multi-line inline calls unless the target firmware has been tested with them.
+- For ready-to-copy CanMV `main.py`, use `references/canmv-api-known-issues.md` conservative syntax rules: avoid f-strings, `lambda`, comprehensions, generator expressions, and complex multi-line inline calls unless the target firmware has been tested with them.
 - For YOLO work, probe the board for actual `.kmodel` and official example paths before assuming `/data/...`; current LCKFB SD-card images may store examples and models under `/sdcard/examples/`.
 - For contest features similar to the user's training examples, consult `references/local-code-examples.md` and use the corresponding `assets/contest-template/examples/` template before writing final code.
 - After modifying this skill, run `scripts/validate_skill.py` plus the system `quick_validate.py` before publishing or syncing the installed copy.

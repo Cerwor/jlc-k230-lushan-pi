@@ -124,9 +124,8 @@ tools/
 关键文件：
 
 - `jlc-k230-lushan-pi/SKILL.md`：Skill 入口、快速路由表、全局规则
-- `jlc-k230-lushan-pi/references/canmv-micropython-compatibility.md`：CanMV MicroPython 保守语法规则
-- `jlc-k230-lushan-pi/references/canmv-api-known-issues.md`：K230 CanMV API 坑点、跨固件差异和代码生成检查
-- `jlc-k230-lushan-pi/references/canmv-workflows.md`：摄像头、LCD、外设 bring-up 流程
+- `jlc-k230-lushan-pi/references/canmv-api-known-issues.md`：K230 CanMV API 坑点、保守语法、跨固件差异和代码生成检查
+- `jlc-k230-lushan-pi/references/canmv-workflows.md`：固件参考、摄像头、LCD、外设 bring-up 流程
 - `jlc-k230-lushan-pi/references/mpremote-debug-workflows.md`：`mpremote` 部署、运行中截图拉取和 SD 卡侧信道调试
 - `jlc-k230-lushan-pi/references/official-basic-image-patterns.md`：GPIO/FPIOA/PWM/UART 与基础图像处理模式
 - `jlc-k230-lushan-pi/references/circle-detection-patterns.md`：圆形/圆环检测与低分辨率检测坐标缩放策略
@@ -240,7 +239,7 @@ python ".\jlc-k230-lushan-pi\scripts\mpremote_snapshot.py" --port COM14 --remote
 python -c "import pathlib; root=pathlib.Path(r'.\jlc-k230-lushan-pi'); files=list(root.rglob('*.py')); [compile(p.read_text(encoding='utf-8'), str(p), 'exec') for p in files]; print('PY_SYNTAX_OK files=%d' % len(files))"
 ```
 
-`tools/validate.ps1` 会调用 `scripts/validate_skill.py`、系统 `quick_validate.py` 和桌面 Python 语法检查。注意：桌面 Python 语法检查不能证明 CanMV IDE 或 CanMV MicroPython 一定能运行。最终 `main.py` 仍应遵循 `references/canmv-micropython-compatibility.md` 的保守语法规则，并尽量在开发板上用 CanMV IDE 或 raw REPL 验证。
+`tools/validate.ps1` 会调用 `scripts/validate_skill.py`、系统 `quick_validate.py` 和桌面 Python 语法检查。注意：桌面 Python 语法检查不能证明 CanMV IDE 或 CanMV MicroPython 一定能运行。最终 `main.py` 仍应遵循 `references/canmv-api-known-issues.md#conservative-syntax-and-validation` 的保守语法规则，并尽量在开发板上用 CanMV IDE 或 raw REPL 验证。
 
 `scripts/validate_skill.py` 不再硬编码维护者本机路径。它会拒绝通用 Windows 绝对路径；如果需要追加本机私有路径模式，把这些模式放在仓库外的 UTF-8 文本文件中，并设置：
 

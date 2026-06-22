@@ -22,7 +22,7 @@ Update this skill when:
 
 ## Update Steps
 
-1. Record the new firmware/version/source in this file or `environment-notes.md`.
+1. Record the new firmware/version/source in this file or `canmv-workflows.md`.
 2. Update only the relevant reference file; avoid duplicating the same fact in multiple places.
 3. If the change affects routing, update `SKILL.md`.
 4. If the change affects reusable project code, update `assets/contest-template/`.
@@ -38,10 +38,8 @@ Update this skill when:
 - `agents/openai.yaml`: UI metadata only; not an operational prompt.
 - `references/official-links.md`: source link index.
 - `references/api-manual-routing.md`: official API manual routing table.
-- `references/canmv-api-known-issues.md`: compact K230 CanMV API pitfall and cross-firmware behavior notes.
-- `references/canmv-micropython-compatibility.md`: conservative CanMV MicroPython syntax style and validation limits.
+- `references/canmv-api-known-issues.md`: compact K230 CanMV API pitfalls, conservative syntax, validation limits, and cross-firmware behavior notes.
 - `references/local-code-examples.md`: built-in contest-oriented training patterns.
-- `references/environment-notes.md`: known user setup and firmware references.
 - `references/hardware-pin-resource-quickref.md`: hardware resources, power, voltage, connectors, camera/DSI/touch.
 - `references/official-basic-image-patterns.md`: official GPIO/FPIOA/PWM/UART and image-recognition example patterns.
 - `references/mpremote-debug-workflows.md`: optional host-side `mpremote` deployment and runtime snapshot workflows.
@@ -107,3 +105,4 @@ Update this skill when:
 - 2026-06-21: Clarified that USB `VID:PID 1209:ABD1` is a tested CanMV auto-detection hint rather than a fixed K230 identity, and broadened `scripts/run_canmv_raw_repl.py` auto-detection to also use common CanMV/K230 port descriptions.
 - 2026-06-21: Reviewed `2262727886-stack/mspm0g-contest-skill` K230 material. It targets Lushan Pi K230 + GC2093 + ST7701 in a dual-chip MSPM0G contest setup, but the cloned repo did not include a root LICENSE file, so useful lessons were paraphrased and scripts were rewritten: added `canmv-api-known-issues.md`, optional Otsu grayscale calibration with verification/fallback in `offline_threshold_tuner.py`, all-UART TX sweep support in `probe_uart2_loopback.py`, `probe_k230_sensor_init.py`, and dual-chip communication guidance.
 - 2026-06-21: Board-tested the connected Lushan Pi K230 after the latest skill updates. `smoke_camera_lcd.py` reached `SMOKE_DONE frames=20 fps=72` on the 3.1-inch LCD after raw REPL fell back from 2000000 baud to 115200. `probe_k230_sensor_init.py` confirmed `Sensor(id=2)` 800x480, `Sensor(id=2)` 320x240, and `Sensor()` 320x240 can snapshot; sensor ids 0 and 1 were not present. The new `scripts/probe_otsu_threshold.py` produced 26 valid samples from 30 frames, verified blob detection, and selected grayscale threshold `0..122` in its formal run.
+- 2026-06-22: Reduced reference and routing fragmentation: merged `environment-notes.md` into `canmv-workflows.md`, merged `canmv-micropython-compatibility.md` into `canmv-api-known-issues.md`, compacted `SKILL.md#Quick Routing` from an index-style table into seven task-level routes, and added `SKILL.md#Template Selection` so agents can choose among the bundled examples confidently.

@@ -137,7 +137,7 @@ For 2025-style rectangle target or laser aiming tasks, read `contest-2025-rectan
 
 For circle/ring detection, read `circle-detection-patterns.md`. Prefer full-screen `800x480` display with `400x240` or `320x240` detection, ROI, coordinate scaling, and detection every `N` frames.
 
-For any ready-to-copy `main.py`, read `canmv-micropython-compatibility.md` and use conservative CanMV MicroPython syntax.
+For any ready-to-copy `main.py`, read `canmv-api-known-issues.md#conservative-syntax-and-validation` and use conservative CanMV MicroPython syntax.
 
 For YOLO/model tasks:
 

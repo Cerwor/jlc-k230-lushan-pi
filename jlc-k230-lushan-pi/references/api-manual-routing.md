@@ -62,4 +62,4 @@ Use this file to choose the exact official API page before relying on memory for
 - For image operations such as `find_rects`, `find_blobs`, drawing functions, ROI, thresholding, and image format limits, read the `Image` API page and compare with `official-basic-image-patterns.md`.
 - For display or panel errors, read the `Display` API page and `troubleshooting.md#lcd-or-display-problems`.
 - For AI demo code, read both the specific module API and the board's `/sdcard/examples/...` script if available.
-- For final `main.py` syntax style, use `canmv-micropython-compatibility.md`; `python -m py_compile` is not a CanMV parser test.
+- For final `main.py` syntax style, use `canmv-api-known-issues.md#conservative-syntax-and-validation`; `python -m py_compile` is not a CanMV parser test.

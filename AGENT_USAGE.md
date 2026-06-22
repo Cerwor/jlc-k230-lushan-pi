@@ -9,7 +9,7 @@
 3. 按 `SKILL.md` 的 Quick Routing 表选择需要的 `references/` 文件。
 4. 只读取与当前任务相关的参考文件，避免把无关内容混进上下文。
 5. 所有脚本、参考资料、模板路径都相对 `SKILL.md` 所在目录解析。
-6. 写最终 CanMV `main.py` 前，必须阅读 `references/canmv-micropython-compatibility.md`。
+6. 写最终 CanMV `main.py` 前，必须阅读 `references/canmv-api-known-issues.md#conservative-syntax-and-validation`。
 7. 优先复用 `assets/contest-template/` 和 `assets/contest-template/examples/` 里的模板。
 
 ## 默认交付策略
