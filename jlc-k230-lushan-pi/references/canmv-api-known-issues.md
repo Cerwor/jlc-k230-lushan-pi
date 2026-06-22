@@ -11,6 +11,7 @@ This is not a replacement for the official API manual. For unfamiliar classes or
 - Sensor and Display
 - Pins and Peripherals
 - Image Processing
+- Conservative Syntax And Validation
 - Code Generation Checklist
 - Source Notes
 
@@ -58,6 +59,22 @@ These notes are distilled from this skill's board tests plus a reviewed public M
 - JPEG or image-file save operations are slow. Throttle capture or snapshot saving and keep it out of the per-frame control loop.
 - Periodic `print(...)`, complex text drawing, and frequent `gc.collect()` can dominate the frame loop. Throttle them.
 
+## Conservative Syntax And Validation
+
+Use this section before generating a ready-to-copy `main.py` for K230 CanMV.
+
+CanMV MicroPython may accept a smaller or different Python syntax subset than desktop Python. A script can pass desktop `python -m py_compile` and still fail in CanMV IDE K230 with `SyntaxError: invalid syntax`.
+
+For final scripts, prefer plain MicroPython style:
+
+- Avoid f-strings unless the target firmware has already been tested with them.
+- Avoid `lambda`, list comprehensions, dict comprehensions, set comprehensions, and generator expressions in final examples.
+- Avoid deeply nested inline expressions and complex multi-line function calls for debug printing, logging, or string formatting.
+- Prefer simple loops, temporary variables, one statement per line, and `%` formatting or simple string concatenation.
+- Keep `try`/`except` blocks simple and use `print("error:", e)` instead of `sys.print_exception(e)` unless the firmware confirms support.
+
+Desktop syntax checks are useful but not sufficient. When hardware is available, also run the script through CanMV IDE or `scripts/run_canmv_raw_repl.py`. When generating or editing `assets/contest-template/` files, keep this conservative style even if desktop Python accepts newer or denser syntax.
+
 ## Code Generation Checklist
 
 Before writing final K230 CanMV code:
@@ -67,8 +84,9 @@ Before writing final K230 CanMV code:
 3. Confirm whether the algorithm needs full-screen capture or lower-resolution detection.
 4. Confirm UART pins, baud rate, packet format, and common ground if an external MCU is involved.
 5. Put thresholds, pins, frame sizes, UART format, and fallback limits at the top.
-6. Add visible LCD status for calibration, target found/lost, FPS, and faults.
-7. Add cleanup and safe-output behavior before enabling actuators.
+6. Apply the conservative syntax rules above before handing over final code.
+7. Add visible LCD status for calibration, target found/lost, FPS, and faults.
+8. Add cleanup and safe-output behavior before enabling actuators.
 
 ## Source Notes
 
