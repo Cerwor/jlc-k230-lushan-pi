@@ -77,7 +77,16 @@
 
 ## 连接开发板测试流程
 
-优先从仓库根目录执行：
+如果能访问仓库根目录，优先使用分层测试入口。默认只做离线预检；显式加 `-Board` 后才通过 raw REPL 连接开发板，且只从 RAM 运行，不写 `/sdcard/main.py`。
+
+```powershell
+.\tools\test.ps1
+.\tools\test.ps1 -ListPorts -SkipValidate
+.\tools\test.ps1 -Board -Port COM14
+.\tools\test.ps1 -Board -Vision all-core -Port COM14
+```
+
+如果只有 Skill 文件夹或需要直接调用底层工具，再从仓库根目录执行：
 
 ```powershell
 python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" --list-ports
@@ -140,16 +149,17 @@ python ".\jlc-k230-lushan-pi\scripts\mpremote_deploy.py" --port COM14 main.py
 3. 影响路由时更新 `SKILL.md`。
 4. 影响可复用代码时更新 `assets/contest-template/`。
 5. 新测试或重要修复写入 `references/maintenance.md` 的 Revision Log。
-6. 在仓库根目录运行 `tools/validate.ps1`。
-7. `tools/validate.ps1` 会调用 `scripts/validate_skill.py`、`quick_validate.py` 和所有 `.py` 模板的桌面语法检查。
+6. 在仓库根目录优先运行 `tools/test.ps1`；只需要纯预检时可直接运行 `tools/validate.ps1`。
+7. `tools/test.ps1` 默认调用 `tools/validate.ps1`；`tools/validate.ps1` 会调用 `scripts/validate_skill.py`、`quick_validate.py` 和所有 `.py` 模板的桌面语法检查。
 8. 如需发布，优先使用仓库根目录的 `tools/publish.ps1`，并显式传 `-Files` 或 `-All`。
-9. 如有开发板，尽量用 raw REPL 跑 smoke test 或相关模板。
+9. 如有开发板，优先用 `tools/test.ps1 -Board` 跑基础 smoke test，再按任务跑相关模板或专门 probe。
 10. 手动发布后重新复制 `jlc-k230-lushan-pi` 到 Codex skills 安装目录；如果使用 `tools/publish.ps1`，脚本会自动同步并校验安装副本。
 
 推荐校验命令：
 
 ```powershell
-.\tools\validate.ps1
+.\tools\test.ps1
+.\tools\test.ps1 -Board -Vision all-core -Port COM14
 .\tools\publish.ps1 -Message "Update skill" -Files @("jlc-k230-lushan-pi\SKILL.md")
 ```
 

@@ -6,6 +6,7 @@ Use this file to keep the skill current as CanMV firmware, LCKFB wiki pages, and
 
 - Update Policy
 - Update Steps
+- Repository Tooling
 - File Ownership Map
 - Revision Log
 
@@ -27,10 +28,19 @@ Update this skill when:
 3. If the change affects routing, update `SKILL.md`.
 4. If the change affects reusable project code, update `assets/contest-template/`.
 5. Move troubleshooting facts to `troubleshooting.md`, not task-specific reference files.
-6. In the distribution repository, prefer root `tools/validate.ps1`; it calls this skill's `scripts/validate_skill.py`, the system `quick_validate.py`, and desktop Python syntax checks.
-7. If the root tools are unavailable, run `scripts/validate_skill.py` from this skill, then run `quick_validate.py` on the skill folder.
-8. Syntax-check any Python files in `assets/contest-template/` where possible.
-9. When hardware is available, run final-style templates in CanMV IDE or with `scripts/run_canmv_raw_repl.py`; desktop `py_compile` alone does not prove CanMV parser compatibility.
+6. In the distribution repository, prefer root `tools/test.ps1`; by default it calls `tools/validate.ps1` and keeps hardware tests opt-in.
+7. Use `tools/test.ps1 -Board` for raw-REPL smoke tests and `tools/test.ps1 -Board -Vision all-core` for camera/LCD, Sensor initialization, and Otsu threshold probes.
+8. If the root tools are unavailable, run `scripts/validate_skill.py` from this skill, then run `quick_validate.py` on the skill folder.
+9. Syntax-check any Python files in `assets/contest-template/` where possible.
+10. When hardware is available, run final-style templates in CanMV IDE or with `scripts/run_canmv_raw_repl.py`; desktop `py_compile` alone does not prove CanMV parser compatibility.
+
+## Repository Tooling
+
+These scripts live in the distribution repository root and are not part of the installed skill folder:
+
+- `tools/test.ps1`: layered test entrypoint. Default runs offline validation only; `-ListPorts` enumerates serial ports; `-Board` runs RAM-only raw REPL tests; `-Vision all-core` runs camera/LCD smoke, Sensor mode probing, and Otsu threshold probing.
+- `tools/validate.ps1`: offline preflight that calls this skill's `scripts/validate_skill.py`, the system `quick_validate.py`, and desktop Python syntax checks.
+- `tools/publish.ps1`: validation, branch, commit, PR, squash-merge, local sync, installed-skill sync, and installed-copy validation.
 
 ## File Ownership Map
 
@@ -107,3 +117,4 @@ Update this skill when:
 - 2026-06-21: Board-tested the connected Lushan Pi K230 after the latest skill updates. `smoke_camera_lcd.py` reached `SMOKE_DONE frames=20 fps=72` on the 3.1-inch LCD after raw REPL fell back from 2000000 baud to 115200. `probe_k230_sensor_init.py` confirmed `Sensor(id=2)` 800x480, `Sensor(id=2)` 320x240, and `Sensor()` 320x240 can snapshot; sensor ids 0 and 1 were not present. The new `scripts/probe_otsu_threshold.py` produced 26 valid samples from 30 frames, verified blob detection, and selected grayscale threshold `0..122` in its formal run.
 - 2026-06-22: Reduced reference and routing fragmentation: merged `environment-notes.md` into `canmv-workflows.md`, merged `canmv-micropython-compatibility.md` into `canmv-api-known-issues.md`, compacted `SKILL.md#Quick Routing` from an index-style table into seven task-level routes, and added `SKILL.md#Template Selection` so agents can choose among the bundled examples confidently.
 - 2026-06-22: Board-tested black-tape rectangle target selection on paper with several small rectangle distractors. Normal grayscale `cv_lite` tracking reached 299/300 hits at about 63-64 FPS with no candidate jumps; a relaxed stress probe produced up to six raw candidates and still selected the max-area target on every hit frame, reaching 177/180 hits with `big_jumps=0`.
+- 2026-06-22: Added root `tools/test.ps1` as a layered test entrypoint so routine skill checks start with offline validation, hardware access is explicit through `-Board`, and common camera/LCD, Sensor, and Otsu probes can be run as one bounded `all-core` board test without writing `/sdcard/main.py`.
