@@ -85,6 +85,8 @@
 .\tools\test.ps1 -Board -Port COM14
 .\tools\test.ps1 -Board -Vision all-core -Port COM14
 .\tools\test.ps1 -Board -Vision resources -Port COM14
+.\tools\test.ps1 -Board -Vision rect-target -Port COM14
+.\tools\test.ps1 -Board -Vision circle-target -Port COM14
 ```
 
 如果只有 Skill 文件夹或需要直接调用底层工具，再从仓库根目录执行：

@@ -139,6 +139,8 @@ tools/
 - `jlc-k230-lushan-pi/scripts/mpremote_snapshot.py`：拉取并解码运行中快照文件的 `mpremote` 调试助手
 - `jlc-k230-lushan-pi/scripts/probe_k230_sensor_init.py`：尝试多种 K230 `Sensor` 初始化/抓帧方式的诊断脚本
 - `jlc-k230-lushan-pi/scripts/probe_otsu_threshold.py`：黑白目标 Otsu 自动阈值短跑探针
+- `jlc-k230-lushan-pi/scripts/probe_cvlite_rectangle_target.py`：黑胶布矩形靶 300 帧命中率/FPS/中心稳定性短跑探针
+- `jlc-k230-lushan-pi/scripts/probe_circle_target.py`：瓶盖/圆形目标 300 帧命中率/FPS/圆心稳定性短跑探针
 - `jlc-k230-lushan-pi/scripts/validate_skill.py`：桌面端 Skill 预检脚本
 - `jlc-k230-lushan-pi/scripts/probe_uart2_loopback.py`：常见 UART2 映射扫描与回环测试
 - `jlc-k230-lushan-pi/scripts/smoke_camera_lcd.py`：短摄像头/LCD 冒烟测试
@@ -198,6 +200,13 @@ tools/
 
 ```powershell
 .\tools\test.ps1 -Board -Vision resources -Port COM14
+```
+
+短跑验证黑胶布矩形靶或瓶盖目标：
+
+```powershell
+.\tools\test.ps1 -Board -Vision rect-target -Port COM14
+.\tools\test.ps1 -Board -Vision circle-target -Port COM14
 ```
 
 测试已安装到 Codex 的 Skill 副本：

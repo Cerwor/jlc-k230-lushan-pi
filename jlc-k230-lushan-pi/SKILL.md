@@ -34,8 +34,8 @@ Prefer this table before browsing every file under `assets/contest-template/exam
 | Need | Start with | Read if needed |
 | --- | --- | --- |
 | Camera/LCD sanity check | `scripts/smoke_camera_lcd.py`, then `assets/contest-template/examples/camera_lcd_preview.py` | `references/canmv-workflows.md` |
-| Bottle cap, ring, circle center | `assets/contest-template/examples/circle_detect.py` | `references/circle-detection-patterns.md` |
-| Black-tape rectangle target for control | `assets/contest-template/examples/cvlite_rectangle_target_uart_tracker.py` | `references/contest-2025-rectangle-patterns.md` |
+| Bottle cap, ring, circle center | `scripts/probe_circle_target.py`, then `assets/contest-template/examples/circle_detect.py` | `references/circle-detection-patterns.md` |
+| Black-tape rectangle target for control | `scripts/probe_cvlite_rectangle_target.py`, then `assets/contest-template/examples/cvlite_rectangle_target_uart_tracker.py` | `references/contest-2025-rectangle-patterns.md` |
 | Rectangle smoke test or no `cv_lite` fallback | `assets/contest-template/examples/rectangle_detect.py`, then `assets/contest-template/examples/rectangle_target_uart_tracker.py` | `references/contest-2025-rectangle-patterns.md` |
 | Field threshold calibration without a PC | `scripts/probe_otsu_threshold.py`, then `assets/contest-template/examples/offline_threshold_tuner.py` | `references/official-basic-image-patterns.md` |
 | UART, servo, laser, PID control pieces | `assets/contest-template/examples/uart2_loopback.py`, `servo_laser_stepper_patterns.py`, `pid_target_centering.py` | `references/contest-patterns.md` and `references/hardware-pin-resource-quickref.md` |
