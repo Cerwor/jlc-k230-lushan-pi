@@ -3,7 +3,7 @@ param(
     [switch]$Installed,
     [switch]$ListPorts,
     [switch]$Board,
-    [ValidateSet("none", "smoke", "sensor", "otsu", "all-core")]
+    [ValidateSet("none", "smoke", "sensor", "otsu", "resources", "all-core")]
     [string]$Vision = "none",
     [string]$Port,
     [double]$Timeout = 45,
@@ -116,6 +116,9 @@ switch ($Vision) {
     }
     "otsu" {
         Invoke-RawReplScript -ScriptPath (Join-Path $skillRootResolved "scripts\probe_otsu_threshold.py") -Label "board probe: Otsu threshold chain"
+    }
+    "resources" {
+        Invoke-RawReplScript -ScriptPath (Join-Path $skillRootResolved "scripts\probe_board_resources.py") -Label "board probe: model and example resources"
     }
     "all-core" {
         Invoke-RawReplScript -ScriptPath (Join-Path $skillRootResolved "scripts\smoke_camera_lcd.py") -Label "board smoke: camera + 3.1-inch LCD"

@@ -38,7 +38,7 @@ Update this skill when:
 
 These scripts live in the distribution repository root and are not part of the installed skill folder:
 
-- `tools/test.ps1`: layered test entrypoint. Default runs offline validation only; `-ListPorts` enumerates serial ports; `-Board` runs RAM-only raw REPL tests; `-Vision all-core` runs camera/LCD smoke, Sensor mode probing, and Otsu threshold probing.
+- `tools/test.ps1`: layered test entrypoint. Default runs offline validation only; `-ListPorts` enumerates serial ports; `-Board` runs RAM-only raw REPL tests; `-Vision all-core` runs camera/LCD smoke, Sensor mode probing, and Otsu threshold probing; `-Vision resources` runs the bounded board resource probe.
 - `tools/validate.ps1`: offline preflight that calls this skill's `scripts/validate_skill.py`, the system `quick_validate.py`, and desktop Python syntax checks.
 - `tools/publish.ps1`: validation, branch, commit, PR, squash-merge, local sync, installed-skill sync, and installed-copy validation.
 
@@ -118,3 +118,4 @@ These scripts live in the distribution repository root and are not part of the i
 - 2026-06-22: Reduced reference and routing fragmentation: merged `environment-notes.md` into `canmv-workflows.md`, merged `canmv-micropython-compatibility.md` into `canmv-api-known-issues.md`, compacted `SKILL.md#Quick Routing` from an index-style table into seven task-level routes, and added `SKILL.md#Template Selection` so agents can choose among the bundled examples confidently.
 - 2026-06-22: Board-tested black-tape rectangle target selection on paper with several small rectangle distractors. Normal grayscale `cv_lite` tracking reached 299/300 hits at about 63-64 FPS with no candidate jumps; a relaxed stress probe produced up to six raw candidates and still selected the max-area target on every hit frame, reaching 177/180 hits with `big_jumps=0`.
 - 2026-06-22: Added root `tools/test.ps1` as a layered test entrypoint so routine skill checks start with offline validation, hardware access is explicit through `-Board`, and common camera/LCD, Sensor, and Otsu probes can be run as one bounded `all-core` board test without writing `/sdcard/main.py`.
+- 2026-06-22: Follow-up testing found that the board resource probe could time out while recursively scanning a populated SD card before printing useful diagnostics, leaving the raw REPL silent until board reset. Reworked `probe_board_resources.py` into a bounded single-pass collector with progress/truncation output and exposed it through `tools/test.ps1 -Board -Vision resources`. Board retest on COM14 found 63 `.kmodel` files and 68 AI/detection-related Python examples across 48 scanned directories with `truncated=0`, then a camera/LCD smoke test still passed at about 70 FPS.

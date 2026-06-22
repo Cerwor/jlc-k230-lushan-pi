@@ -194,6 +194,12 @@ tools/
 .\tools\test.ps1 -Board -Vision all-core -Port COM14
 ```
 
+探测板端模型和例程路径：
+
+```powershell
+.\tools\test.ps1 -Board -Vision resources -Port COM14
+```
+
 测试已安装到 Codex 的 Skill 副本：
 
 ```powershell
