@@ -19,7 +19,7 @@ Use these as tested defaults when the user has not provided a different current 
 - Board-tested firmware reference: `CanMV_K230_LCKFB_micropython_v1.6-57-gce3418e_nncase_v2.11.0`.
 - Treat the firmware string as a compatibility/debugging reference, not a universal requirement.
 - If API behavior differs, ask the user to confirm the board firmware string and compare with the official wiki/API pages.
-- When this firmware reference changes, update this file and add a short note to `maintenance.md#revision-log`.
+- When this firmware reference changes, update this file and add a short note to `maintenance.md#maintenance-summary`; put long chronological test history in repository-level `docs/BOARD_TEST_LOG.md` when available.
 
 ## Project Bring-Up
 
