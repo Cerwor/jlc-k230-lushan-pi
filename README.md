@@ -116,6 +116,7 @@ jlc-k230-lushan-pi/
   assets/
     contest-template/
   scripts/
+docs/
 README.md
 AGENT_USAGE.md
 tools/
@@ -144,6 +145,8 @@ tools/
 - `jlc-k230-lushan-pi/scripts/validate_skill.py`：桌面端 Skill 预检脚本
 - `jlc-k230-lushan-pi/scripts/probe_uart2_loopback.py`：常见 UART2 映射扫描与回环测试
 - `jlc-k230-lushan-pi/scripts/smoke_camera_lcd.py`：短摄像头/LCD 冒烟测试
+- `docs/TEST_MATRIX.md`：仓库级测试矩阵，说明每类测试是否上板、是否写卡、需要什么人工准备
+- `docs/BOARD_TEST_LOG.md`：仓库级历史实测流水账，不安装到 Codex skill
 
 ## 常用模板
 
@@ -173,6 +176,8 @@ tools/
 ## 分层测试流程
 
 仓库根目录提供统一入口 `tools/test.ps1`。默认模式只做本地预检，不连接开发板、不写 SD 卡：
+
+完整测试选择规则见 `docs/TEST_MATRIX.md`。
 
 ```powershell
 .\tools\test.ps1
@@ -315,7 +320,7 @@ $env:JLC_K230_LOCAL_PATH_CONFIG = "$HOME\.jlc-k230-local-paths.txt"
 - 新硬件、新固件、新屏幕、新接线结论写入对应 `references/` 文件。
 - 会影响 Agent 路由的内容同步更新 `SKILL.md`。
 - 会影响可复用代码的内容同步更新 `assets/contest-template/`。
-- 任何实测结论补到 `references/maintenance.md` 的 Revision Log。
+- 可复用实测结论写入对应 `references/`；长历史记录写入 `docs/BOARD_TEST_LOG.md`。
 - 修改仓库后重新复制 `jlc-k230-lushan-pi` 到 Codex skills 安装目录。
 
 ## 安全边界
