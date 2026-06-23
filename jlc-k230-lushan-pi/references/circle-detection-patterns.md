@@ -109,3 +109,13 @@ For extreme frame-rate work, consider `Display.bind_layer(...)` for a video laye
 ## Built-In Template
 
 Use `assets/contest-template/examples/circle_detect.py` as the default starting point for circle detection on the 3.1-inch LCD.
+
+## Acceptance Probe
+
+For a bottle cap, ring, or circular target, run:
+
+```powershell
+.\tools\test.ps1 -Board -Vision circle-target -Port COM14
+```
+
+`ACCEPT_CIRCLE status=pass` means the current ROI, radius window, detection stride, and result-hold strategy are usable in the present scene. `warn` is common for circle detection and should trigger ROI/radius/threshold tuning before control. `fail` means the probe did not produce a usable held overlay or the frame rate is too low.

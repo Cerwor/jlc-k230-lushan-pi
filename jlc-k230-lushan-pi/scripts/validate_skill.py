@@ -105,6 +105,7 @@ def is_board_side_python(root: Path, path: Path) -> bool:
         "scripts/probe_k230_sensor_init.py",
         "scripts/probe_otsu_threshold.py",
         "scripts/probe_uart2_loopback.py",
+        "scripts/probe_yolo_runtime.py",
         "scripts/smoke_camera_lcd.py",
     ):
         return True

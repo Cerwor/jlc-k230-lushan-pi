@@ -234,6 +234,7 @@ Treat these as demo defaults, not project facts.
 
 ## Contest-Oriented YOLO Guidance
 
+- Start with `scripts/probe_yolo_runtime.py` or `.\tools\test.ps1 -Board -Vision yolo -Port COM14` before assuming imports, model paths, or official example layout.
 - Validate the `.kmodel` in still-image mode first.
 - Then run video mode with camera and LCD but no actuator output.
 - Then parse results and enable decision/control logic.
@@ -243,6 +244,8 @@ Treat these as demo defaults, not project facts.
 - Keep `debug_mode=0` for normal runs; use `debug_mode=1` or `ScopedTiming` while profiling.
 - Call `gc.collect()` regularly in video loops.
 - Always release YOLO and pipeline resources in `finally`.
+
+`ACCEPT_YOLO status=pass` from the repository test means the runtime imports and bundled YOLO classes are available, and the board scan found model/example resources. It does not prove the user's trained model has correct labels, input size, or post-processing.
 
 ## Non-K230 YOLO/RKNN Samples
 
@@ -267,6 +270,7 @@ On the user's connected Lushan Pi K230, the vision capability probe confirmed:
 - `nncase_runtime`, `aicube`, `libs.PipeLine`, and `libs.YOLO` imported successfully.
 - `YOLOv5`, `YOLOv8`, and `YOLO11` classes were available.
 - Official examples and models existed under `/sdcard/examples/20-YOLO-Module-Examples/`, `/sdcard/examples/05-AI-Demo/`, and `/sdcard/examples/kmodel/`.
+- `scripts/probe_yolo_runtime.py` through `tools/test.ps1 -Board -Vision yolo -Port COM14` produced `ACCEPT_YOLO status=pass`, finding 63 `.kmodel` files and 54 YOLO/detection examples with `truncated=0`.
 
 Known-good YOLOv8 detection smoke tests:
 

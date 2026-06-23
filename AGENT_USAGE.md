@@ -88,7 +88,11 @@
 .\tools\test.ps1 -Board -Vision resources -Port COM14
 .\tools\test.ps1 -Board -Vision rect-target -Port COM14
 .\tools\test.ps1 -Board -Vision circle-target -Port COM14
+.\tools\test.ps1 -Board -Vision yolo -Port COM14
+.\tools\test.ps1 -Board -Vision uart-loopback -Port COM14
 ```
+
+对 `resources`、`rect-target`、`circle-target`、`yolo`、`uart-loopback`，`tools/test.ps1` 会在 raw REPL 输出后自动调用 `scripts/evaluate_probe_log.py`，打印 `ACCEPT_* status=pass|warn|fail`。`warn` 表示现场条件、摆放、接线或资源路径还需要人工确认；`fail` 才表示当前链路不应继续集成。
 
 如果只有 Skill 文件夹或需要直接调用底层工具，再从仓库根目录执行：
 
@@ -112,6 +116,12 @@ python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-p
 
 ```powershell
 python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\scripts\probe_otsu_threshold.py"
+```
+
+如果要做 YOLO/KModel 项目，先确认运行时和板端资源：
+
+```powershell
+python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\scripts\probe_yolo_runtime.py"
 ```
 
 运行模板时先从 RAM 测试，不要直接保存为板端 `main.py`：
