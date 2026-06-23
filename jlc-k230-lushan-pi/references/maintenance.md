@@ -101,3 +101,4 @@ Recent maintenance entries:
 - 2026-06-22: Productized rectangle and circle target probes and recorded their latest board-test behavior in the relevant references.
 - 2026-06-23: Added tiered reference-loading guidance, YOLO runtime probing, and probe-log acceptance explanations for rectangle, circle, YOLO, UART, and resource tests.
 - 2026-06-23: Board-tested the new YOLO and UART acceptance modes after reset; fixed `probe_yolo_runtime.py` resource caps/de-duplication so it reaches YOLO example directories before reporting acceptance.
+- 2026-06-23: Cleaned stale maintenance anchors, made `user-example-patterns.md` directly reachable from `SKILL.md`, and extended conservative syntax validation to the target-specific board probes.

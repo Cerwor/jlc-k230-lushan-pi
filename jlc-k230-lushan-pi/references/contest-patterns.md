@@ -64,7 +64,7 @@ When creating a new contest project:
 5. Enable optional blocks such as `USE_YOLO`, `ENABLE_UART`, or `ENABLE_PWM_SAFE_OUTPUT`.
 6. Save the final integrated program as `main.py` for offline deployment.
 
-When the template changes because of firmware or API updates, record the reason in `maintenance.md#revision-log`.
+When the template changes because of firmware or API updates, record the reason in `maintenance.md#maintenance-summary`; put long chronological test history in repository-level `docs/BOARD_TEST_LOG.md` when available.
 
 ## Competition Priorities
 

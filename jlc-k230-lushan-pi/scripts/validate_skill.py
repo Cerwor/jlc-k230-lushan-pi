@@ -102,6 +102,8 @@ def is_board_side_python(root: Path, path: Path) -> bool:
         return True
     if rel_path in (
         "scripts/probe_board_resources.py",
+        "scripts/probe_circle_target.py",
+        "scripts/probe_cvlite_rectangle_target.py",
         "scripts/probe_k230_sensor_init.py",
         "scripts/probe_otsu_threshold.py",
         "scripts/probe_uart2_loopback.py",

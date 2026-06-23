@@ -2,7 +2,7 @@
 
 Use these links as the source index for LCKFB/JLC Lushan Pi K230 work.
 
-If a link moves or an API page changes meaningfully, update the relevant reference file and record the change in `maintenance.md#revision-log`.
+If a link moves or an API page changes meaningfully, update the relevant reference file and record the change in `maintenance.md#maintenance-summary`; put long chronological test history in repository-level `docs/BOARD_TEST_LOG.md` when available.
 
 ## Board and Setup
 
