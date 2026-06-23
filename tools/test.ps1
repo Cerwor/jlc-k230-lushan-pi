@@ -3,7 +3,7 @@ param(
     [switch]$Installed,
     [switch]$ListPorts,
     [switch]$Board,
-    [ValidateSet("none", "smoke", "sensor", "otsu", "resources", "rect-target", "circle-target", "all-core")]
+    [ValidateSet("none", "smoke", "sensor", "otsu", "resources", "rect-target", "circle-target", "yolo", "uart-loopback", "all-core")]
     [string]$Vision = "none",
     [string]$Port,
     [double]$Timeout = 45,
@@ -36,7 +36,8 @@ function Invoke-RawReplScript {
         [Parameter(Mandatory = $true)]
         [string]$ScriptPath,
         [Parameter(Mandatory = $true)]
-        [string]$Label
+        [string]$Label,
+        [string]$AssessmentKind = ""
     )
 
     if (-not (Test-Path -LiteralPath $ScriptPath)) {
@@ -52,7 +53,36 @@ function Invoke-RawReplScript {
     }
     $cmdArgs += $ScriptPath
 
-    Invoke-Checked { python @cmdArgs } $Label
+    Write-Host ""
+    Write-Host "==> $Label"
+    $global:LASTEXITCODE = 0
+    $oldErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $output = & python @cmdArgs 2>&1
+        $exitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $oldErrorActionPreference
+    }
+    foreach ($line in $output) {
+        Write-Host $line
+    }
+    if ($exitCode -ne 0) {
+        throw "$Label failed with exit code $exitCode"
+    }
+
+    if ($AssessmentKind) {
+        if (-not (Test-Path -LiteralPath $assessProbe)) {
+            throw "Missing probe assessment helper: $assessProbe"
+        }
+        $logPath = Join-Path ([System.IO.Path]::GetTempPath()) ("jlc-k230-{0}-{1}.log" -f $AssessmentKind, [System.Guid]::NewGuid().ToString("N"))
+        $output | ForEach-Object { [string]$_ } | Set-Content -Encoding UTF8 -LiteralPath $logPath
+        try {
+            Invoke-Checked { python $assessProbe --kind $AssessmentKind $logPath } "assess probe result: $AssessmentKind"
+        } finally {
+            Remove-Item -LiteralPath $logPath -ErrorAction SilentlyContinue
+        }
+    }
 }
 
 function Invoke-ListPorts {
@@ -73,6 +103,7 @@ if (-not $SkillRoot) {
 
 $skillRootResolved = (Resolve-Path -LiteralPath $SkillRoot).Path
 $rawRepl = Join-Path $skillRootResolved "scripts\run_canmv_raw_repl.py"
+$assessProbe = Join-Path $skillRootResolved "scripts\evaluate_probe_log.py"
 $validateScript = Join-Path $repoRoot "tools\validate.ps1"
 
 if (-not (Test-Path -LiteralPath $rawRepl)) {
@@ -118,13 +149,19 @@ switch ($Vision) {
         Invoke-RawReplScript -ScriptPath (Join-Path $skillRootResolved "scripts\probe_otsu_threshold.py") -Label "board probe: Otsu threshold chain"
     }
     "resources" {
-        Invoke-RawReplScript -ScriptPath (Join-Path $skillRootResolved "scripts\probe_board_resources.py") -Label "board probe: model and example resources"
+        Invoke-RawReplScript -ScriptPath (Join-Path $skillRootResolved "scripts\probe_board_resources.py") -Label "board probe: model and example resources" -AssessmentKind "resources"
     }
     "rect-target" {
-        Invoke-RawReplScript -ScriptPath (Join-Path $skillRootResolved "scripts\probe_cvlite_rectangle_target.py") -Label "board target probe: cv_lite rectangle"
+        Invoke-RawReplScript -ScriptPath (Join-Path $skillRootResolved "scripts\probe_cvlite_rectangle_target.py") -Label "board target probe: cv_lite rectangle" -AssessmentKind "rect"
     }
     "circle-target" {
-        Invoke-RawReplScript -ScriptPath (Join-Path $skillRootResolved "scripts\probe_circle_target.py") -Label "board target probe: circle"
+        Invoke-RawReplScript -ScriptPath (Join-Path $skillRootResolved "scripts\probe_circle_target.py") -Label "board target probe: circle" -AssessmentKind "circle"
+    }
+    "yolo" {
+        Invoke-RawReplScript -ScriptPath (Join-Path $skillRootResolved "scripts\probe_yolo_runtime.py") -Label "board probe: YOLO runtime and resources" -AssessmentKind "yolo"
+    }
+    "uart-loopback" {
+        Invoke-RawReplScript -ScriptPath (Join-Path $skillRootResolved "scripts\probe_uart2_loopback.py") -Label "board probe: UART2 loopback and TX sweep" -AssessmentKind "uart"
     }
     "all-core" {
         Invoke-RawReplScript -ScriptPath (Join-Path $skillRootResolved "scripts\smoke_camera_lcd.py") -Label "board smoke: camera + 3.1-inch LCD"

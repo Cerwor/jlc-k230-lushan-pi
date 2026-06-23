@@ -40,7 +40,7 @@ Update this skill when:
 
 These scripts live in the distribution repository root and are not part of the installed skill folder:
 
-- `tools/test.ps1`: layered test entrypoint. Default runs offline validation only; `-ListPorts` enumerates serial ports; `-Board` runs RAM-only raw REPL tests; `-Vision all-core` runs camera/LCD smoke, Sensor mode probing, and Otsu threshold probing; `-Vision resources` runs the bounded board resource probe; `-Vision rect-target` and `-Vision circle-target` run target-specific bounded probes.
+- `tools/test.ps1`: layered test entrypoint. Default runs offline validation only; `-ListPorts` enumerates serial ports; `-Board` runs RAM-only raw REPL tests; `-Vision all-core` runs camera/LCD smoke, Sensor mode probing, and Otsu threshold probing; `-Vision resources` runs the bounded board resource probe; `-Vision rect-target` and `-Vision circle-target` run target-specific bounded probes; `-Vision yolo` probes YOLO runtime/resources; `-Vision uart-loopback` runs UART2 loopback/TX sweep. Supported probe modes automatically call `scripts/evaluate_probe_log.py`.
 - `tools/validate.ps1`: offline preflight that calls this skill's `scripts/validate_skill.py`, the system `quick_validate.py`, and desktop Python syntax checks.
 - `tools/publish.ps1`: validation, branch, commit, PR, squash-merge, local sync, installed-skill sync, and installed-copy validation.
 
@@ -71,6 +71,8 @@ These scripts live in the distribution repository root and are not part of the i
 - `scripts/probe_otsu_threshold.py`: board-side bounded Otsu grayscale threshold calibration probe for black/white targets.
 - `scripts/probe_cvlite_rectangle_target.py`: board-side bounded 300-frame cv_lite rectangle target probe with hit count, FPS, candidate, center-range, jump, and memory telemetry.
 - `scripts/probe_circle_target.py`: board-side bounded 300-frame circle target probe with detection-hit, overlay, FPS, center/radius range, jump, and memory telemetry.
+- `scripts/probe_yolo_runtime.py`: board-side bounded YOLO runtime/resource probe for `nncase_runtime`, `aicube`, `PipeLine`, YOLOv5/YOLOv8/YOLO11, `.kmodel`, and YOLO example discovery.
+- `scripts/evaluate_probe_log.py`: host-side acceptance explainer for rectangle, circle, YOLO, UART, and resource probe logs.
 - `scripts/validate_skill.py`: host-side preflight checker for skill structure, Python syntax, CanMV conservative syntax, doc references, local paths, and cache artifacts.
 - `scripts/smoke_camera_lcd.py`: board-side short smoke test for default camera and 3.1-inch LCD.
 - `assets/contest-template/`: copyable starter project.
@@ -84,6 +86,9 @@ Current tested baseline:
 - Lushan Pi K230 CanMV with GC2093 camera and 3.1-inch ST7701 LCD.
 - `scripts/run_canmv_raw_repl.py` is the default RAM-only board-test path and does not write `/sdcard/main.py`.
 - `tools/test.ps1` is the repository-level layered test entrypoint; use `-Board` only when hardware is intentionally involved.
+- `tools/test.ps1` prints `ACCEPT_* status=pass|warn|fail` for target/resource probes. Treat `warn` as a prompt to check placement, lighting, wiring, or SD-card resources before integration.
+- `tools/test.ps1 -Board -Vision yolo -Port COM14` is board-tested with `ACCEPT_YOLO status=pass` on the current SD-card image: YOLO imports passed, 63 `.kmodel` files and 54 YOLO/detection examples were found, and `truncated=0`.
+- `tools/test.ps1 -Board -Vision uart-loopback -Port COM14` is board-tested with `ACCEPT_UART status=pass` when the current loopback short connects `PIN5/PIN6`: UART2 remap received 63 bytes.
 - `cv_lite` grayscale rectangle tracking is the preferred black-tape rectangle target path on the tested firmware.
 - Circle detection is useful but more scene-sensitive; use raw-vs-tracked telemetry from `probe_circle_target.py` to judge field quality.
 - `mpremote_deploy.py` and snapshot pull/delete paths are explicit board-file workflows; dry-run is safe for command preview.
@@ -94,3 +99,5 @@ Recent maintenance entries:
 - 2026-06-22: Bounded `probe_board_resources.py` after a populated SD-card scan could time out and leave raw REPL silent until reset.
 - 2026-06-22: Allowed `mpremote_deploy.py --dry-run` to work without host `mpremote` installed.
 - 2026-06-22: Productized rectangle and circle target probes and recorded their latest board-test behavior in the relevant references.
+- 2026-06-23: Added tiered reference-loading guidance, YOLO runtime probing, and probe-log acceptance explanations for rectangle, circle, YOLO, UART, and resource tests.
+- 2026-06-23: Board-tested the new YOLO and UART acceptance modes after reset; fixed `probe_yolo_runtime.py` resource caps/de-duplication so it reaches YOLO example directories before reporting acceptance.

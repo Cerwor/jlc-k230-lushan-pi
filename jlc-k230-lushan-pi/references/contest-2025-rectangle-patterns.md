@@ -154,3 +154,13 @@ Use `assets/contest-template/examples/cvlite_rectangle_target_uart_tracker.py` f
 Use `assets/contest-template/examples/rectangle_target_uart_tracker.py` when `cv_lite` is unavailable or the user needs the older `image.find_rects` route.
 
 Use the simpler `assets/contest-template/examples/rectangle_detect.py` for the first camera/LCD smoke test.
+
+## Acceptance Probe
+
+For a black-tape rectangle target, run:
+
+```powershell
+.\tools\test.ps1 -Board -Vision rect-target -Port COM14
+```
+
+`ACCEPT_RECT status=pass` means the 300-frame probe saw high hit rate, acceptable FPS, and no concerning center jumps under the current placement. `warn` usually means the target is partially out of ROI, too small/large, lighting changed, or false rectangles are competing. `fail` means do not enable control output from this result.

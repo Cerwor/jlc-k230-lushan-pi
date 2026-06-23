@@ -37,6 +37,7 @@ jlc-k230-lushan-pi/
 | 3.1 寸屏 | 默认使用 `Display.ST7701`、`800x480`、全屏显示 |
 | 显示缩小问题 | 不要把低分辨率检测帧直接居中显示到 LCD；应 LCD 全屏显示，检测低分辨率后把坐标缩放回屏幕坐标 |
 | raw REPL | `scripts/run_canmv_raw_repl.py` 可从 RAM 临时运行脚本，已加入串口列举、握手诊断、`2000000/115200` 自动尝试 |
+| 探针验收 | `scripts/evaluate_probe_log.py` 可把矩形、圆形、YOLO、UART、资源探针日志判读为 `pass/warn/fail` |
 | mpremote 调试 | 提供 `scripts/mpremote_deploy.py` 和 `scripts/mpremote_snapshot.py` 作为显式授权后的板端文件部署、运行中截图拉取补充方案 |
 | 离线运行 | TF 卡根目录 `main.py` 可上电自动运行；坏脚本阻塞时可改名为 `main_disabled.py` 后重启 |
 | 圆形检测 | 瓶盖目标长测约 63 FPS，适合低分辨率检测加结果保持 |
@@ -142,6 +143,8 @@ tools/
 - `jlc-k230-lushan-pi/scripts/probe_otsu_threshold.py`：黑白目标 Otsu 自动阈值短跑探针
 - `jlc-k230-lushan-pi/scripts/probe_cvlite_rectangle_target.py`：黑胶布矩形靶 300 帧命中率/FPS/中心稳定性短跑探针
 - `jlc-k230-lushan-pi/scripts/probe_circle_target.py`：瓶盖/圆形目标 300 帧命中率/FPS/圆心稳定性短跑探针
+- `jlc-k230-lushan-pi/scripts/probe_yolo_runtime.py`：YOLO 运行时导入、YOLO 类可用性、板端模型和例程路径短探针
+- `jlc-k230-lushan-pi/scripts/evaluate_probe_log.py`：矩形、圆形、YOLO、UART、资源探针日志验收解释器
 - `jlc-k230-lushan-pi/scripts/validate_skill.py`：桌面端 Skill 预检脚本
 - `jlc-k230-lushan-pi/scripts/probe_uart2_loopback.py`：常见 UART2 映射扫描与回环测试
 - `jlc-k230-lushan-pi/scripts/smoke_camera_lcd.py`：短摄像头/LCD 冒烟测试
@@ -214,13 +217,20 @@ tools/
 .\tools\test.ps1 -Board -Vision circle-target -Port COM14
 ```
 
+运行 YOLO 运行时/资源探针，或 UART 回环/TX 扫描：
+
+```powershell
+.\tools\test.ps1 -Board -Vision yolo -Port COM14
+.\tools\test.ps1 -Board -Vision uart-loopback -Port COM14
+```
+
 测试已安装到 Codex 的 Skill 副本：
 
 ```powershell
 .\tools\test.ps1 -Installed -Board -Vision smoke -Port COM14
 ```
 
-`tools/test.ps1` 的上板模式只使用 raw REPL 从 RAM 运行脚本，不会覆盖 `/sdcard/main.py`。圆形、矩形、移动靶、光照变化、UART 回环、离线自启动这类依赖现场摆放或接线的测试，仍按对应 reference 的专门步骤执行，并把新的实测结论写入 `references/maintenance.md`。
+`tools/test.ps1` 的上板模式只使用 raw REPL 从 RAM 运行脚本，不会覆盖 `/sdcard/main.py`。对 `resources`、`rect-target`、`circle-target`、`yolo`、`uart-loopback` 模式，脚本会自动输出 `ACCEPT_* status=pass|warn|fail` 和简短原因。圆形、矩形、移动靶、光照变化、UART 回环、离线自启动这类依赖现场摆放或接线的测试，仍按对应 reference 的专门步骤执行，并把新的实测结论写入 `references/maintenance.md`。
 
 ## 连接开发板时的常用命令
 
@@ -246,6 +256,18 @@ python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-p
 
 ```powershell
 python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\scripts\probe_board_resources.py"
+```
+
+探测 YOLO 运行时和资源：
+
+```powershell
+python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\scripts\probe_yolo_runtime.py"
+```
+
+单独判读已保存的探针日志：
+
+```powershell
+python ".\jlc-k230-lushan-pi\scripts\evaluate_probe_log.py" --kind rect ".\rect.log"
 ```
 
 扫描常见 UART2 回环映射：

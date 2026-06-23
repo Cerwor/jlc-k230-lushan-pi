@@ -7,6 +7,7 @@ For integration failures, use `troubleshooting.md#contest-integration-problems`.
 - Default Architecture
 - Competition Priorities
 - Runtime Resilience
+- Field Mode Acceptance
 - Vision Tasks
 - Actuation and Communication
 - Debugging
@@ -121,6 +122,26 @@ Board-tested recovery result on the user's Lushan Pi K230: an injected raw previ
 For YOLO/PipeLine code, prefer safe stop plus visible fault state after repeated frame/model exceptions unless the exact `PipeLine.destroy()` and recreate path has been board-tested. Recreating AI pipelines repeatedly can leak resources or fragment memory on embedded firmware, so do not promise live model recovery without a real board test.
 
 Do not hide persistent faults. After the recovery budget is exceeded, keep actuators neutral, show `FAULT` on LCD, and continue sending a simple fault/lost packet if the UART path still works.
+
+## Field Mode Acceptance
+
+Before turning a tested probe into a competition `main.py`, require a field-mode pass:
+
+1. The program starts automatically after reset or power cycle when named `/sdcard/main.py`.
+2. LCD shows a compact status page or overlay with `BOOT`, `READY`, `TRACK`, `SEARCH`, `LOST`, `RECOVER`, or `FAULT`.
+3. The overlay shows FPS, target center or signed error, confidence/area/radius, active threshold/preset, and UART/control state.
+4. A no-PC adjustment path exists for light-sensitive vision: button-selected preset, Otsu calibration, or conservative fallback thresholds.
+5. UART output has one normal packet and one lost/fault packet; debug text does not share the same controller stream unless the receiver expects it.
+6. Actuators remain disabled or neutral until LCD overlay and UART logs are stable.
+7. Consecutive frame errors enter `RECOVER`; repeated recovery failure enters visible `FAULT`.
+8. The last check is a full reset or power cycle, not only the IDE green-run button.
+
+Use `tools/test.ps1` for the pre-integration probes:
+
+- Rectangle target: `.\tools\test.ps1 -Board -Vision rect-target -Port COM14`; continue only after `ACCEPT_RECT status=pass` or a deliberate explanation for `warn`.
+- Circle target: `.\tools\test.ps1 -Board -Vision circle-target -Port COM14`; treat `warn` as a tuning prompt because circle detection is target-dependent.
+- YOLO: `.\tools\test.ps1 -Board -Vision yolo -Port COM14`; continue only if the runtime imports pass and the expected `.kmodel` path is known.
+- UART: `.\tools\test.ps1 -Board -Vision uart-loopback -Port COM14`; continue only after wiring is verified by loopback or by the external MCU observer.
 
 ## Vision Tasks
 

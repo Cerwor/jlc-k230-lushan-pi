@@ -17,15 +17,17 @@ description: Build, port, debug, and deploy LCKFB/JLC Lushan Pi K230 CanMV proje
 
 ## Quick Routing
 
+Load references in tiers. Always read `SKILL.md` first, then read only the Tier-1 file for the task. Open Tier-2 files only when the task needs that detail or the first attempt fails.
+
 | User task | Read first | Use this result |
 | --- | --- | --- |
-| Bring-up, connected-board smoke tests, camera/LCD, raw REPL, setup facts | `references/canmv-workflows.md` and `references/troubleshooting.md` | Known firmware/setup facts, safe hardware validation, and failure diagnosis |
-| Final CanMV `main.py`, API quirks, syntax compatibility, unfamiliar API calls | `references/canmv-api-known-issues.md` and `references/api-manual-routing.md` | Conservative MicroPython style plus official API page selection |
-| Classical vision, circles, rectangles, colors, thresholds, template choice | This `Template Selection` table, then `references/circle-detection-patterns.md`, `references/contest-2025-rectangle-patterns.md`, or `references/official-basic-image-patterns.md` | Pick the right tested template before writing new code |
-| Contest integration, UART/control output, pins, power, actuators, runtime recovery | `references/contest-patterns.md`, `references/hardware-pin-resource-quickref.md`, and `references/official-basic-image-patterns.md` | Safe control architecture and verified wiring/resource constraints |
-| YOLO/KModel/PipeLine/model paths | `references/yolo-module-patterns.md` | Model lifecycle, display adaptation, and board resource probing |
-| Offline boot, TF-card `main.py`, mpremote deploy, runtime snapshot pull | `references/offline-run-patterns.md`, `references/mpremote-debug-workflows.md`, and `references/troubleshooting.md` | Deployment path, board-write boundaries, and recovery steps |
-| Skill maintenance, scope, official sources, version drift | `references/maintenance.md`, `references/usage-boundaries.md`, `references/official-links.md`, and `scripts/validate_skill.py` | Update policy, limitations, source links, and preflight checks |
+| Bring-up, connected-board smoke tests, camera/LCD, raw REPL, setup facts | Tier-1: `references/canmv-workflows.md`; Tier-2 on failure: `references/troubleshooting.md` | Known firmware/setup facts, safe hardware validation, and failure diagnosis |
+| Final CanMV `main.py`, API quirks, syntax compatibility, unfamiliar API calls | Tier-1: `references/canmv-api-known-issues.md`; Tier-2 for official lookup: `references/api-manual-routing.md` | Conservative MicroPython style plus official API page selection |
+| Classical vision, circles, rectangles, colors, thresholds, template choice | Tier-1: this `Template Selection` table; Tier-2: only the matching task reference | Pick the right tested template before writing new code |
+| Contest integration, UART/control output, pins, power, actuators, runtime recovery | Tier-1: `references/contest-patterns.md`; Tier-2 for pins: `references/hardware-pin-resource-quickref.md`; Tier-2 for basic APIs: `references/official-basic-image-patterns.md` | Safe control architecture and verified wiring/resource constraints |
+| YOLO/KModel/PipeLine/model paths | Tier-1: `references/yolo-module-patterns.md`; Tier-2 if paths are unknown: run `scripts/probe_yolo_runtime.py` or `scripts/probe_board_resources.py` | Model lifecycle, display adaptation, and board resource probing |
+| Offline boot, TF-card `main.py`, mpremote deploy, runtime snapshot pull | Tier-1: `references/offline-run-patterns.md`; Tier-2 for mpremote/snapshot: `references/mpremote-debug-workflows.md`; Tier-2 on failure: `references/troubleshooting.md` | Deployment path, board-write boundaries, and recovery steps |
+| Skill maintenance, scope, official sources, version drift | Tier-1: `references/maintenance.md`; Tier-2 for boundaries/sources: `references/usage-boundaries.md`, `references/official-links.md`, and `scripts/validate_skill.py` | Update policy, limitations, source links, and preflight checks |
 
 ## Template Selection
 
@@ -39,7 +41,9 @@ Prefer this table before browsing every file under `assets/contest-template/exam
 | Rectangle smoke test or no `cv_lite` fallback | `assets/contest-template/examples/rectangle_detect.py`, then `assets/contest-template/examples/rectangle_target_uart_tracker.py` | `references/contest-2025-rectangle-patterns.md` |
 | Field threshold calibration without a PC | `scripts/probe_otsu_threshold.py`, then `assets/contest-template/examples/offline_threshold_tuner.py` | `references/official-basic-image-patterns.md` |
 | UART, servo, laser, PID control pieces | `assets/contest-template/examples/uart2_loopback.py`, `servo_laser_stepper_patterns.py`, `pid_target_centering.py` | `references/contest-patterns.md` and `references/hardware-pin-resource-quickref.md` |
-| YOLO official example on 3.1-inch LCD | `assets/contest-template/examples/yolov8_lcd_official_launcher.py` | `references/yolo-module-patterns.md` |
+| YOLO official example on 3.1-inch LCD | `scripts/probe_yolo_runtime.py`, then `assets/contest-template/examples/yolov8_lcd_official_launcher.py` | `references/yolo-module-patterns.md` |
+
+Use `scripts/evaluate_probe_log.py` to interpret bounded probe output for rectangle, circle, YOLO, UART, and board-resource tests. Repository `tools/test.ps1` calls it automatically for supported board-test modes.
 
 ## Working Rules
 
