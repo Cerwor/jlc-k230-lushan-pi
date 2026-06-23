@@ -1,4 +1,4 @@
-# Maintenance
+﻿# Maintenance
 
 Use this file to keep the skill current as CanMV firmware, LCKFB wiki pages, and user project patterns evolve.
 
@@ -8,7 +8,7 @@ Use this file to keep the skill current as CanMV firmware, LCKFB wiki pages, and
 - Update Steps
 - Repository Tooling
 - File Ownership Map
-- Revision Log
+- Maintenance Summary
 
 ## Update Policy
 
@@ -28,11 +28,13 @@ Update this skill when:
 3. If the change affects routing, update `SKILL.md`.
 4. If the change affects reusable project code, update `assets/contest-template/`.
 5. Move troubleshooting facts to `troubleshooting.md`, not task-specific reference files.
-6. In the distribution repository, prefer root `tools/test.ps1`; by default it calls `tools/validate.ps1` and keeps hardware tests opt-in.
-7. Use `tools/test.ps1 -Board` for raw-REPL smoke tests and `tools/test.ps1 -Board -Vision all-core` for camera/LCD, Sensor initialization, and Otsu threshold probes.
-8. If the root tools are unavailable, run `scripts/validate_skill.py` from this skill, then run `quick_validate.py` on the skill folder.
-9. Syntax-check any Python files in `assets/contest-template/` where possible.
-10. When hardware is available, run final-style templates in CanMV IDE or with `scripts/run_canmv_raw_repl.py`; desktop `py_compile` alone does not prove CanMV parser compatibility.
+6. In the distribution repository, use `docs/TEST_MATRIX.md` to choose the smallest useful test.
+7. Prefer root `tools/test.ps1`; by default it calls `tools/validate.ps1` and keeps hardware tests opt-in.
+8. Use `tools/test.ps1 -Board` for raw-REPL smoke tests and `tools/test.ps1 -Board -Vision all-core` for camera/LCD, Sensor initialization, and Otsu threshold probes.
+9. If the root tools are unavailable, run `scripts/validate_skill.py` from this skill, then run `quick_validate.py` on the skill folder.
+10. Syntax-check any Python files in `assets/contest-template/` where possible.
+11. When hardware is available, run final-style templates in CanMV IDE or with `scripts/run_canmv_raw_repl.py`; desktop `py_compile` alone does not prove CanMV parser compatibility.
+12. Put long chronological test notes in repository-level `docs/BOARD_TEST_LOG.md`, not in this installable reference.
 
 ## Repository Tooling
 
@@ -73,53 +75,22 @@ These scripts live in the distribution repository root and are not part of the i
 - `scripts/smoke_camera_lcd.py`: board-side short smoke test for default camera and 3.1-inch LCD.
 - `assets/contest-template/`: copyable starter project.
 
-## Revision Log
+## Maintenance Summary
 
-- 2026-06-13: Created and validated the initial Lushan Pi K230 skill with official wiki links, CanMV workflows, YOLO module notes, offline deployment, hardware quick reference, centralized troubleshooting, usage boundaries, maintenance policy, and a copyable contest template.
-- 2026-06-13: Recorded user preference that Codex should normally provide the final offline `main.py` only; the user manually copies it to the SD card unless explicit save/write action is requested.
-- 2026-06-13: Added lessons from live YOLOv8 board test: probe actual board model paths before assuming `/data/...`; tested SD card stored models/examples under `/sdcard/examples/`; official YOLOv8 example needed HDMI-to-LCD display mode adaptation; successful LCD run reached about 29 FPS and was saved to board `main.py` after explicit user approval.
-- 2026-06-13: Added board-tested rectangle detection example and replaced `sys.print_exception(e)` in templates with `print("error:", e)` for compatibility with the tested firmware.
-- 2026-06-13: Added official API manual routing and absorbed useful training examples into built-in Skill references/templates so the skill is self-contained.
-- 2026-06-15: Added lessons from `abcDesolate/25-vision-collection`: 2025-style rectangle target strategy, single-class `AnchorBaseDet` ROI-assist notes, and an enhanced rectangle UART tracker template.
-- 2026-06-15: Board-tested `rectangle_target_uart_tracker.py` through raw REPL on COM14/baud 2000000 for 60 frames. Camera/LCD initialized, `gc2093_csi2` was detected, no target was present, and the 800x480 grayscale/binary/full-frame rectangle search ran at about 8 FPS. Added `scripts/run_canmv_raw_repl.py` for repeatable RAM-only tests without saving to SD.
-- 2026-06-15: Added circle-detection lessons from Skill usage: avoid full-frame `800x480` `find_circles`, default to full-screen LCD with low-resolution detection, clarify detection/LCD coordinate spaces, throttle serial prints, document `Display.bind_layer` tradeoff, and add `circle_detect.py`.
-- 2026-06-15: Added CanMV MicroPython conservative syntax guidance after a script passed desktop `py_compile` but failed in CanMV IDE with `SyntaxError`. Final templates should avoid f-strings, `lambda`, comprehensions, generator expressions, and complex inline/multi-line calls unless the target firmware has been tested.
-- 2026-06-15: Self-check pass: made key templates more conservative by replacing `.format(...)` with `%` formatting, replacing a YOLO class dictionary dispatch with `if/elif`, removing remaining template list comprehensions, and making `probe_board_resources.py` warn when it is run on desktop Python instead of the K230 board.
-- 2026-06-16: Made the distribution package portable for other users by removing author-local install paths from the top-level README, documenting copy-based installation, clarifying that bundled paths are relative to `SKILL.md`, and describing the firmware string as a board-tested reference rather than a current-user requirement.
-- 2026-06-16: Debug pass: removed remaining conditional expressions from CanMV templates, removed a generator expression from the board resource probe, and kept template code closer to conservative MicroPython style.
-- 2026-06-17: Improved raw REPL host helper with retry and handshake diagnostics after a board sometimes printed `MPY: soft reboot` before accepting `Ctrl-A`; added `scripts/smoke_camera_lcd.py` for 20-frame camera/LCD validation.
-- 2026-06-18: Regression pass: added `--list-ports` to the raw REPL helper, included target port/baud in no-byte diagnostics, and reported board-side `Traceback` separately from upload timeouts.
-- 2026-06-18: Regression pass: documented the need to recopy the skill folder after repository updates because Codex loads the installed copy under the skills directory, not the development repository.
-- 2026-06-18: Board recovery finding: removing the SD card made the CanMV USB serial disappear; reinserting the SD card while renaming a blocking `main.py` to `main_disabled.py` restored COM14, ordinary REPL, raw REPL, and the camera/LCD smoke test.
-- 2026-06-18: Raw REPL robustness pass: extended the helper's `Ctrl-B` read window and skip redundant `Ctrl-C` when the ordinary `>>>` prompt is already visible.
-- 2026-06-18: Board-tested the original rectangle template and found full-frame `800x480` `find_rects` ran at about 2 FPS; updated `rectangle_detect.py` to full-screen display plus `400x240` detection-channel scaling.
-- 2026-06-18: Board-tested `color_line_tracking.py` and found the old `640x360` single-channel template ran around 11 FPS and did not match full-screen LCD guidance; updated it to full-screen display plus `400x240` detection-channel scaling.
-- 2026-06-18: Board-tested `rectangle_target_uart_tracker.py` with a rectangle target. The old single-channel full-frame tracker ran around 8 FPS; the dual-channel tracker ran about 30-35 FPS and detected the target while keeping LCD-coordinate UART output semantics.
-- 2026-06-18: Board-tested `circle_detect.py` with a bottle-cap target. The old `threshold=2500`, stride `4` settings missed the cap; parameter sweep found `threshold=1200`, stride `2`, producing `circles=1` at about 55-60 FPS with result hold enabled.
-- 2026-06-18: Updated `scripts/run_canmv_raw_repl.py` to auto-try baud `2000000` then `115200` because COM14 sometimes returned no bytes at one baud while working at the other during repeated board tests; also made occupied-port/open failures report as a concise diagnostic instead of a Python traceback.
-- 2026-06-18: UART2 loopback finding: a user shorted `PIN5/PIN6`, not the template default `PIN11/PIN12`. GPIO link scanning showed `PIN5/PIN6` matched, UART2 remapped to `PIN5/PIN6` received `rx=4`, and `scripts/probe_uart2_loopback.py` was added to auto-scan common UART2 FPIOA pairs before loopback testing.
-- 2026-06-19: Long-run circle stability test with a bottle-cap target: `circle_detect.py` parameters ran 3000 frames through raw REPL on COM14 at about 63 FPS, with 999/1000 detection passes hitting, 2997/3000 overlay-visible frames, LCD center averaging `(403,213)` with x/y ranges `(384..422)/(196..226)`, radius range `52..86`, and no obvious memory leak (`mem_start=4000480`, `mem_end=3999424`).
-- 2026-06-19: Offline auto-run smoke passed: a minimal TF-card-root `main.py` with camera preview, `Display.ST7701`, `800x480`, and `to_ide=False` showed `OFFLINE MAIN OK` on the 3.1-inch LCD, held about 61 FPS, and reappeared automatically after reset.
-- 2026-06-19: Data-capture save test passed through raw REPL: captured five `800x480` JPEGs to `/sdcard/codex_capture_test`, verified all five had nonzero sizes totaling about 95 KB, then deleted the files and confirmed the directory was empty. JPEG save/write reduced the loop to about 3 FPS, so capture templates should throttle save interval and prefer `/sdcard/capture`.
-- 2026-06-19: Board-tested `offline_threshold_tuner.py` through raw REPL on COM14 for 90 frames. The updated full-screen `800x480` display plus `400x240` detection-channel template ran about 62 FPS. A `GPIO53` pull-down, active-high NEXT key falsely triggered once after camera/LCD startup; switching all three tuner keys to pull-up, active-low detection and initializing debounce state from current pin values removed false key events (`events=0/0/0`, `selected=0`).
-- 2026-06-19: Board-tested `button_capture.py` user-button flow through raw REPL on COM14. The physical `USR` key matched `BUTTON_PAD=52`, `FPIOA.GPIO53`, `Pin(53, Pin.PULL_DOWN)`, idle `0` and pressed `1`. A 30-second capture-flow probe detected two `USR` presses, toggled capture on/off, saved three JPEGs to `/sdcard/codex_button_capture_test` totaling 64,767 bytes, cleaned them up, and finished at about 62 FPS.
-- 2026-06-19: Reviewed additional local external vision/controller samples and deposited only portable lessons: optional `cv_lite` rectangle-corner detection with firmware probe/fallback, RKNN/RK3576 non-portability to CanMV plus reusable target-selection/error-UART ideas, fixed-width bracketed signed-error UART packets for MCU control, and dynamic thresholding from simple sensor/line-detection practice.
-- 2026-06-20: Board-tested vision capability probes through raw REPL on COM14. The tested firmware supports `cv_lite`, `nncase_runtime`, `aicube`, `libs.PipeLine`, `YOLOv5`, `YOLOv8`, and `YOLO11`; `cv_lite` RGB888 rectangle-corner detection at `480x320` plus full-screen `800x480` LCD ran about 58-59 FPS for 120 frames; official YOLOv8 fruit detection still-image inference returned three boxes with about 21 ms model run time; YOLOv8 LCD video smoke ran 60 frames at about 30-32 FPS.
-- 2026-06-20: Board-tested a real black-tape rectangle target on white paper through raw REPL on COM14. In 300-frame comparisons at `480x320` detection plus full-screen `800x480` LCD, `cv_lite` grayscale corners reached 299/300 hits at about 58 FPS with center range `418..418`/`210..216`; `cv_lite` RGB888 corners reached 297/300 hits at about 59 FPS with the same center range; traditional black-threshold `image.find_rects` hit 297/300 but repeatedly selected false rectangles at about 22-23 FPS; black-threshold `find_blobs` hit 300/300 at about 46 FPS but produced a biased coarse center.
-- 2026-06-20: Board-tested moving black-tape rectangle tracking through raw REPL on COM14 while the user moved, tilted, and changed target distance. Strict grayscale `cv_lite` corners reached 503/600 hits at about 59 FPS with no large jumps; strict-plus-relaxed-fallback detection reached 578/600 hits at about 58 FPS, with 565 strict hits, 13 fallback hits, 22 misses, `max_step=13`, and `big_jumps=0`.
-- 2026-06-20: Board-tested lighting robustness for the black-tape rectangle tracker through raw REPL on COM14. Four 450-frame phases at `480x320` detection plus full-screen `800x480` LCD gave normal light 449/450 hits, bright light 450/450 hits, shadow 450/450 hits, and dim light 449/450 hits; strict detection handled most frames, relaxed fallback contributed 10 bright, 7 shadow, and 13 dim hits; all phases held center ranges within about 5 x-pixels and 6 y-pixels with no large jumps.
-- 2026-06-20: Skill self-check found that `cv_lite` rectangle guidance had outgrown the bundled templates. Added `cvlite_rectangle_target_uart_tracker.py` so future contest rectangle code can start from the board-tested strict-plus-relaxed-fallback `cv_lite` path instead of rewriting it from notes, and added a contents table to `offline-run-patterns.md`.
-- 2026-06-21: Improvement pass from external-agent review: added `scripts/validate_skill.py` local preflight checks, expanded `contest-patterns.md` with runtime safe-stop/recovery guidance, added bounded frame-error recovery to the integrated contest `main.py` template, added a 40Pin/common connector quick table to `hardware-pin-resource-quickref.md`, reduced circle-detection duplication by routing strategy details to `circle-detection-patterns.md`, and refreshed `agents/openai.yaml` metadata.
-- 2026-06-21: Board-tested the updated installed skill on a connected Lushan Pi K230 through raw REPL on COM14. `scripts/smoke_camera_lcd.py` initialized `gc2093_csi2`, displayed 20 frames on the 3.1-inch `800x480` ST7701 LCD, and printed `SMOKE_DONE frames=20 fps=70`. An injected runtime-recovery probe displayed 10 frames, stopped and deinitialized `Sensor`/`Display`/`MediaManager`, reinitialized the same camera/LCD path, displayed 10 more frames, and exited cleanly with `recoveries=1`.
-- 2026-06-21: Reduced routing-table drift by making `SKILL.md#Quick Routing` the single routing source for distribution docs, and hardened `yolov8_lcd_official_launcher.py` so it checks the official example path, verifies that the HDMI-to-LCD replacement actually happened, and fails if an HDMI `display_mode` assignment remains.
-- 2026-06-21: Added root repository maintenance scripts `tools/validate.ps1` and `tools/publish.ps1` to shorten validation, PR, merge, and installed-skill sync workflow. Generalized `scripts/validate_skill.py` so it rejects Windows absolute paths and can load optional machine-private path patterns from `JLC_K230_LOCAL_PATH_CONFIG`, without hard-coding maintainer-local directories in the installable skill.
-- 2026-06-21: Added a supplemental `mpremote` debug workflow based on public K230 tooling lessons: `scripts/mpremote_deploy.py` for explicit Windows-friendly `/sdcard` deployment, `scripts/mpremote_snapshot.py` for SD-card runtime snapshot pulls/KSNP decoding, and `references/mpremote-debug-workflows.md` to keep this PC-assisted path separate from the default manual/offline contest flow.
-- 2026-06-21: Clarified that USB `VID:PID 1209:ABD1` is a tested CanMV auto-detection hint rather than a fixed K230 identity, and broadened `scripts/run_canmv_raw_repl.py` auto-detection to also use common CanMV/K230 port descriptions.
-- 2026-06-21: Reviewed `2262727886-stack/mspm0g-contest-skill` K230 material. It targets Lushan Pi K230 + GC2093 + ST7701 in a dual-chip MSPM0G contest setup, but the cloned repo did not include a root LICENSE file, so useful lessons were paraphrased and scripts were rewritten: added `canmv-api-known-issues.md`, optional Otsu grayscale calibration with verification/fallback in `offline_threshold_tuner.py`, all-UART TX sweep support in `probe_uart2_loopback.py`, `probe_k230_sensor_init.py`, and dual-chip communication guidance.
-- 2026-06-21: Board-tested the connected Lushan Pi K230 after the latest skill updates. `smoke_camera_lcd.py` reached `SMOKE_DONE frames=20 fps=72` on the 3.1-inch LCD after raw REPL fell back from 2000000 baud to 115200. `probe_k230_sensor_init.py` confirmed `Sensor(id=2)` 800x480, `Sensor(id=2)` 320x240, and `Sensor()` 320x240 can snapshot; sensor ids 0 and 1 were not present. The new `scripts/probe_otsu_threshold.py` produced 26 valid samples from 30 frames, verified blob detection, and selected grayscale threshold `0..122` in its formal run.
-- 2026-06-22: Reduced reference and routing fragmentation: merged `environment-notes.md` into `canmv-workflows.md`, merged `canmv-micropython-compatibility.md` into `canmv-api-known-issues.md`, compacted `SKILL.md#Quick Routing` from an index-style table into seven task-level routes, and added `SKILL.md#Template Selection` so agents can choose among the bundled examples confidently.
-- 2026-06-22: Board-tested black-tape rectangle target selection on paper with several small rectangle distractors. Normal grayscale `cv_lite` tracking reached 299/300 hits at about 63-64 FPS with no candidate jumps; a relaxed stress probe produced up to six raw candidates and still selected the max-area target on every hit frame, reaching 177/180 hits with `big_jumps=0`.
-- 2026-06-22: Added root `tools/test.ps1` as a layered test entrypoint so routine skill checks start with offline validation, hardware access is explicit through `-Board`, and common camera/LCD, Sensor, and Otsu probes can be run as one bounded `all-core` board test without writing `/sdcard/main.py`.
-- 2026-06-22: Follow-up testing found that the board resource probe could time out while recursively scanning a populated SD card before printing useful diagnostics, leaving the raw REPL silent until board reset. Reworked `probe_board_resources.py` into a bounded single-pass collector with progress/truncation output and exposed it through `tools/test.ps1 -Board -Vision resources`. Board retest on COM14 found 63 `.kmodel` files and 68 AI/detection-related Python examples across 48 scanned directories with `truncated=0`, then a camera/LCD smoke test still passed at about 70 FPS.
-- 2026-06-22: Additional no-write workflow testing confirmed raw REPL auto-port selection can choose COM14 without `--port`, and the installed skill's `all-core` board test passes. It also found that `mpremote_deploy.py --dry-run` unnecessarily required `mpremote`; changed dry-run mode to print planned commands with a placeholder when `mpremote` is not installed.
-- 2026-06-22: Productized previously temporary target tests into reusable board-side probes: `probe_cvlite_rectangle_target.py` for 300-frame black-tape rectangle telemetry and `probe_circle_target.py` for 300-frame bottle-cap/circle telemetry, both exposed through root `tools/test.ps1`. Board retest on COM14: rectangle probe reached 299/300 hits at about 63 FPS, `raw_max=2`, `valid_max=2`, center range `438..441`/`213..214`, and `big_jumps=0`; circle probe after adding radius filtering and previous-center gating reported `raw_hits=62/100`, `track_hits=42/100`, `overlay_frames=279/300`, about 64 FPS, center range `432..492`/`150..262`, and `big_jumps=1`, confirming the circle probe is more useful as a raw-vs-tracked target quality diagnostic than as a strict always-hit assertion.
+Keep this installable reference compact. Put task-specific facts in the task reference, not in a chronological log. Keep detailed historical board-test notes in the distribution repository file `docs/BOARD_TEST_LOG.md`, which is intentionally outside the installed skill.
+
+Current tested baseline:
+
+- Lushan Pi K230 CanMV with GC2093 camera and 3.1-inch ST7701 LCD.
+- `scripts/run_canmv_raw_repl.py` is the default RAM-only board-test path and does not write `/sdcard/main.py`.
+- `tools/test.ps1` is the repository-level layered test entrypoint; use `-Board` only when hardware is intentionally involved.
+- `cv_lite` grayscale rectangle tracking is the preferred black-tape rectangle target path on the tested firmware.
+- Circle detection is useful but more scene-sensitive; use raw-vs-tracked telemetry from `probe_circle_target.py` to judge field quality.
+- `mpremote_deploy.py` and snapshot pull/delete paths are explicit board-file workflows; dry-run is safe for command preview.
+
+Recent maintenance entries:
+
+- 2026-06-22: Added layered root `tools/test.ps1` with offline validation, smoke, Sensor, Otsu, resources, rectangle target, and circle target modes.
+- 2026-06-22: Bounded `probe_board_resources.py` after a populated SD-card scan could time out and leave raw REPL silent until reset.
+- 2026-06-22: Allowed `mpremote_deploy.py --dry-run` to work without host `mpremote` installed.
+- 2026-06-22: Productized rectangle and circle target probes and recorded their latest board-test behavior in the relevant references.
