@@ -162,13 +162,14 @@ python ".\jlc-k230-lushan-pi\scripts\mpremote_deploy.py" --port COM14 main.py
 2. 新测试结论写入对应 `references/`。
 3. 影响路由时更新 `SKILL.md`。
 4. 影响可复用代码时更新 `assets/contest-template/`。
-5. 可复用事实写入对应 `references/`；长历史流水账写入仓库根目录 `docs/BOARD_TEST_LOG.md`，不要塞回安装 skill。
-6. 按 `docs/TEST_MATRIX.md` 选择最小有用测试。
-7. 在仓库根目录优先运行 `tools/test.ps1`；只需要纯预检时可直接运行 `tools/validate.ps1`。
-8. `tools/test.ps1` 默认调用 `tools/validate.ps1`；`tools/validate.ps1` 会调用 `scripts/validate_skill.py`、`quick_validate.py` 和所有 `.py` 模板的桌面语法检查。
-9. 如需发布，优先使用仓库根目录的 `tools/publish.ps1`，并显式传 `-Files` 或 `-All`。
-10. 如有开发板，优先用 `tools/test.ps1 -Board` 跑基础 smoke test，再按任务跑相关模板或专门 probe。
-11. 手动发布后重新复制 `jlc-k230-lushan-pi` 到 Codex skills 安装目录；如果使用 `tools/publish.ps1`，脚本会自动同步并校验安装副本。
+5. 官方链接、API 路由和适用边界写入 `references/sources-and-boundaries.md`。
+6. 可复用事实写入对应 `references/`；长历史流水账写入仓库根目录 `docs/BOARD_TEST_LOG.md`，不要塞回安装 skill。
+7. 按 `docs/TEST_MATRIX.md` 选择最小有用测试。
+8. 在仓库根目录优先运行 `tools/test.ps1`；只需要纯预检时可直接运行 `tools/validate.ps1`。
+9. `tools/test.ps1` 默认调用 `tools/validate.ps1`；`tools/validate.ps1` 会调用 `scripts/validate_skill.py`、`quick_validate.py` 和所有 `.py` 模板的桌面语法检查。
+10. 如需发布，优先使用仓库根目录的 `tools/publish.ps1`，并显式传 `-Files` 或 `-All`。
+11. 如有开发板，优先用 `tools/test.ps1 -Board` 跑基础 smoke test，再按任务跑相关模板或专门 probe。
+12. 手动发布后重新复制 `jlc-k230-lushan-pi` 到 Codex skills 安装目录；如果使用 `tools/publish.ps1`，脚本会自动同步并校验安装副本。
 
 推荐校验命令：
 

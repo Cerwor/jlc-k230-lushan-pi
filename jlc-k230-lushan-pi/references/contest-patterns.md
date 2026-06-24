@@ -1,6 +1,6 @@
 # Electronic Design Contest Patterns
 
-For integration failures, use `troubleshooting.md#contest-integration-problems`. For scope limits such as actuator safety, unsupported boards, or uncertain pins, use `usage-boundaries.md`.
+For integration failures, use `troubleshooting.md#contest-integration-problems`. For scope limits such as actuator safety, unsupported boards, or uncertain pins, use `sources-and-boundaries.md#applicability-boundaries`.
 
 ## Contents
 

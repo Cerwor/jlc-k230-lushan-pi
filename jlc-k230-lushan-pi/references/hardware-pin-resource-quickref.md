@@ -4,7 +4,7 @@ This file distills the official LCKFB/JLC Lushan Pi K230 schematic diagram page 
 
 Official source: https://wiki.lckfb.com/zh-hans/lushan-pi-k230/open-source-hardware/diagram.html
 
-For wiring, voltage, and peripheral failures, use `troubleshooting.md#gpio-pwm-uart-i2c-spi-problems`. For scope boundaries and safety assumptions, use `usage-boundaries.md`.
+For wiring, voltage, and peripheral failures, use `troubleshooting.md#gpio-pwm-uart-i2c-spi-problems`. For scope boundaries and safety assumptions, use `sources-and-boundaries.md#applicability-boundaries`.
 
 ## Contents
 

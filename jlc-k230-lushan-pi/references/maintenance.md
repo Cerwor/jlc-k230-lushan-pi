@@ -48,8 +48,7 @@ These scripts live in the distribution repository root and are not part of the i
 
 - `SKILL.md`: compact trigger context, quick routing, and global working rules.
 - `agents/openai.yaml`: UI metadata only; not an operational prompt.
-- `references/official-links.md`: source link index.
-- `references/api-manual-routing.md`: official API manual routing table.
+- `references/sources-and-boundaries.md`: applicability boundaries, official source link index, and official API manual routing table.
 - `references/canmv-api-known-issues.md`: compact K230 CanMV API pitfalls, conservative syntax, validation limits, and cross-firmware behavior notes.
 - `references/local-code-examples.md`: built-in contest-oriented training patterns.
 - `references/hardware-pin-resource-quickref.md`: hardware resources, power, voltage, connectors, camera/DSI/touch.
@@ -63,7 +62,6 @@ These scripts live in the distribution repository root and are not part of the i
 - `references/contest-patterns.md`: contest architecture and template usage.
 - `references/offline-run-patterns.md`: normal offline deployment.
 - `references/troubleshooting.md`: centralized failure diagnosis.
-- `references/usage-boundaries.md`: scope, assumptions, and escalation rules.
 - `scripts/run_canmv_raw_repl.py`: host-side helper for running MicroPython scripts from RAM over K230 raw REPL.
 - `scripts/mpremote_deploy.py`: host-side helper for explicit `/sdcard` file deployment through `mpremote`.
 - `scripts/mpremote_snapshot.py`: host-side helper for pulling and decoding runtime snapshot files written by explicit board hooks.
@@ -102,3 +100,4 @@ Recent maintenance entries:
 - 2026-06-23: Added tiered reference-loading guidance, YOLO runtime probing, and probe-log acceptance explanations for rectangle, circle, YOLO, UART, and resource tests.
 - 2026-06-23: Board-tested the new YOLO and UART acceptance modes after reset; fixed `probe_yolo_runtime.py` resource caps/de-duplication so it reaches YOLO example directories before reporting acceptance.
 - 2026-06-23: Cleaned stale maintenance anchors, made `user-example-patterns.md` directly reachable from `SKILL.md`, and extended conservative syntax validation to the target-specific board probes.
+- 2026-06-24: Consolidated source links, official API routing, and usage boundaries into `sources-and-boundaries.md` to reduce reference fan-out.
