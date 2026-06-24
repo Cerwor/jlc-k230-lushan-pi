@@ -127,6 +127,7 @@ tools/
 
 - `jlc-k230-lushan-pi/SKILL.md`：Skill 入口、快速路由表、全局规则
 - `jlc-k230-lushan-pi/references/canmv-api-known-issues.md`：K230 CanMV API 坑点、保守语法、跨固件差异和代码生成检查
+- `jlc-k230-lushan-pi/references/sources-and-boundaries.md`：适用边界、官方来源链接和 API 手册路由
 - `jlc-k230-lushan-pi/references/canmv-workflows.md`：固件参考、摄像头、LCD、外设 bring-up 流程
 - `jlc-k230-lushan-pi/references/mpremote-debug-workflows.md`：`mpremote` 部署、运行中截图拉取和 SD 卡侧信道调试
 - `jlc-k230-lushan-pi/references/official-basic-image-patterns.md`：GPIO/FPIOA/PWM/UART 与基础图像处理模式

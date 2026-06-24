@@ -22,13 +22,13 @@ Load references in tiers. Always read `SKILL.md` first, then read only the Tier-
 | User task | Read first | Use this result |
 | --- | --- | --- |
 | Bring-up, connected-board smoke tests, camera/LCD, raw REPL, setup facts | Tier-1: `references/canmv-workflows.md`; Tier-2 on failure: `references/troubleshooting.md` | Known firmware/setup facts, safe hardware validation, and failure diagnosis |
-| Final CanMV `main.py`, API quirks, syntax compatibility, unfamiliar API calls | Tier-1: `references/canmv-api-known-issues.md`; Tier-2 for official lookup: `references/api-manual-routing.md` | Conservative MicroPython style plus official API page selection |
+| Final CanMV `main.py`, API quirks, syntax compatibility, unfamiliar API calls | Tier-1: `references/canmv-api-known-issues.md`; Tier-2 for official lookup: `references/sources-and-boundaries.md` | Conservative MicroPython style plus official API page selection |
 | Classical vision, circles, rectangles, colors, thresholds, template choice | Tier-1: this `Template Selection` table; Tier-2: only the matching task reference | Pick the right tested template before writing new code |
 | Contest integration, UART/control output, pins, power, actuators, runtime recovery | Tier-1: `references/contest-patterns.md`; Tier-2 for pins: `references/hardware-pin-resource-quickref.md`; Tier-2 for basic APIs: `references/official-basic-image-patterns.md` | Safe control architecture and verified wiring/resource constraints |
 | Porting user examples, matching prior project style, training/data-collection patterns | Tier-1: `references/local-code-examples.md`; Tier-2 for the user's prior working-code style: `references/user-example-patterns.md` | Reuse portable patterns without depending on local paths or external folders |
 | YOLO/KModel/PipeLine/model paths | Tier-1: `references/yolo-module-patterns.md`; Tier-2 if paths are unknown: run `scripts/probe_yolo_runtime.py` or `scripts/probe_board_resources.py` | Model lifecycle, display adaptation, and board resource probing |
 | Offline boot, TF-card `main.py`, mpremote deploy, runtime snapshot pull | Tier-1: `references/offline-run-patterns.md`; Tier-2 for mpremote/snapshot: `references/mpremote-debug-workflows.md`; Tier-2 on failure: `references/troubleshooting.md` | Deployment path, board-write boundaries, and recovery steps |
-| Skill maintenance, scope, official sources, version drift | Tier-1: `references/maintenance.md`; Tier-2 for boundaries/sources: `references/usage-boundaries.md`, `references/official-links.md`, and `scripts/validate_skill.py` | Update policy, limitations, source links, and preflight checks |
+| Skill maintenance, scope, official sources, version drift | Tier-1: `references/maintenance.md`; Tier-2 for boundaries/sources: `references/sources-and-boundaries.md` and `scripts/validate_skill.py` | Update policy, limitations, source links, and preflight checks |
 
 ## Template Selection
 
@@ -51,7 +51,7 @@ Use `scripts/evaluate_probe_log.py` to interpret bounded probe output for rectan
 - Treat `agents/openai.yaml` as UI metadata only. The operational instructions live in `SKILL.md`, `references/`, and `assets/`.
 - Resolve all bundled paths relative to the folder that contains this `SKILL.md`; do not rely on the original author's local filesystem paths.
 - Verify board-specific facts through official references before making hardware claims.
-- Check `usage-boundaries.md` before high-risk hardware, firmware, model-conversion, or unsupported-board work.
+- Check `sources-and-boundaries.md` before high-risk hardware, firmware, model-conversion, unsupported-board work, or unfamiliar official API calls.
 - Configure FPIOA before constructing `Pin`, `UART`, `PWM`, I2C, SPI, or other peripheral objects.
 - Do not claim a pin assignment is safe unless it comes from the official pin/resource references, `fpioa.help(...)`, the user's schematic, or a user-provided working example.
 - Keep constants at the top: display mode, frame size, pins, UART baud rate, thresholds, model path, labels, and control limits.

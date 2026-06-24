@@ -2,7 +2,7 @@
 
 Use this file when K230 CanMV code fails because an API behaves differently from desktop Python, old CanMV examples, or unofficial notes.
 
-This is not a replacement for the official API manual. For unfamiliar classes or function signatures, still route through `api-manual-routing.md` first.
+This is not a replacement for the official API manual. For unfamiliar classes or function signatures, still route through `sources-and-boundaries.md#api-manual-routing` first.
 
 ## Contents
 
