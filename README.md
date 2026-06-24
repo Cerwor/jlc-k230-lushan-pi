@@ -116,6 +116,7 @@ jlc-k230-lushan-pi/
   references/
   assets/
     contest-template/
+    model-package/
   scripts/
 docs/
 README.md
@@ -128,6 +129,7 @@ tools/
 - `jlc-k230-lushan-pi/SKILL.md`：Skill 入口、快速路由表、全局规则
 - `jlc-k230-lushan-pi/references/canmv-api-known-issues.md`：K230 CanMV API 坑点、保守语法、跨固件差异和代码生成检查
 - `jlc-k230-lushan-pi/references/sources-and-boundaries.md`：适用边界、官方来源链接和 API 手册路由
+- `jlc-k230-lushan-pi/references/model-vision-pipeline.md`：自训练 `.kmodel` 的模型包、验收闸门和比赛集成闭环
 - `jlc-k230-lushan-pi/references/canmv-workflows.md`：固件参考、摄像头、LCD、外设 bring-up 流程
 - `jlc-k230-lushan-pi/references/mpremote-debug-workflows.md`：`mpremote` 部署、运行中截图拉取和 SD 卡侧信道调试
 - `jlc-k230-lushan-pi/references/official-basic-image-patterns.md`：GPIO/FPIOA/PWM/UART 与基础图像处理模式
@@ -137,9 +139,11 @@ tools/
 - `jlc-k230-lushan-pi/references/offline-run-patterns.md`：TF 卡 `main.py`、`boot.py`、离线自启动
 - `jlc-k230-lushan-pi/references/troubleshooting.md`：集中排障清单
 - `jlc-k230-lushan-pi/assets/contest-template/`：可复制的电赛项目模板
+- `jlc-k230-lushan-pi/assets/model-package/model_manifest.example.json`：自训练 `.kmodel` 交付包 manifest 示例
 - `jlc-k230-lushan-pi/scripts/run_canmv_raw_repl.py`：通过 raw REPL 从 RAM 临时运行脚本
 - `jlc-k230-lushan-pi/scripts/mpremote_deploy.py`：显式把本地文件复制到板端 `/sdcard` 的 `mpremote` 部署助手
 - `jlc-k230-lushan-pi/scripts/mpremote_snapshot.py`：拉取并解码运行中快照文件的 `mpremote` 调试助手
+- `jlc-k230-lushan-pi/scripts/check_model_package.py`：检查自训练模型包的 manifest、labels 和 `.kmodel`
 - `jlc-k230-lushan-pi/scripts/probe_k230_sensor_init.py`：尝试多种 K230 `Sensor` 初始化/抓帧方式的诊断脚本
 - `jlc-k230-lushan-pi/scripts/probe_otsu_threshold.py`：黑白目标 Otsu 自动阈值短跑探针
 - `jlc-k230-lushan-pi/scripts/probe_cvlite_rectangle_target.py`：黑胶布矩形靶 300 帧命中率/FPS/中心稳定性短跑探针
@@ -165,6 +169,28 @@ tools/
 | `assets/contest-template/examples/offline_threshold_tuner.py` | 无电脑现场阈值调试思路 |
 | `assets/contest-template/examples/button_capture.py` | USR 按键拍照/保存流程 |
 | `assets/contest-template/examples/yolov8_lcd_official_launcher.py` | 官方 YOLOv8 LCD 视频示例入口 |
+| `assets/model-package/model_manifest.example.json` | 自训练 `.kmodel`、标签、输入尺寸和板端路径的模型包清单模板 |
+
+## 自训练模型交付包
+
+如果用户自己训练模型并转换为 `.kmodel`，建议把模型按下面结构交给 Agent：
+
+```text
+model-package/
+  model_manifest.json
+  labels.txt
+  target.kmodel
+  sample-test.jpg         可选，用于 still-image 验证
+  conversion-log.txt      可选，首次上板或加载失败时很有用
+```
+
+最少需要提供 `.kmodel`、`labels.txt`、任务类型、模型输入尺寸、YOLO 包装类或自定义后处理说明，以及计划放到板端的路径。可从 `jlc-k230-lushan-pi/assets/model-package/model_manifest.example.json` 复制 manifest 模板，并用下面命令预检：
+
+```powershell
+python ".\jlc-k230-lushan-pi\scripts\check_model_package.py" ".\model-package"
+```
+
+完整验收流程见 `jlc-k230-lushan-pi/references/model-vision-pipeline.md`。
 
 ## 推荐开发流程
 
