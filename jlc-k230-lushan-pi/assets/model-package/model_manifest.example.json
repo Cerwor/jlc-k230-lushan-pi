@@ -1,0 +1,21 @@
+{
+  "model_name": "contest_target",
+  "task_type": "detect",
+  "yolo_class": "YOLOv8",
+  "kmodel_file": "contest_target.kmodel",
+  "labels_file": "labels.txt",
+  "model_input_size": [320, 320],
+  "rgb888p_size": [320, 320],
+  "display_size": [800, 480],
+  "board_kmodel_path": "/sdcard/models/contest_target.kmodel",
+  "confidence_threshold": 0.5,
+  "nms_threshold": 0.45,
+  "max_boxes_num": 20,
+  "preprocess": "Match training export: RGB input, resize or letterbox as used by the YOLO wrapper, CHW tensor layout where required.",
+  "postprocess": "Use the official YOLO wrapper when possible; otherwise record anchors, strides, confidence, and NMS settings.",
+  "validation": {
+    "still_image": "Run one representative image before camera video.",
+    "video_lcd": "Run camera plus 3.1-inch LCD with actuator output disabled.",
+    "field_cases": ["normal", "bright", "shadow", "dim", "distractor"]
+  }
+}

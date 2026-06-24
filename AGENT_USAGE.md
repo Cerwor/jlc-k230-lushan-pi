@@ -57,6 +57,8 @@
 ### YOLO 和模型
 
 - 不要假设模型路径固定，先探测 `/sdcard/examples/`、`/sdcard/` 或用户给出的路径。
+- 如果用户自己训练并转换 `.kmodel`，优先读取 `references/model-vision-pipeline.md`，要求用户提供 `.kmodel`、标签顺序、输入尺寸、任务类型和转换说明。
+- 写板端代码前，先用 `scripts/check_model_package.py` 检查模型包，再跑 YOLO runtime/resource 探针。
 - YOLO 可用于粗 ROI 或多物体分类，但精确中心控制通常还需要几何后处理。
 - 对固定靶标，单类检测器加传统几何精定位往往比纯 YOLO 更稳。
 - 比赛现场光照变化大时，不要只依赖离线阈值；需要 fallback、ROI、曝光/对比度容错或模型辅助。

@@ -125,6 +125,12 @@ The wiki currently marks the basic I2C tutorial as waiting for update. For I2C w
 - Color recognition: https://wiki.lckfb.com/zh-hans/lushan-pi-k230/image-recog/color_detection.html
 - Code recognition: https://wiki.lckfb.com/zh-hans/lushan-pi-k230/image-recog/code-classif.html
 
+### AI Demo and Model Deployment
+
+- AI demo framework: https://wiki.lckfb.com/zh-hans/lushan-pi-k230/ai-demo/profile.html
+
+Use the AI demo framework page for overall PipeLine/runtime structure. For exact YOLO and nncase APIs, use the API routing section below. Treat model conversion tools and nncase versions as toolchain-sensitive; verify against the user's conversion script, firmware, and conversion logs.
+
 ## API Manual Routing
 
 Official API index: https://wiki.lckfb.com/zh-hans/lushan-pi-k230/api/

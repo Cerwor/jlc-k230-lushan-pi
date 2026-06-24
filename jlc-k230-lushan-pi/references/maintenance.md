@@ -50,6 +50,7 @@ These scripts live in the distribution repository root and are not part of the i
 - `agents/openai.yaml`: UI metadata only; not an operational prompt.
 - `references/sources-and-boundaries.md`: applicability boundaries, official source link index, and official API manual routing table.
 - `references/canmv-api-known-issues.md`: compact K230 CanMV API pitfalls, conservative syntax, validation limits, and cross-firmware behavior notes.
+- `references/model-vision-pipeline.md`: user-trained `.kmodel` packaging, validation gates, and contest model integration workflow.
 - `references/local-code-examples.md`: built-in contest-oriented training patterns.
 - `references/hardware-pin-resource-quickref.md`: hardware resources, power, voltage, connectors, camera/DSI/touch.
 - `references/official-basic-image-patterns.md`: official GPIO/FPIOA/PWM/UART and image-recognition example patterns.
@@ -65,6 +66,7 @@ These scripts live in the distribution repository root and are not part of the i
 - `scripts/run_canmv_raw_repl.py`: host-side helper for running MicroPython scripts from RAM over K230 raw REPL.
 - `scripts/mpremote_deploy.py`: host-side helper for explicit `/sdcard` file deployment through `mpremote`.
 - `scripts/mpremote_snapshot.py`: host-side helper for pulling and decoding runtime snapshot files written by explicit board hooks.
+- `scripts/check_model_package.py`: host-side helper for validating a self-trained model package manifest, labels, and `.kmodel` before board integration.
 - `scripts/probe_k230_sensor_init.py`: board-side diagnostic for trying several K230 `Sensor` construction and snapshot modes.
 - `scripts/probe_otsu_threshold.py`: board-side bounded Otsu grayscale threshold calibration probe for black/white targets.
 - `scripts/probe_cvlite_rectangle_target.py`: board-side bounded 300-frame cv_lite rectangle target probe with hit count, FPS, candidate, center-range, jump, and memory telemetry.
@@ -74,6 +76,7 @@ These scripts live in the distribution repository root and are not part of the i
 - `scripts/validate_skill.py`: host-side preflight checker for skill structure, Python syntax, CanMV conservative syntax, doc references, local paths, and cache artifacts.
 - `scripts/smoke_camera_lcd.py`: board-side short smoke test for default camera and 3.1-inch LCD.
 - `assets/contest-template/`: copyable starter project.
+- `assets/model-package/`: manifest template for packaging self-trained `.kmodel` deployments.
 
 ## Maintenance Summary
 
