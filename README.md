@@ -22,6 +22,7 @@ jlc-k230-lushan-pi/
 - 立创·庐山派 K230-CanMV 开发板常见环境
 - 3.1 寸 ST7701 MIPI LCD，默认 `800x480` 全屏显示
 - 摄像头、LCD、GPIO/FPIOA、UART、PWM、I2C、SPI
+- 通用云台/激光打靶/描图/跟随的控制架构，以及 ZDT 闭环步进电机的专用 UART 控制经验
 - 圆形、矩形、色块、线条、二维码、条形码、AprilTag 等视觉任务
 - YOLOv5、YOLOv8、YOLO11、KModel、`nncase_runtime`、`aicube`
 - 电赛控制类题目的视觉坐标输出、串口通信、离线 `main.py` 启动
@@ -47,6 +48,7 @@ jlc-k230-lushan-pi/
 | Otsu 阈值 | `scripts/probe_otsu_threshold.py` 可短跑验证黑白目标自动阈值链路；本机实测 30 帧采样得 26 个有效样本，阈值约 `0..120` |
 | YOLO | 已测固件支持 `nncase_runtime`、`aicube`、`libs.PipeLine`、YOLOv5/YOLOv8/YOLO11 |
 | UART2 | 不要假设唯一引脚；可用 `scripts/probe_uart2_loopback.py` 扫描常见 UART2 映射 |
+| 云台和 ZDT 电机 | 通用云台/激光跟随先走 `contest-patterns.md`；确认是 ZDT XS 系列闭环步进后，再用 `zdt-stepper-gimbal-patterns.md` 的 UART2、`F1/FC`、急停和反馈节流经验 |
 
 ## 安装
 
@@ -135,6 +137,7 @@ tools/
 - `jlc-k230-lushan-pi/references/official-basic-image-patterns.md`：GPIO/FPIOA/PWM/UART 与基础图像处理模式
 - `jlc-k230-lushan-pi/references/circle-detection-patterns.md`：圆形/圆环检测与低分辨率检测坐标缩放策略
 - `jlc-k230-lushan-pi/references/contest-2025-rectangle-patterns.md`：2025 风格矩形靶、`cv_lite`、ROI、串口输出策略
+- `jlc-k230-lushan-pi/references/zdt-stepper-gimbal-patterns.md`：ZDT 闭环步进电机、激光云台轴控和单轴闭环模拟经验
 - `jlc-k230-lushan-pi/references/yolo-module-patterns.md`：YOLO/KModel/PipeLine 使用要点
 - `jlc-k230-lushan-pi/references/offline-run-patterns.md`：TF 卡 `main.py`、`boot.py`、离线自启动
 - `jlc-k230-lushan-pi/references/troubleshooting.md`：集中排障清单
@@ -384,4 +387,4 @@ $env:JLC_K230_LOCAL_PATH_CONFIG = "$HOME\.jlc-k230-local-paths.txt"
 
 Skill 已通过 `quick_validate.py` 校验。多个模板已经做过桌面语法检查，并按已测 CanMV MicroPython 环境调整为更保守的写法。
 
-已连接 Lushan Pi K230 实测过：摄像头/LCD、raw REPL、离线 `main.py` 自动运行、圆形检测、传统矩形检测、`cv_lite` 矩形角点检测、动态矩形跟踪、光照鲁棒性、Otsu 自动阈值、YOLO 能力探测、数据保存、USR 按键、UART2 回环扫描。仓库也提供了桌面端 `scripts/validate_skill.py` 作为 CI/PR 前的预检入口。
+已连接 Lushan Pi K230 实测过：摄像头/LCD、raw REPL、离线 `main.py` 自动运行、圆形检测、传统矩形检测、`cv_lite` 矩形角点检测、动态矩形跟踪、光照鲁棒性、Otsu 自动阈值、YOLO 能力探测、数据保存、USR 按键、UART2 回环扫描、ZDT 闭环步进电机单轴云台控制链路。仓库也提供了桌面端 `scripts/validate_skill.py` 作为 CI/PR 前的预检入口。
