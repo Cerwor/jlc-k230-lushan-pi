@@ -169,6 +169,8 @@ For YOLO/model tasks:
 
 ## Actuation and Communication
 
+For generic gimbals, laser aiming, laser tracing, or target-following motion, start from the actuator-neutral control shape in this file. Do not copy motor-specific command frames, pin mappings, or angle units until the exact actuator and protocol are confirmed. A generic K230 vision loop should output target state or bounded error first; only bind that error to a servo, MCU, stepper driver, or smart motor after an actuator-specific smoke test.
+
 For UART-connected motor controllers or MCUs:
 
 - Define a packet format with header, payload, checksum or newline.
@@ -176,6 +178,7 @@ For UART-connected motor controllers or MCUs:
 - Use one success format and one lost-target/timeout format; avoid mixing debug strings and controller packets on the same UART stream.
 - Add timeout handling.
 - Echo or log received responses during bring-up.
+- Only for confirmed ZDT XS-series closed-loop stepper motors using the tested ZDT free protocol, read `zdt-stepper-gimbal-patterns.md`. Prefer tested `F1/FC` fast relative position deltas for visual closed-loop tracking, throttle feedback reads, and send the stop command immediately on target loss.
 
 For K230 plus MSPM0/MSPM0G-style dual-core contest systems:
 

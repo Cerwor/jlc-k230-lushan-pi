@@ -19,6 +19,8 @@
 - 如果需要连接开发板测试，优先使用 `scripts/run_canmv_raw_repl.py` 从 RAM 临时运行。
 - 如果用户明确要求部署到板端或拉取运行中截图，再读取 `references/mpremote-debug-workflows.md` 并使用 `scripts/mpremote_deploy.py` / `scripts/mpremote_snapshot.py`。
 - 对电赛项目，先验证摄像头/LCD，再验证识别，再验证串口，再进入执行器控制。
+- 对通用云台、激光打靶、激光描图或目标跟随任务，先按 `SKILL.md` 路由读取 `references/contest-patterns.md`，确认执行器类型后再进入具体协议。
+- 只有确认是 ZDT XS 系列闭环步进、Emm/ZDT free protocol、固定 `0x6B` 校验或 `F1/FC` 快速位置命令时，才读取并套用 `references/zdt-stepper-gimbal-patterns.md`。
 - 涉及执行器、激光、电机、舵机时，必须先给出安全开关、限幅和失联/丢目标保护。
 - 集成型比赛 `main.py` 应包含安全停机输出、目标丢失状态、连续帧异常预算和可见 `FAULT` 状态。
 
@@ -186,6 +188,7 @@ python ".\jlc-k230-lushan-pi\scripts\mpremote_deploy.py" --port COM14 main.py
 - 不要假设 CanMV IDE 路径。
 - 不要假设串口号固定。
 - 不要假设 UART2 固定在某一组引脚。
+- 不要把 ZDT 电机的回零、参数写入、限位、心跳保护和恢复出厂当作已测功能；未装机械限位前只使用已验证的读取、使能、位置、快速增量和急停链路。
 - 不要假设模型、标签、例程路径固定。
 - 不要假设 `cv_lite` 在所有固件都存在；先 probe，不能用时 fallback。
 - 不要假设第三方 K230 速查表中的 API 结论适用于所有固件；先看 `references/canmv-api-known-issues.md` 的边界说明。
