@@ -106,3 +106,4 @@ Recent maintenance entries:
 - 2026-06-24: Consolidated source links, official API routing, and usage boundaries into `sources-and-boundaries.md` to reduce reference fan-out.
 - 2026-06-28: Added board-tested ZDT two-axis gimbal control notes: yaw `0x01`, pitch `0x02`, UART2 `PIN5/PIN6`, `cv_lite` rectangle precheck, target-loss stop, ACK retry guidance, and four-direction convergence results.
 - 2026-06-28: Added full ZDT gimbal tracking results after removing the short-test cumulative-angle limiter, including `7200`-frame tracking telemetry, lost-stop behavior, and the need for `LOST_STOP -> REACQUIRE -> TRACK` in final continuous-operation code.
+- 2026-06-28: Added self-trained single-class YOLOv8 `best.kmodel` board-test notes and ZDT model-tracking tuning guidance, including FC ACK sampling, time-based control periods, target smoothing, and position-feedback validation.

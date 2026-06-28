@@ -210,6 +210,55 @@ TRACK:
 
 This keeps the tested safety behavior while allowing the gimbal to resume after the target reappears.
 
+### Self-Trained YOLO Target Gimbal Notes
+
+The same two-axis ZDT gimbal was also tested with the user-trained single-class YOLOv8 model described in `model-vision-pipeline.md`:
+
+- Model path: `/sdcard/best.kmodel`
+- Label: `Rec`
+- Input/PipeLine size: `320x320`
+- YOLO center source: `box = [x, y, w, h]`, center from `x + w/2`, `y + h/2`
+- Direction signs remained correct for the mounted camera:
+  - `yaw_step = clamp(err_x * PIXEL_TO_DEG * -1.0, ...)`
+  - `pitch_step = clamp(err_y * PIXEL_TO_DEG * +1.0, ...)`
+
+Use this bring-up sequence for a model-driven gimbal:
+
+1. Run YOLO video-only until model path, label order, tuple shape, center coordinates, score range, and FPS are known.
+2. Move the target by hand with motors disabled; verify no large center jumps and no long lost segments.
+3. Enable ZDT control with small FC deltas and real software angle limits.
+4. For tuning or suspected non-motion, read motor position before and after the test; command totals alone do not prove the axis moved.
+
+Board-tested YOLO + ZDT observations:
+
+- Conservative `FC` loop: `FAST_RPM=30`, `FAST_ACC=25`, `CONTROL_EVERY_N_FRAMES=4`, `MAX_STEP_DEG=0.40` tracked safely but could hit a small `12 deg` yaw test limit before reaching the target.
+- Wider safe test: `FAST_RPM=30`, `FAST_ACC=25`, wider `25 deg` limits, about `21 FPS`, `438/438` command ACKs, and only `12` misses in `1500` frames.
+- Smooth sampled-ACK test: `FAST_RPM=45`, `FAST_ACC=35`, `CONTROL_PERIOD_MS=70`, `MAX_STEP_DEG=0.25`, `SMOOTH_ALPHA=0.30`, `FC_ACK_SAMPLE_EVERY=20` improved loop FPS to about `30` and felt smoother than waiting for every FC ACK, but was slower to converge.
+- Medium sampled-ACK test: `FAST_RPM=55`, `FAST_ACC=45`, `CONTROL_PERIOD_MS=55`, `MAX_STEP_DEG=0.35`, `SMOOTH_ALPHA=0.35` sent more motion, but commanded totals alone were not enough to judge actual tracking.
+- Visible validation test: `FAST_RPM=60`, `FAST_ACC=50`, `CONTROL_PERIOD_MS=65`, `MAX_STEP_DEG=0.75`, `SMOOTH_ALPHA=0.45`, every-FC ACK, and position reads proved real movement: commanded yaw about `25.97 deg`, measured yaw delta about `23.61 deg`; commanded pitch about `1.90 deg`, measured pitch delta about `3.09 deg`.
+
+For final model tracking, start from a middle ground instead of the most aggressive validation mode:
+
+```text
+FAST_RPM = 55
+FAST_ACC = 45
+CONTROL_PERIOD_MS = 55 to 65
+MAX_STEP_DEG = 0.35 to 0.60
+MAX_TOTAL_AXIS_DEG = 30 to 45, then replace with real mechanical soft limits
+SMOOTH_ALPHA = 0.35 to 0.45
+CONTROL_SCORE_THRESH = 0.35, then field-tune
+FC_ACK_SAMPLE_EVERY = 10 to 20
+```
+
+Important control lessons:
+
+- Waiting for every `FC` ACK lowers FPS and can make motion feel stepped. For final smooth operation, write most `FC` packets directly and sample ACK/status periodically.
+- Sampled ACK counts are optimistic unless stale UART bytes are drained. When diagnosing motion, temporarily wait for every `FC` ACK and read `0x36` position before/after.
+- Use a low-pass target center: `smooth = smooth * (1 - alpha) + raw * alpha`.
+- Use a time-based control period instead of frame modulo, because YOLO FPS can change with target scene and display load.
+- Keep stop/setup/enable commands ACK-checked even when FC deltas use sampled ACK.
+- If the user says the gimbal barely moves but direction is correct, increase per-step/period/gain only after position feedback confirms whether the motor physically followed the commands.
+
 ## Bring-Up Order
 
 Use this order for a new ZDT gimbal axis:

@@ -10,6 +10,7 @@ This file is intentionally post-conversion focused. Do not turn it into a generi
 - User Artifact Handoff
 - Model Package Contract
 - Board Bring-Up Gates
+- Board-Tested Single-Class YOLO Notes
 - Contest Integration Pattern
 - Common Failure Modes
 - Agent Delivery Checklist
@@ -112,6 +113,36 @@ Use these gates before control integration:
 9. Control gate: only after stable overlay, enable UART/control output with clamps and target-lost behavior.
 
 For the 3.1-inch LCD, keep `display_mode = "lcd"` and `display_size = [800, 480]`. If using `PipeLine`, run inference at a smaller `rgb888p_size` when FPS matters.
+
+## Board-Tested Single-Class YOLO Notes
+
+The current user-trained contest detector baseline is a single-class YOLOv8 detect model:
+
+- Board file: `/sdcard/best.kmodel`
+- Size observed on TF card: `3347424` bytes
+- Label order: `["Rec"]`
+- Input size: `[320, 320]`
+- Camera/PipeLine inference size: `rgb888p_size = [320, 320]`
+- Display: 3.1-inch LCD, `display_mode = "lcd"`, `display_size = [800, 480]`
+
+For this tested YOLOv8 wrapper path, detection results were observed as:
+
+```text
+res[0] = boxes
+res[1] = class ids
+res[2] = scores
+box = [x, y, w, h]
+center = (x + w / 2, y + h / 2)
+```
+
+Do not assume this tuple shape for another model or firmware. Keep the result-structure gate in the first board run and draw/log a few parsed detections before enabling control output.
+
+Board-tested video gates for this model:
+
+- Fixed target probe: `300/300` hits, about `22.6 FPS`, score around `0.54` in the tested scene.
+- Moving target probe: `1168/1200` hits, about `26.9 FPS`, center range about `x=83..739`, `y=41..466`, score range about `0.25..0.54`, `8` short lost segments.
+
+Control implication: the model is stable enough to drive a gimbal, but final code should keep `LOST_STOP -> REACQUIRE -> TRACK`, candidate filtering, and a confidence threshold that can be lowered for dim scenes. A good starting `CONTROL_SCORE_THRESH` for this tested model is around `0.35`; re-test at the contest venue.
 
 ## Contest Integration Pattern
 
