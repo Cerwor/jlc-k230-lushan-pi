@@ -26,6 +26,7 @@ Prefer this order during contest bring-up:
 4. If the firmware provides `cv_lite`, test it as an optional rectangle-corner path after a small `import cv_lite` probe.
 5. If the background is too noisy, use a small single-class detector only to propose an ROI, then run classical rectangle/feature detection inside that ROI.
 6. Enable UART output only after on-screen target position is stable.
+7. Enable gimbal or motor output only after the same on-screen rectangle is confirmed through a vision-only candidate-labeling run.
 
 ## Classical Rectangle Tracker
 
@@ -81,6 +82,38 @@ Board-tested result on the user's Lushan Pi K230 firmware:
   - Shadow: 450/450 hits, 443 strict and 7 fallback, center range `501..505`/`199..205`.
   - Dim light: 449/450 hits, 436 strict and 13 fallback, one miss, center range `501..505`/`199..204`.
 - For contest lighting changes, keep the fallback pass enabled even if the normal-light strict pass looks perfect. The fallback pass costs little when only run on strict misses and helps absorb exposure/contrast changes without target jumps.
+
+Board-tested ZDT gimbal integration notes:
+
+- Do not use a simple black `find_blobs` target as the actuator input in scenes that contain a computer screen or other large dark objects. A blob-based smoke test can prove the motor chain, but it can chase the wrong object.
+- Use `cv_lite` rectangle candidates for black-rectangle gimbal tracking. Confirm the displayed `#1` candidate is the intended paper target before sending any motor command.
+- In a cluttered scene with several small black objects, candidate labeling showed the main rectangle as `#1` with area about `20467`; a small dark object appeared as `#2` with area about `630`, so area-first plus geometry filtering selected the correct target.
+- A 300-frame cluttered-scene probe reached `298/300` hits, `big_jumps=0`, and about `63 FPS`.
+- During active two-axis ZDT tracking with clutter, the tested loop kept `120/120` hits and `15/15` motion ACKs with no target jump.
+- Lost-target safety was board-tested: after the rectangle was removed, the loop sent ZDT stop after `3` consecutive missed frames and suppressed later tracking commands.
+- Four-direction short tests showed correct convergence directions for a mounted camera: left, right, above, and below targets all moved toward the LCD center under bounded ZDT `FC` control.
+- A long fixed/slow target closed-loop run reached `3597/3600` hits, `big_jumps=0`, and `54/54` motion ACKs.
+- A full tracking run with the short-test cumulative angle limiter disabled reached `7089/7200` hits at about `50 FPS`, with `486/490` motion ACKs and one large target jump. The target-loss stop fired after `3` consecutive misses, proving the safety path, but also showing that a final competition program should include reacquisition if continued operation is required.
+
+Recommended vision-to-gimbal gate:
+
+```text
+PRECHECK:
+  run cv_lite rectangle detection only
+  require enough hits, stable center, and displayed target confirmation
+
+TRACK:
+  send bounded signed pixel-error control to the gimbal
+  clamp per-step and total axis motion
+
+LOST:
+  after a small number of consecutive misses, send motor stop immediately
+  do not continue using the last known target center
+
+REACQUIRE:
+  if continuous operation is needed, keep motors stopped
+  require the rectangle to be stable again before returning to TRACK
+```
 
 ## Model-Assisted ROI
 
@@ -146,6 +179,7 @@ For final contest control, consider adding a header, sequence id, checksum, or t
 - Do not assume `GPIO53` is the user's button pin.
 - Do not preserve temporary debug comments, Chinese mojibake, or unused imports from external examples.
 - Do not enable actuators from model output until the same coordinates are stable on LCD and serial logs.
+- Do not promote a black-blob smoke test to final gimbal control when the field may include screens, dark backgrounds, cables, or other dark objects.
 
 ## Built-In Template
 

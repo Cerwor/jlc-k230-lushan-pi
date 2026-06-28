@@ -14,6 +14,7 @@ For general actuator safety and K230 UART pin rules, read `contest-patterns.md` 
 - Motion Results
 - Communication Timing
 - Recommended Gimbal Control Pattern
+- Tested Two-Axis Vision Gimbal Pattern
 - Bring-Up Order
 - Safety Rules
 - Untested Or Deferred Features
@@ -42,6 +43,7 @@ Tested motor side:
 - Motor `R/A/H` connects to controller TX in the tested TTL interpretation.
 - Motor `T/B/L` connects to controller RX in the tested TTL interpretation.
 - Supply during tests was about `11.8 V`.
+- Single-axis tests used address `0x01`; the tested two-axis gimbal used yaw address `0x01` and pitch address `0x02`.
 
 Always verify common ground and 3.3 V logic compatibility before connecting K230 GPIO/UART to a motor driver or communication module.
 
@@ -106,6 +108,7 @@ Recommended feedback rates:
 - Speed `0x35`: only for stop detection, debug, or slow supervisory loops.
 - Voltage/status `0x24`/`0x3A`: `1 Hz` to `2 Hz`.
 - Control deltas `FC`: send at the vision/control period, normally without reading every diagnostic immediately afterward.
+- ACK reads can occasionally miss even when the motor executes the command. Treat isolated missed ACKs on `enable` or `FC` as a warning, not an immediate fault; require repeated misses before entering communication fault, and always retry `stop` several times.
 
 ## Recommended Gimbal Control Pattern
 
@@ -144,6 +147,69 @@ LOST or FAULT:
 
 The tested single-axis simulation used target sequence `0 -> 15 -> -15 -> 8 -> -8 -> 0`, a `70 ms` control period, `KP=0.48`, `2.2 deg` max step, and `0.25 deg` deadband. Final target errors were roughly `0 deg` to `0.3 deg`, with no lost position reads and all fast-delta commands acknowledged.
 
+## Tested Two-Axis Vision Gimbal Pattern
+
+The current two-axis ZDT gimbal has been board-tested with a Lushan Pi K230 camera mounted on the gimbal:
+
+- Yaw motor: address `0x01`.
+- Pitch motor: address `0x02`.
+- K230 UART2: `PIN5/GPIO5` as `UART2_TXD`, `PIN6/GPIO6` as `UART2_RXD`, `115200 8N1`.
+- The recommended control path is camera/LCD + `cv_lite` rectangle target center + bounded `F1/FC` relative-current deltas.
+- Use `F1` once per axis after enabling; then send small signed `FC` deltas during tracking.
+- For the tested camera orientation, target-center control signs were:
+  - `yaw_step = clamp(err_x * PIXEL_TO_DEG * -1.0, ...)`
+  - `pitch_step = clamp(err_y * PIXEL_TO_DEG * +1.0, ...)`
+  where `err_x = target_x - 400` and `err_y = target_y - 240` on the `800x480` LCD.
+- Typical conservative bring-up values:
+  - `FAST_RPM = 25`
+  - `FAST_ACC = 20`
+  - `CONTROL_EVERY_N_FRAMES = 5`
+  - `PIXEL_TO_DEG = 0.006`
+  - `MAX_STEP_DEG = 0.25` to `0.45`
+  - short test `MAX_TOTAL_AXIS_DEG = 3` to `4`
+  - wider moving-target test `MAX_TOTAL_AXIS_DEG = 6`
+  - `DEADBAND_X_PX` and `DEADBAND_Y_PX` around `20` to `36`
+- Require a vision precheck before enabling motors. A tested shape was `36` precheck frames with at least `24` valid rectangle hits.
+- On target loss, stop first. A tested path sent `FE 98 00 6B` after `3` consecutive missed frames and then suppressed further motion commands.
+- Do not use a black-blob detector as the final gimbal input in cluttered scenes; it can lock onto a computer screen or other dark regions. Use `cv_lite` rectangle corners or a model-assisted ROI before enabling ZDT motion.
+- Full tracking mode should remove only the short-test cumulative-angle limiter. Keep per-command `MAX_STEP_DEG`, target-loss stop, startup precheck, final stop, and real mechanical soft limits.
+
+Board-tested closed-loop observations:
+
+- Camera/LCD plus UART2 motor control can run together. A camera+gimbal coexistence smoke test completed with all motion commands acknowledged and about `36 FPS`.
+- With `cv_lite` rectangle input, a black rectangle target was tracked at about `39` to `49 FPS` during ZDT control tests and about `62` to `63 FPS` in vision-only probes.
+- Small black object clutter did not steal the target when selecting by valid rectangle geometry and area: the main target stayed as candidate `#1`, while a small object appeared as candidate `#2`.
+- A 300-frame cluttered-scene vision probe reached `298/300` hits, `big_jumps=0`, and center ranges around `x=427..432`, `y=213..219`.
+- Four-direction tests confirmed the above sign mapping:
+  - target on left: x moved from about `224` to `272`, yaw total `+4 deg`;
+  - target on right: x moved from about `670` to `639`, yaw total `-4 deg`;
+  - target above center: y moved from about `128` to `170`, pitch total `-4 deg`;
+  - target below center: y moved from about `329` to `298`, pitch total `+4 deg`.
+- A moving-target test with clutter kept `260/260` target hits, no lost stop, and `63/63` motion ACKs; pitch reached the configured `6 deg` test limit.
+- A long closed-loop run with a fixed or slowly moved target completed `3600` frames with `3597` hits, `3` misses, about `60 FPS`, `54/54` motion ACKs, `max_step=11`, `big_jumps=0`, yaw total `-6.000 deg`, and pitch total `+4.426 deg`.
+- A full tracking run with the short-test cumulative limiter disabled completed `7200` frames at about `50 FPS`, with `7089` hits, `111` misses, `486/490` motion ACKs, `ack_miss=4`, target center range `x=154..519`, `y=140..324`, yaw total `-18.654 deg`, and pitch total `+2.382 deg`. It correctly entered lost-stop at frame `4193` after `3` consecutive missed detections.
+
+For final contest code, replace short-test total motion limits with real soft limits based on the actual gimbal mechanics. Keep software limits in axis angle space and keep an immediate repeated stop path for `LOST`, `FAULT`, and `KeyboardInterrupt`.
+
+If the task requires continuous competition operation, do not leave the system permanently stopped after one target-loss event. Use a small state machine:
+
+```text
+TRACK:
+  target valid; send bounded FC deltas
+
+LOST_STOP:
+  after consecutive misses, send stop several times and suppress deltas
+
+REACQUIRE:
+  keep detecting with motors stopped
+  require N stable rectangle hits before motion resumes
+
+TRACK:
+  re-enable or re-arm only after reacquire passes
+```
+
+This keeps the tested safety behavior while allowing the gimbal to resume after the target reappears.
+
 ## Bring-Up Order
 
 Use this order for a new ZDT gimbal axis:
@@ -158,6 +224,7 @@ Use this order for a new ZDT gimbal axis:
 8. Test `F1/FC` fast small deltas.
 9. Test lost-target stop.
 10. Only after mechanical limits and laser safety are handled, integrate visual tracking.
+11. For vision tracking, run vision-only candidate labeling first, then enable motors only after the displayed target is confirmed to be the intended object.
 
 ## Safety Rules
 
