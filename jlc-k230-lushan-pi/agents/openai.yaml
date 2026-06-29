@@ -1,7 +1,7 @@
 interface:
   display_name: "JLC K230 Lushan Pi"
   short_description: "Build K230 CanMV vision and contest code"
-  default_prompt: "Use $jlc-k230-lushan-pi to build or debug a Lushan Pi K230 CanMV contest project with camera, LCD, vision, UART, and offline main.py deployment."
+  default_prompt: "Use $jlc-k230-lushan-pi to build or debug a Lushan Pi K230 CanMV contest project. Default to CanMV MicroPython on Lushan Pi K230 with GC2093/CSI2 camera, 3.1-inch ST7701 LCD at 800x480, conservative CanMV syntax, visible LCD diagnostics, safe UART/GPIO/FPIOA handling, and offline /sdcard/main.py delivery unless deployment is explicitly requested."
 
 policy:
   allow_implicit_invocation: true

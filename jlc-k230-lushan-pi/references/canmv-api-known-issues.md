@@ -13,11 +13,11 @@ This is not a replacement for the official API manual. For unfamiliar classes or
 - Image Processing
 - Conservative Syntax And Validation
 - Code Generation Checklist
-- Source Notes
+- Provenance Hygiene
 
 ## Scope
 
-These notes are distilled from this skill's board tests plus a reviewed public MSPM0G/K230 contest repository. The reviewed K230 material targets Lushan Pi K230, GC2093 camera, CanMV MicroPython, and a 3.1-inch ST7701 MIPI screen, so it is relevant to this skill. Treat its version-specific observations as hints, not universal firmware guarantees.
+These notes are distilled from this skill's board tests plus paraphrased external contest examples that match Lushan Pi K230, GC2093 camera, CanMV MicroPython, and a 3.1-inch ST7701 MIPI screen. Treat version-specific observations as hints, not universal firmware guarantees.
 
 ## High-Value Pitfalls
 
@@ -88,10 +88,8 @@ Before writing final K230 CanMV code:
 7. Add visible LCD status for calibration, target found/lost, FPS, and faults.
 8. Add cleanup and safe-output behavior before enabling actuators.
 
-## Source Notes
+## Provenance Hygiene
 
-External reference reviewed:
+Do not store third-party project URLs, author-specific local paths, or repository names in this operational reference unless the user explicitly asks for a bibliography. Sediment only the reusable behavior: API pitfall, firmware condition, tested workaround, or validation rule.
 
-https://github.com/2262727886-stack/mspm0g-contest-skill
-
-The reviewed repository did not include a `LICENSE` file in the cloned root even though its README displayed an MIT badge, so this skill paraphrases and rewrites useful patterns instead of copying the 49 KB `k230.md` table or source scripts verbatim.
+When learning from external examples, paraphrase the idea and keep it small enough to be maintained inside this skill. Do not copy large API tables, source scripts, comments, or project-specific folder layouts.

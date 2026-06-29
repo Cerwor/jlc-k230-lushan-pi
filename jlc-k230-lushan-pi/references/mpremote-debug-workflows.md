@@ -12,7 +12,7 @@ These workflows complement the normal TF-card `main.py` flow. They are useful wh
 - Runtime Snapshot Pull
 - Snapshot Hook Patterns
 - Safety And Failure Modes
-- Source Notes
+- Provenance Hygiene
 
 ## When To Use mpremote
 
@@ -126,10 +126,8 @@ Do not auto-patch unknown `main.py` files by default. If patching is unavoidable
 - Treat `mpremote_deploy.py` as a board-writing tool. Do not run it unless the user has explicitly asked to deploy or update board files.
 - Treat `mpremote_snapshot.py --delete` as a remote file deletion. Use it only for temporary snapshot artifacts.
 
-## Source Notes
+## Provenance Hygiene
 
-This reference was inspired by the public `zhoushoujianwork/k230-skill` project, especially its use of raw Ctrl-C bursts, `mpremote ... resume`, and SD-card snapshot side-channeling for K230/CanMV debugging:
-
-https://github.com/zhoushoujianwork/k230-skill
+Keep this reference as a workflow summary, not a list of third-party project links. The reusable ideas are raw Ctrl-C bursts before deployment, `mpremote ... resume` to avoid unwanted soft-reset behavior, and SD-card snapshot side-channeling for K230/CanMV debugging.
 
 The command behavior is grounded in MicroPython's `mpremote` documentation: `resume` disables automatic soft-reset for subsequent commands, and `fs cp` uses `:` to mark remote paths.

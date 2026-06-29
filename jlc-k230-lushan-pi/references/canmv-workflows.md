@@ -39,6 +39,14 @@ On Windows, CanMV IDE K230 may be installed in a user-chosen directory. When the
 
 When CanMV IDE UI automation is unavailable, try running a temporary script through K230 MicroPython raw REPL with `scripts/run_canmv_raw_repl.py`. The user's tested board exposed a USB serial port with `VID:PID=1209:ABD1`, but that ID is a tested auto-detection hint rather than a universal K230 guarantee; pass `--port COMx` whenever auto-detection is uncertain. The helper tries baud `2000000` and then `115200` when `--baud` is omitted. This method runs code from RAM and does not save `main.py` to the TF card.
 
+If raw REPL is unavailable or repeatedly silent, use this Plan B instead of repeatedly re-running the same probe:
+
+1. Close CanMV IDE and serial terminals, reset the board, and retry once with an explicit `--port`.
+2. If `/sdcard/main.py` or `/sdcard/boot.py` may be blocking REPL, rename it to `main_disabled.py` or `boot_disabled.py`, reboot, and retry.
+3. If the user can use CanMV IDE, run the same probe script manually from the IDE and report the console/LCD result.
+4. If board-file deployment is acceptable, copy a bounded probe as `/sdcard/main.py`, reboot, observe LCD/serial output, then restore the original `main.py`.
+5. If file deployment through serial is requested, switch to `mpremote-debug-workflows.md`; treat it as an explicit board-write path, not a RAM-only smoke test.
+
 When the user explicitly asks to deploy files to `/sdcard`, pull a runtime snapshot, or iterate with `mpremote`, read `mpremote-debug-workflows.md` and use `scripts/mpremote_deploy.py` or `scripts/mpremote_snapshot.py`. Keep this separate from RAM-only raw REPL testing because `mpremote_deploy.py` writes board files.
 
 When hardware is connected and a quick camera/LCD check is needed, run `scripts/smoke_camera_lcd.py` through `scripts/run_canmv_raw_repl.py`. It initializes the default CSI camera and the 3.1-inch `Display.ST7701` LCD, shows 20 frames, prints `SMOKE_DONE`, and exits. Use this before debugging a large application or an infinite-loop template.

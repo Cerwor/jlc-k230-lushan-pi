@@ -107,3 +107,5 @@ Recent maintenance entries:
 - 2026-06-28: Added board-tested ZDT two-axis gimbal control notes: yaw `0x01`, pitch `0x02`, UART2 `PIN5/PIN6`, `cv_lite` rectangle precheck, target-loss stop, ACK retry guidance, and four-direction convergence results.
 - 2026-06-28: Added full ZDT gimbal tracking results after removing the short-test cumulative-angle limiter, including `7200`-frame tracking telemetry, lost-stop behavior, and the need for `LOST_STOP -> REACQUIRE -> TRACK` in final continuous-operation code.
 - 2026-06-28: Added self-trained single-class YOLOv8 `best.kmodel` board-test notes and ZDT model-tracking tuning guidance, including FC ACK sampling, time-based control periods, target smoothing, and position-feedback validation.
+- 2026-06-29: Added reusable direct-UART ZDT speed-mode rectangle tracking guidance and cleaned third-party project URLs from operational references so only portable experience remains.
+- 2026-06-29: Slimmed `SKILL.md` working rules, added probe-result action guidance, documented raw-REPL Plan B, and strengthened `agents/openai.yaml` default prompt.

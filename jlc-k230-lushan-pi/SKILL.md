@@ -47,7 +47,7 @@ Prefer this table before browsing every file under `assets/contest-template/exam
 | Self-trained `.kmodel` after user conversion | `assets/model-package/model_manifest.example.json`, then `scripts/check_model_package.py` | `references/model-vision-pipeline.md` |
 | YOLO official example on 3.1-inch LCD | `scripts/probe_yolo_runtime.py`, then `assets/contest-template/examples/yolov8_lcd_official_launcher.py` | `references/yolo-module-patterns.md` |
 
-Use `scripts/evaluate_probe_log.py` to interpret bounded probe output for rectangle, circle, YOLO, UART, and board-resource tests. Repository `tools/test.ps1` calls it automatically for supported board-test modes.
+Use `scripts/evaluate_probe_log.py` to interpret bounded probe output for rectangle, circle, YOLO, UART, and board-resource tests. Repository `tools/test.ps1` calls it automatically for supported board-test modes. For `ACCEPT_* status=warn|fail`, read `references/troubleshooting.md#probe-result-actions` before enabling actuators or changing final code.
 
 ## Working Rules
 
@@ -55,18 +55,9 @@ Use `scripts/evaluate_probe_log.py` to interpret bounded probe output for rectan
 - Resolve all bundled paths relative to the folder that contains this `SKILL.md`; do not rely on the original author's local filesystem paths.
 - Verify board-specific facts through official references before making hardware claims.
 - Check `sources-and-boundaries.md` before high-risk hardware, firmware, model-conversion, unsupported-board work, or unfamiliar official API calls.
-- Configure FPIOA before constructing `Pin`, `UART`, `PWM`, I2C, SPI, or other peripheral objects.
-- Do not claim a pin assignment is safe unless it comes from the official pin/resource references, `fpioa.help(...)`, the user's schematic, or a user-provided working example.
 - Keep constants at the top: display mode, frame size, pins, UART baud rate, thresholds, model path, labels, and control limits.
-- For camera/display code, include cleanup for `Sensor.stop()`, `Display.deinit()`, `MediaManager.deinit()`, `pl.destroy()`, `yolo.deinit()`, and `os.exitpoint(...)` where applicable.
-- For contest code, separate hardware init, perception, decision, actuation, telemetry, and cleanup.
-- For integrated contest `main.py`, include safe output defaults, target-lost behavior, bounded frame-error recovery, and a visible fault state before enabling actuators.
-- For real-time vision loops, default to LCD overlays and throttled prints; do not print every frame unless the user explicitly requests serial debugging.
 - For final delivery, provide a ready-to-copy `main.py`; mention SD-card placement, but leave copying/flashing to the user unless explicitly requested.
-- Treat `scripts/mpremote_deploy.py` and snapshot pull/delete options as explicit board-file operations. Do not run them unless the user asks to deploy, pull, patch, or delete board files.
-- For runtime screenshots, prefer adding an explicit snapshot hook from `scripts/mpremote_snapshot.py --emit-hook ...` over automatically patching an unknown `/sdcard/main.py`.
 - For ready-to-copy CanMV `main.py`, use `references/canmv-api-known-issues.md` conservative syntax rules: avoid f-strings, `lambda`, comprehensions, generator expressions, and complex multi-line inline calls unless the target firmware has been tested with them.
-- For YOLO work, probe the board for actual `.kmodel` and official example paths before assuming `/data/...`; current LCKFB SD-card images may store examples and models under `/sdcard/examples/`.
 - For user-trained models, assume the user trains and converts to `.kmodel`; request the `.kmodel`, label order, input size, task type, and conversion notes, then validate the package before writing final board code.
 - For contest features similar to the user's training examples, consult `references/local-code-examples.md` and use the corresponding `assets/contest-template/examples/` template before writing final code.
 - After modifying this skill, run `scripts/validate_skill.py` plus the system `quick_validate.py` before publishing or syncing the installed copy.

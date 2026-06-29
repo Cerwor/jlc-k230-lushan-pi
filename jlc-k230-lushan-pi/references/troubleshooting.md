@@ -2,6 +2,19 @@
 
 Use this file as the single debug checklist for Lushan Pi K230 CanMV contest projects. Keep task-specific references focused on normal usage; put failure diagnosis here.
 
+## Contents
+
+- First Pass
+- Probe Result Actions
+- Raw REPL or USB Serial Problems
+- No Offline Auto-Run
+- Camera Problems
+- LCD or Display Problems
+- GPIO, PWM, UART, I2C, SPI Problems
+- CanMV API or Firmware Quirks
+- YOLO, KModel, or AI Problems
+- Contest Integration Problems
+
 ## First Pass
 
 Check in this order:
@@ -14,6 +27,20 @@ Check in this order:
 6. `boot.py` is absent or finishes quickly; it must not block `main.py`.
 7. Required files exist on the board at the paths used in code, especially `/data/...` models and labels.
 8. On the tested firmware reference, prefer `print("error:", e)` over `sys.print_exception(e)` because `sys.print_exception` may be unavailable.
+
+## Probe Result Actions
+
+Use this table after `tools/test.ps1 -Board ...` prints `ACCEPT_* status=pass|warn|fail`. Do not enable motors, lasers, or other actuators from a `warn` or `fail` result unless the user deliberately accepts the risk and the next action is bounded.
+
+| Probe | `pass` | `warn` | `fail` |
+| --- | --- | --- | --- |
+| `ACCEPT_SMOKE` camera/LCD | Continue to the task-specific vision probe. | Re-run once after reset; check camera/LCD cables, display mode, and whether IDE preview or physical LCD is the intended output. | Stop integration; run a minimal print script, then camera-only and display-only checks before any model or actuator code. |
+| `ACCEPT_RECT` rectangle target | Enable UART/control only after the displayed `#1` target is the intended rectangle. | Adjust target size/distance/lighting/ROI; remove small competing rectangles; try strict-plus-relaxed `cv_lite`; re-run before motion. | Do not send motion commands; fall back to camera/LCD smoke, then `cv_lite` import probe, then simpler `rectangle_detect.py`. |
+| `ACCEPT_CIRCLE` circle target | Use current ROI/radius thresholds for a bounded control test. | Tune ROI, radius window, threshold, and result-hold; circle detection is scene-sensitive, so do a short vision-only confirmation. | Do not integrate control; switch to blob/ring-specific preprocessing or ask for a clearer target design. |
+| `ACCEPT_YOLO` runtime/resources | Runtime imports and board resources are available; still validate the user's exact `.kmodel`, labels, input size, and result tuple. | Probe actual model paths and example directories; reduce scan scope if truncated; verify SD-card mount and model package. | Split the issue: imports missing means firmware/library mismatch; model paths missing means board-file/package problem; `.kmodel` load failure means conversion/runtime mismatch and needs user artifacts/logs. |
+| `ACCEPT_UART` loopback/TX sweep | Use the passing pin pair and baud rate in final code. | Recheck TX/RX short or external MCU wiring; try `PIN5/PIN6`, `PIN11/PIN12`, and `PIN44/PIN45`; keep common ground. | Do not blame the peripheral first; verify FPIOA mapping, port ownership, baud, and whether another script is using UART. |
+| `ACCEPT_RESOURCES` board resources | Use the reported paths rather than hard-coded `/data/...` assumptions. | Treat missing or truncated directories as an SD-card/resource issue; reset and re-run with narrower scan. | Check SD-card insertion, firmware image resources, and whether `/sdcard/main.py` is blocking access. |
+| `ACCEPT_OTSU` threshold | Use the calibrated threshold as a startup or user-triggered value. | Keep the fallback threshold visible on LCD; ask the user to fill the ROI with target/background and re-run. | Do not auto-calibrate in final code; use a manual threshold or a different feature detector. |
 
 ## Raw REPL or USB Serial Problems
 

@@ -2,8 +2,6 @@
 
 Use this reference for 2025-style e-contest vision tasks that need a K230 camera to find a rectangular target, estimate its center, and send coordinates to an external controller.
 
-Source pattern reviewed: https://github.com/abcDesolate/25-vision-collection
-
 For failures, use `troubleshooting.md`: `#camera-problems`, `#lcd-or-display-problems`, `#gpio-pwm-uart-i2c-spi-problems`, and `#contest-integration-problems`.
 
 ## Contents
@@ -11,6 +9,7 @@ For failures, use `troubleshooting.md`: `#camera-problems`, `#lcd-or-display-pro
 - Strategy Ladder
 - Classical Rectangle Tracker
 - Optional cv_lite Rectangle Path
+- Direct Speed-Servo Rectangle Tracking
 - Model-Assisted ROI
 - UART Output
 - What Not To Copy Directly
@@ -45,7 +44,7 @@ Do not rely only on `rect.rect()` center for perspective views. It is useful as 
 
 ## Optional cv_lite Rectangle Path
 
-A reviewed K230 rectangle sample used `cv_lite.rgb888_find_rectangles_with_corners(...)` on an RGB888 camera frame to return corner points directly. Treat this as an optional acceleration/accuracy path, not as a baseline dependency.
+A portable K230 rectangle pattern uses `cv_lite.rgb888_find_rectangles_with_corners(...)` on an RGB888 camera frame to return corner points directly. Treat this as an optional acceleration/accuracy path, not as a baseline dependency.
 
 Useful shape:
 
@@ -83,6 +82,36 @@ Board-tested result on the user's Lushan Pi K230 firmware:
   - Dim light: 449/450 hits, 436 strict and 13 fallback, one miss, center range `501..505`/`199..204`.
 - For contest lighting changes, keep the fallback pass enabled even if the normal-light strict pass looks perfect. The fallback pass costs little when only run on strict misses and helps absorb exposure/contrast changes without target jumps.
 
+## Direct Speed-Servo Rectangle Tracking
+
+For a black rectangle target on a clean field, a very effective low-latency architecture is:
+
+```text
+640x480 grayscale frame
+  -> cv_lite grayscale rectangle corners
+  -> largest valid rectangle
+  -> corner-based center
+  -> signed pixel error
+  -> EMA filter
+  -> ZDT speed-mode command
+```
+
+This keeps the K230 doing both vision and control, with no external MCU. It works best when the target is a high-contrast geometric mark and the motor driver accepts direct speed commands over UART.
+
+Useful tuning pattern:
+
+- Capture grayscale instead of RGB when color is not part of the rule.
+- Use `Sensor(id=2, fps=90)` only after the camera module and firmware have been tested; fall back to the normal `Sensor(id=2)` pattern if needed.
+- Keep the 3.1-inch LCD at `800x480`; if the camera frame is `640x480`, explicitly track the difference between camera coordinates and display offset.
+- Use `screen_center_x = cam_w / 2`; tune `screen_center_y` with a small offset if the camera or gimbal mounting is biased.
+- Select the largest rectangle and reject targets below a real area threshold such as `6000` camera-frame pixels.
+- When no valid rectangle is found, use the screen center as the temporary target so the error becomes zero and the speed command stops.
+- Use a small deadband around `3 px`.
+- Use a simple EMA on signed error, for example `filtered = 0.7 * raw + 0.3 * previous`.
+- Convert error to speed with per-axis gains; horizontal yaw often tolerates a larger gain than pitch.
+
+The reason this looks smooth is that speed mode behaves like continuous visual servoing: a large error commands faster motion, and the command naturally shrinks near the center. The tradeoff is that speed mode is less inherently bounded than position deltas, so final code needs speed clamps, lost-target stop, and real mechanical angle limits.
+
 Board-tested ZDT gimbal integration notes:
 
 - Do not use a simple black `find_blobs` target as the actuator input in scenes that contain a computer screen or other large dark objects. A blob-based smoke test can prove the motor chain, but it can chase the wrong object.
@@ -117,7 +146,7 @@ REACQUIRE:
 
 ## Model-Assisted ROI
 
-The reviewed project includes a one-class `AnchorBaseDet` KModel path generated for K230 with nncase 2.9.0. It uses `nncase_runtime`, `aicube`, and `deploy_config.json`, then calls `aicube.anchorbasedet_post_process(...)`.
+A portable one-class `AnchorBaseDet` KModel path generated for K230 with nncase 2.9.0 uses `nncase_runtime`, `aicube`, and `deploy_config.json`, then calls `aicube.anchorbasedet_post_process(...)`.
 
 Observed model properties:
 
@@ -152,7 +181,7 @@ For centering control, it is often better to send signed pixel error from image 
 e,<err_x>,<err_y>\n
 ```
 
-A reviewed MSPM0 pan/tilt project used a compact bracketed packet style that is useful when the external controller expects fixed-width signed errors:
+A compact bracketed packet style is useful when an external controller expects fixed-width signed errors:
 
 ```text
 [+012-034*]

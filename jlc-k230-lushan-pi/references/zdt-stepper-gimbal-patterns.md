@@ -14,6 +14,7 @@ For general actuator safety and K230 UART pin rules, read `contest-patterns.md` 
 - Motion Results
 - Communication Timing
 - Recommended Gimbal Control Pattern
+- Direct UART Speed-Mode Visual Servo Pattern
 - Tested Two-Axis Vision Gimbal Pattern
 - Bring-Up Order
 - Safety Rules
@@ -146,6 +147,42 @@ LOST or FAULT:
 ```
 
 The tested single-axis simulation used target sequence `0 -> 15 -> -15 -> 8 -> -8 -> 0`, a `70 ms` control period, `KP=0.48`, `2.2 deg` max step, and `0.25 deg` deadband. Final target errors were roughly `0 deg` to `0.3 deg`, with no lost position reads and all fast-delta commands acknowledged.
+
+## Direct UART Speed-Mode Visual Servo Pattern
+
+A lightweight alternative to position-delta tracking is direct ZDT speed-mode visual servoing from K230:
+
+```text
+camera target center -> pixel error -> EMA filter -> speed command F6 -> ZDT axis
+```
+
+This pattern is useful when the target is a high-FPS geometric mark and the gimbal must look smooth in a demo or contest run. It does not require an external MCU and it avoids waiting for every motor ACK in the frame loop.
+
+Typical command shape for ZDT free-protocol speed mode:
+
+```text
+addr F6 dir vel_h vel_l acc sync 6B
+```
+
+Observed useful implementation choices:
+
+- Use grayscale `640x480` capture for rectangle targets when color is not needed.
+- Use a full `800x480` ST7701 display, but keep detection coordinates in the camera frame when the camera image is shown centered on the LCD.
+- Choose the largest valid rectangle, reject small candidates by area, and compute center from corner geometry.
+- If no valid target exists, set the target to the screen center so both speed commands naturally become zero.
+- Use a small deadband, such as `3 px`, to avoid constant micro-motion.
+- Use integer EMA filtering for signed pixel error: `filtered = (alpha * raw + (den - alpha) * filtered) / den`; a fast visual-servo starting point is `alpha = 0.7`.
+- Convert filtered error directly to speed. A practical starting shape is a larger horizontal gain and smaller pitch gain, for example `yaw_speed = abs(filtered_x) * 20`, `pitch_speed = abs(filtered_y) * 7`, then clamp both to safe limits for the actual mechanism.
+- Send `vel=0` repeatedly while centered or lost; do not rely on the last nonzero command decaying inside the motor.
+
+This pattern feels smoother than small position deltas because the motor keeps moving while the target is off-center and slows as the target approaches center. It also has less per-frame serial overhead than ACK-checked `FC` loops.
+
+Safety caveats:
+
+- Speed mode has no inherent position target. Add real software angle limits, limit switches, or periodic position reads before using it on a mechanism that can hit stops.
+- Add a maximum speed clamp even if the raw formula can produce larger values.
+- Add a lost-target timeout that sends stop or zero-speed frames to both axes.
+- For final contest code, decide deliberately between speed mode for smooth tracking and `F1/FC` or `FD` position mode for bounded angle control.
 
 ## Tested Two-Axis Vision Gimbal Pattern
 
