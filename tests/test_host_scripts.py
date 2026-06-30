@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 import struct
 import subprocess
 import sys
@@ -8,6 +9,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+
+sys.dont_write_bytecode = True
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SKILL_ROOT = REPO_ROOT / "jlc-k230-lushan-pi"
@@ -19,16 +22,23 @@ import mpremote_snapshot  # noqa: E402
 import validate_skill  # noqa: E402
 
 
+def cleanup_skill_pycache() -> None:
+    shutil.rmtree(SCRIPTS_DIR / "__pycache__", ignore_errors=True)
+
+
 def run_python(*args: str, input_text: str | None = None) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        [sys.executable, *args],
-        cwd=str(REPO_ROOT),
-        input=input_text,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        check=False,
-    )
+    try:
+        return subprocess.run(
+            [sys.executable, *args],
+            cwd=str(REPO_ROOT),
+            input=input_text,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=False,
+        )
+    finally:
+        cleanup_skill_pycache()
 
 
 def write_valid_model_package(root: Path) -> None:
@@ -142,6 +152,7 @@ class MpremoteSnapshotTests(unittest.TestCase):
 
 class SkillValidatorGuardrailTests(unittest.TestCase):
     def test_current_skill_validation_passes(self) -> None:
+        cleanup_skill_pycache()
         result = run_python(str(SCRIPTS_DIR / "validate_skill.py"), str(SKILL_ROOT))
 
         self.assertEqual(result.returncode, 0, result.stdout)
