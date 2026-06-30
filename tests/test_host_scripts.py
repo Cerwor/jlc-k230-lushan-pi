@@ -16,6 +16,7 @@ SCRIPTS_DIR = SKILL_ROOT / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 import mpremote_snapshot  # noqa: E402
+import validate_skill  # noqa: E402
 
 
 def run_python(*args: str, input_text: str | None = None) -> subprocess.CompletedProcess[str]:
@@ -137,6 +138,37 @@ class MpremoteSnapshotTests(unittest.TestCase):
                 mpremote_snapshot.decode_ksnp(snapshot, None)
 
         self.assertIn("snapshot shape too large", str(raised.exception))
+
+
+class SkillValidatorGuardrailTests(unittest.TestCase):
+    def test_current_skill_validation_passes(self) -> None:
+        result = run_python(str(SCRIPTS_DIR / "validate_skill.py"), str(SKILL_ROOT))
+
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn("VALIDATE_SKILL_OK warnings=0", result.stdout)
+
+    def test_repo_only_file_inside_skill_is_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "README.md").write_text("repo-only", encoding="utf-8")
+            failures: list[str] = []
+            validate_skill.check_installable_boundary(root, failures)
+
+        self.assertTrue(failures)
+        self.assertIn("repo-only", failures[0])
+
+    def test_long_reference_without_scope_warns(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            refs = root / "references"
+            refs.mkdir()
+            lines = ["# Long Ref", "", "## Contents", "", "- A"]
+            lines.extend("line %03d" % index for index in range(120))
+            (refs / "long.md").write_text("\n".join(lines), encoding="utf-8")
+            warnings: list[str] = []
+            validate_skill.check_reference_contents(root, warnings)
+
+        self.assertTrue(any("no early Scope section" in item for item in warnings))
 
 
 if __name__ == "__main__":

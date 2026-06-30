@@ -2,6 +2,10 @@
 
 This file contains built-in contest-oriented training patterns. Use this reference and the templates under `assets/contest-template/examples/` without depending on any external example folder.
 
+## Scope
+
+Use this reference to reuse portable patterns distilled from bundled or user-provided examples without depending on local absolute paths.
+
 ## Contents
 
 - Camera and Drawing

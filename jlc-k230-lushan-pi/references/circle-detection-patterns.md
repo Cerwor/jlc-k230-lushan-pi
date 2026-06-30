@@ -9,6 +9,10 @@ Official sources:
 
 For failures, use `troubleshooting.md#camera-problems` and `troubleshooting.md#contest-integration-problems`.
 
+## Scope
+
+Use this reference only for circle, ring, bottle-cap, and circular target detection on the K230 camera/LCD pipeline.
+
 ## Contents
 
 - Default Display Strategy

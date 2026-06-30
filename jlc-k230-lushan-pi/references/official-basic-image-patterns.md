@@ -4,6 +4,10 @@ These notes distill the LCKFB/JLC Lushan Pi K230 official wiki pages for GPIO/FP
 
 For failures, route to `troubleshooting.md`: `#gpio-pwm-uart-i2c-spi-problems` for peripherals, `#camera-problems` for sensor issues, `#lcd-or-display-problems` for display issues, and `#yolo-kmodel-or-ai-problems` for model-related issues.
 
+## Scope
+
+Use this reference for official CanMV-style GPIO, FPIOA, PWM, UART, and basic image-processing API patterns.
+
 ## Contents
 
 - GPIO and FPIOA

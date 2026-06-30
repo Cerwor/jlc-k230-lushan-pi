@@ -6,6 +6,10 @@ Official source: https://wiki.lckfb.com/zh-hans/lushan-pi-k230/ide-usage/offline
 
 For failures, use `troubleshooting.md#no-offline-auto-run`.
 
+## Scope
+
+Use this reference for final /sdcard/main.py boot behavior, TF-card deployment boundaries, and offline contest startup checks.
+
 ## Contents
 
 - Core Rule

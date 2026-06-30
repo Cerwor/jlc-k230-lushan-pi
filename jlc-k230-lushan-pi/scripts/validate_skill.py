@@ -32,6 +32,19 @@ CANMV_FORBIDDEN_NAMES = {
 }
 
 WINDOWS_ABSOLUTE_PATH_RE = re.compile(r"\b[A-Za-z]:\\[^\s`'\"<>|]+")
+MAX_TEMPLATE_EXAMPLES = 16
+REPO_ONLY_NAMES = (
+    ".github",
+    "docs",
+    "tests",
+    "tools",
+    "README.md",
+    "AGENT_USAGE.md",
+    "LICENSE",
+    "requirements-host.txt",
+    "requirements.txt",
+    "pyproject.toml",
+)
 
 
 def rel(path: Path, root: Path) -> str:
@@ -158,6 +171,46 @@ def check_reference_contents(root: Path, warnings: list[str]) -> None:
             head = "\n".join(lines[:40])
             if "## Contents" not in head:
                 warnings.append("%s is longer than 100 lines but has no early Contents section" % rel(path, root))
+            if "## Scope" not in head:
+                warnings.append("%s is longer than 100 lines but has no early Scope section" % rel(path, root))
+
+
+def check_template_inventory(root: Path, warnings: list[str]) -> None:
+    examples_dir = root / "assets" / "contest-template" / "examples"
+    if not examples_dir.exists():
+        return
+
+    examples = sorted(path for path in examples_dir.glob("*.py") if path.is_file())
+    if len(examples) > MAX_TEMPLATE_EXAMPLES:
+        warnings.append(
+            "template example count %d exceeds guardrail %d; move one-off patterns to references"
+            % (len(examples), MAX_TEMPLATE_EXAMPLES)
+        )
+
+    contest_text = read_text(root / "references" / "contest-patterns.md")
+    skill_text = read_text(root / "SKILL.md")
+    combined = contest_text + "\n" + skill_text
+    if "Template Admission Rules" not in contest_text:
+        warnings.append("contest-patterns.md missing Template Admission Rules")
+
+    for path in examples:
+        if path.name not in combined:
+            warnings.append("%s is not listed in SKILL.md or contest-patterns.md" % rel(path, root))
+
+
+def check_installable_boundary(root: Path, failures: list[str]) -> None:
+    for name in REPO_ONLY_NAMES:
+        if (root / name).exists():
+            failures.append("repo-only file or directory must not be inside installable skill: %s" % name)
+
+
+def check_actuator_boundaries(root: Path, warnings: list[str]) -> None:
+    contest_text = read_text(root / "references" / "contest-patterns.md")
+    zdt_text = read_text(root / "references" / "zdt-stepper-gimbal-patterns.md")
+    if "Do not emit ZDT command frames in final code" not in zdt_text:
+        warnings.append("zdt-stepper-gimbal-patterns.md should explicitly forbid ZDT frames before protocol confirmation")
+    if "Do not copy motor-specific command frames" not in contest_text:
+        warnings.append("contest-patterns.md should keep generic actuator guidance separate from motor-specific frames")
 
 
 def load_extra_local_path_patterns(config_path: str | None, warnings: list[str]) -> list[str]:
@@ -222,6 +275,9 @@ def main() -> int:
     check_canmv_conservative_style(root, py_files, failures)
     check_python_documentation_links(root, py_files, failures)
     check_reference_contents(root, warnings)
+    check_template_inventory(root, warnings)
+    check_installable_boundary(root, failures)
+    check_actuator_boundaries(root, warnings)
     check_no_local_paths(root, failures, extra_local_path_patterns)
     check_no_pycache(root, failures)
 

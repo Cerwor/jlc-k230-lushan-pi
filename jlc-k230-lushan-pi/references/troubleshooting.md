@@ -2,6 +2,10 @@
 
 Use this file as the single debug checklist for Lushan Pi K230 CanMV contest projects. Keep task-specific references focused on normal usage; put failure diagnosis here.
 
+## Scope
+
+Use this reference after probe failures, runtime errors, serial silence, display/camera issues, model-load failures, or actuator bring-up problems.
+
 ## Contents
 
 - First Pass

@@ -4,6 +4,10 @@ Use this file when the user already trains their own model and converts it to `.
 
 This file is intentionally post-conversion focused. Do not turn it into a generic training guide. For board-side YOLO API usage, read `yolo-module-patterns.md`. For uncertain runtime/API signatures, verify through `sources-and-boundaries.md`.
 
+## Scope
+
+Use this reference for self-trained .kmodel handoff, model-package validation, label/input-size contracts, and model-to-control integration gates.
+
 ## Contents
 
 - When To Use A Model

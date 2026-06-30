@@ -2,9 +2,14 @@
 
 For integration failures, use `troubleshooting.md#contest-integration-problems`. For scope limits such as actuator safety, unsupported boards, or uncertain pins, use `sources-and-boundaries.md#applicability-boundaries`.
 
+## Scope
+
+Use this reference for generic contest application architecture, state handling, UART/control output, and actuator-neutral integration before motor-specific code.
+
 ## Contents
 
 - Default Architecture
+- Template Admission Rules
 - Competition Priorities
 - Runtime Resilience
 - Field Mode Acceptance
@@ -65,6 +70,18 @@ When creating a new contest project:
 6. Save the final integrated program as `main.py` for offline deployment.
 
 When the template changes because of firmware or API updates, record the reason in `maintenance.md#maintenance-summary`; put long chronological test history in repository-level `docs/BOARD_TEST_LOG.md` when available.
+
+## Template Admission Rules
+
+Do not add a new file under `assets/contest-template/examples/` for every solved user case. Add a template only when all of these are true:
+
+- The pattern is likely to be reused across several contest tasks.
+- The pattern has a hardware, firmware, API, or safety detail that agents often get wrong.
+- A shorter reference note would not be enough to reproduce the behavior safely.
+- The template has a clear entry in `SKILL.md#template-selection` or in this file's current-template list.
+- The template can run as a bounded smoke/probe/demo without requiring the user's private local paths.
+
+If a case is useful but specific to one actuator, one target, or one test session, put the distilled lesson in the matching reference file instead. If it is only chronological evidence, put it in repository-level `docs/BOARD_TEST_LOG.md`.
 
 ## Competition Priorities
 

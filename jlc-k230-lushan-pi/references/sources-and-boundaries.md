@@ -4,6 +4,10 @@ Use this file to verify applicability, official source links, and exact API page
 
 This file intentionally combines the previous source index, API routing table, and usage boundaries because these are normally needed together when a task depends on firmware version, board wiring, API signatures, or official documentation.
 
+## Scope
+
+Use this reference for scope limits, official source links, API manual routing, and claims that need board or documentation verification.
+
 ## Contents
 
 - Applicability Boundaries

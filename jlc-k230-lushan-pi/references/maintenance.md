@@ -2,6 +2,10 @@
 
 Use this file to keep the skill current as CanMV firmware, LCKFB wiki pages, and user project patterns evolve.
 
+## Scope
+
+Use this reference only when maintaining the skill, updating routing, changing bundled resources, or recording reusable board-tested conclusions.
+
 ## Contents
 
 - Update Policy
@@ -9,6 +13,7 @@ Use this file to keep the skill current as CanMV firmware, LCKFB wiki pages, and
 - Repository Tooling
 - File Ownership Map
 - Maintenance Summary
+- Architecture Guardrails
 
 ## Update Policy
 
@@ -94,18 +99,20 @@ Current tested baseline:
 - Circle detection is useful but more scene-sensitive; use raw-vs-tracked telemetry from `probe_circle_target.py` to judge field quality.
 - `mpremote_deploy.py` and snapshot pull/delete paths are explicit board-file workflows; dry-run is safe for command preview.
 
+## Architecture Guardrails
+
+- Every long reference must have early `## Scope` and `## Contents` sections so an agent can decide whether to continue reading.
+- `SKILL.md` remains the routing source. README and AGENT_USAGE may point at it but should not duplicate the full routing matrix.
+- Keep repository-only files such as `README.md`, `LICENSE`, `.github/`, `docs/`, `tests/`, `requirements-host.txt`, and root `tools/` outside the installable `jlc-k230-lushan-pi/` skill folder.
+- Add new templates only when `contest-patterns.md#template-admission-rules` is satisfied.
+- Keep generic actuator guidance in `contest-patterns.md`; keep ZDT command frames only in `zdt-stepper-gimbal-patterns.md`.
+- Keep only reusable conclusions here. Move raw chronological board-test details to repository-level `docs/BOARD_TEST_LOG.md`.
+
 Recent maintenance entries:
 
-- 2026-06-22: Added layered root `tools/test.ps1` with offline validation, smoke, Sensor, Otsu, resources, rectangle target, and circle target modes.
-- 2026-06-22: Bounded `probe_board_resources.py` after a populated SD-card scan could time out and leave raw REPL silent until reset.
-- 2026-06-22: Allowed `mpremote_deploy.py --dry-run` to work without host `mpremote` installed.
-- 2026-06-22: Productized rectangle and circle target probes and recorded their latest board-test behavior in the relevant references.
-- 2026-06-23: Added tiered reference-loading guidance, YOLO runtime probing, and probe-log acceptance explanations for rectangle, circle, YOLO, UART, and resource tests.
-- 2026-06-23: Board-tested the new YOLO and UART acceptance modes after reset; fixed `probe_yolo_runtime.py` resource caps/de-duplication so it reaches YOLO example directories before reporting acceptance.
-- 2026-06-23: Cleaned stale maintenance anchors, made `user-example-patterns.md` directly reachable from `SKILL.md`, and extended conservative syntax validation to the target-specific board probes.
-- 2026-06-24: Consolidated source links, official API routing, and usage boundaries into `sources-and-boundaries.md` to reduce reference fan-out.
 - 2026-06-28: Added board-tested ZDT two-axis gimbal control notes: yaw `0x01`, pitch `0x02`, UART2 `PIN5/PIN6`, `cv_lite` rectangle precheck, target-loss stop, ACK retry guidance, and four-direction convergence results.
 - 2026-06-28: Added full ZDT gimbal tracking results after removing the short-test cumulative-angle limiter, including `7200`-frame tracking telemetry, lost-stop behavior, and the need for `LOST_STOP -> REACQUIRE -> TRACK` in final continuous-operation code.
 - 2026-06-28: Added self-trained single-class YOLOv8 `best.kmodel` board-test notes and ZDT model-tracking tuning guidance, including FC ACK sampling, time-based control periods, target smoothing, and position-feedback validation.
 - 2026-06-29: Added reusable direct-UART ZDT speed-mode rectangle tracking guidance and cleaned third-party project URLs from operational references so only portable experience remains.
 - 2026-06-29: Slimmed `SKILL.md` working rules, added probe-result action guidance, documented raw-REPL Plan B, and strengthened `agents/openai.yaml` default prompt.
+- 2026-06-30: Added host-side CI, dependency manifest, regression tests, mpremote safety hardening, reference Scope guardrails, and repository/skill boundary checks.

@@ -10,6 +10,10 @@ For failures, use `troubleshooting.md#yolo-kmodel-or-ai-problems`. For firmware/
 
 For final contest scripts, also use `canmv-api-known-issues.md#conservative-syntax-and-validation`; desktop Python syntax compatibility does not guarantee CanMV IDE compatibility.
 
+## Scope
+
+Use this reference for YOLO/KModel/PipeLine lifecycle, official example adaptation, model paths, and 3.1-inch LCD display changes.
+
 ## Contents
 
 - Supported Classes and Tasks

@@ -1,5 +1,9 @@
 # CanMV Workflows
 
+## Scope
+
+Use this reference for board bring-up, camera/LCD smoke tests, raw REPL workflow, and firmware/setup facts before task-specific vision or actuator work.
+
 ## Contents
 
 - Firmware And Host Assumptions

@@ -4,6 +4,10 @@ Use this file when the user explicitly wants host-driven deployment, board-file 
 
 These workflows complement the normal TF-card `main.py` flow. They are useful while a PC is connected, but contest-ready programs should still boot from `/sdcard/main.py` without a PC.
 
+## Scope
+
+Use this reference only for explicit mpremote board-file deployment, runtime snapshot pulls, and SD-card side-channel debugging.
+
 ## Contents
 
 - When To Use mpremote

@@ -4,6 +4,10 @@ Use this reference for 2025-style e-contest vision tasks that need a K230 camera
 
 For failures, use `troubleshooting.md`: `#camera-problems`, `#lcd-or-display-problems`, `#gpio-pwm-uart-i2c-spi-problems`, and `#contest-integration-problems`.
 
+## Scope
+
+Use this reference for black-tape rectangle targets, cv_lite rectangle corners, rectangle-center UART output, and 2025-style visual control tasks.
+
 ## Contents
 
 - Strategy Ladder

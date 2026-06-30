@@ -28,6 +28,15 @@ Treat these facts as tested defaults for this user's board and motor, not as uni
 
 The tested motor used the ZDT free protocol with fixed `0x6B` checksum. Do not switch to Modbus unless the motor menu or upper-computer tool has been set to Modbus checksum mode.
 
+Do not use this reference merely because the task says "gimbal", "laser", "target tracking", or "stepper". First identify the actuator:
+
+| Actuator situation | Route |
+| --- | --- |
+| Confirmed ZDT XS-series second-generation closed-loop stepper, free protocol, fixed `0x6B` checksum | Use this file. |
+| Servo, PWM pan-tilt, external MCU, unknown smart motor, CAN/RS485 module, or ordinary stepper driver | Use `contest-patterns.md` first. |
+| Same ZDT motor but different checksum mode, firmware mode, address plan, supply, or mechanical limits | Re-run bring-up; treat only command shapes as hints. |
+| User has not confirmed the actuator protocol | Do not emit ZDT command frames in final code. Output target error/state only. |
+
 ## Tested Wiring And Protocol
 
 Tested K230 side:

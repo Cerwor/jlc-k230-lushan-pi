@@ -2,6 +2,10 @@
 
 These patterns are distilled from the user's previous working K230 CanMV examples. They are portable and do not depend on the original local file paths.
 
+## Scope
+
+Use this reference to match the user's working-code style and reuse ideas from their prior K230 projects without copying private paths.
+
 ## Contents
 
 - Common LCD Preview Pattern

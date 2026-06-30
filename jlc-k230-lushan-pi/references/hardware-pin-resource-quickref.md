@@ -6,6 +6,10 @@ Official source: https://wiki.lckfb.com/zh-hans/lushan-pi-k230/open-source-hardw
 
 For wiring, voltage, and peripheral failures, use `troubleshooting.md#gpio-pwm-uart-i2c-spi-problems`. For scope boundaries and safety assumptions, use `sources-and-boundaries.md#applicability-boundaries`.
 
+## Scope
+
+Use this reference for Lushan Pi K230 pin, connector, power, UART/FPIOA, camera, display, and board-resource checks.
+
 ## Contents
 
 - Safety Rules
