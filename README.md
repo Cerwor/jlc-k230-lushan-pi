@@ -121,6 +121,7 @@ jlc-k230-lushan-pi/
     model-package/
   scripts/
 docs/
+tests/
 README.md
 AGENT_USAGE.md
 tools/
@@ -159,6 +160,7 @@ tools/
 - `jlc-k230-lushan-pi/scripts/smoke_camera_lcd.py`：短摄像头/LCD 冒烟测试
 - `docs/TEST_MATRIX.md`：仓库级测试矩阵，说明每类测试是否上板、是否写卡、需要什么人工准备
 - `docs/BOARD_TEST_LOG.md`：仓库级历史实测流水账，不安装到 Codex skill
+- `tests/test_host_scripts.py`：模型包、探针日志和 `mpremote` 安全边界的纯主机回归测试
 
 ## 常用模板
 
@@ -215,6 +217,7 @@ python ".\jlc-k230-lushan-pi\scripts\check_model_package.py" ".\model-package"
 
 ```powershell
 .\tools\test.ps1
+python -m unittest discover -s tests
 ```
 
 连接开发板后，先只列出串口：
