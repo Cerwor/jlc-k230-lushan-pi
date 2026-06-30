@@ -22,17 +22,23 @@ Do not use it as the default path for final answers. The skill default remains: 
 
 Prefer `scripts/run_canmv_raw_repl.py` for RAM-only smoke tests that should not touch `/sdcard`. Prefer `scripts/mpremote_deploy.py` when the user wants to update `/sdcard/main.py` or companion `.py` files.
 
+`scripts/_host_tools.py` is an internal shared helper for serial-port listing, conservative port resolution, `mpremote` lookup, and command execution. Do not call it directly from user-facing workflows.
+
 ## Prerequisites
 
 Install host dependencies for real board-file deployment:
 
 ```powershell
+python -m pip install -r .\requirements-host.txt
+```
+
+If the repository-level requirements file is unavailable, install the minimum dependencies directly:
+
+```powershell
 python -m pip install mpremote pyserial
 ```
 
-`--dry-run` can preview the deployment commands before `mpremote` is installed. Port listing and Ctrl-C/Ctrl-D recovery still need `pyserial`.
-
-For raw `.bin` snapshot decoding, also install:
+`--dry-run` can preview the deployment commands before `mpremote` is installed. Port listing and Ctrl-C/Ctrl-D recovery still need `pyserial`. Raw `.bin` snapshot decoding also needs `Pillow` and `numpy`.
 
 ```powershell
 python -m pip install Pillow numpy
@@ -44,7 +50,9 @@ List detected serial ports:
 python ".\jlc-k230-lushan-pi\scripts\mpremote_deploy.py" --list-ports
 ```
 
-The helper treats the tested CanMV USB VID:PID `1209:ABD1` only as an auto-detection hint, not as a universal K230 identifier. It also checks common descriptions such as CanMV, Kendryte, K230, or USB Serial Device. If multiple ports exist, pass `--port COM14` or the user's current COM port.
+The helper treats the tested CanMV USB VID:PID `1209:ABD1` as a high-confidence auto-detection hint, not as a universal K230 identifier. Port listing also marks common descriptions such as CanMV, Kendryte, K230, or USB Serial Device with `?`. If multiple ports exist, pass `--port COM14` or the user's current COM port.
+
+By default, `mpremote_deploy.py` and `mpremote_snapshot.py` auto-select only the tested VID:PID match. If the board appears with a generic USB-serial description, pass `--port` explicitly. Use `--allow-fuzzy-port` only when the user accepts description-based matching.
 
 ## Windows-Friendly Deployment
 
@@ -92,6 +100,8 @@ Pull the latest JPEG:
 python ".\jlc-k230-lushan-pi\scripts\mpremote_snapshot.py" --port COM14 --remote /sdcard/codex_snap.jpg --out ".\snaps\latest.jpg" --delete --open
 ```
 
+`--delete` is intentionally restricted to snapshot-like paths under `/sdcard/codex_snap*` or `/sdcard/tmp/codex_snap*`. For a deliberate custom path, require `--force-any-remote` and explain the risk before running it.
+
 For PipeLine or AI-channel code that exposes a CHW RGB888 tensor/ulab ndarray, paste the CHW hook:
 
 ```powershell
@@ -105,6 +115,8 @@ python ".\jlc-k230-lushan-pi\scripts\mpremote_snapshot.py" --port COM14 --remote
 ```
 
 The `KSNP` format is intentionally simple: magic `KSNP`, little-endian width, height, channels, layout, then raw `uint8` image bytes. Layout `1` means CHW and is decoded to normal HWC before saving.
+
+The host decoder rejects invalid dimensions, channels above 4, and bodies above the configured safety limit, so a corrupt snapshot should fail closed instead of exhausting host memory.
 
 ## Snapshot Hook Patterns
 

@@ -11,25 +11,34 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
-import importlib.util
 import os
-import shutil
-import subprocess
 import sys
 import time
 from pathlib import Path
+from subprocess import CalledProcessError
+from subprocess import TimeoutExpired
+
+from _host_tools import command_text
+from _host_tools import print_ports
+from _host_tools import require_serial
+from _host_tools import resolve_mpremote
+from _host_tools import resolve_port
+from _host_tools import run_checked
 
 
 DEFAULT_BAUD = 115200
 DEFAULT_REMOTE = "/sdcard/codex_snap.bin"
 DEFAULT_BREAK_COUNT = 10
+SAFE_REMOTE_PREFIXES = ("/sdcard/codex_snap", "/sdcard/tmp/codex_snap")
+MAX_KSNP_WIDTH = 4096
+MAX_KSNP_HEIGHT = 4096
+MAX_KSNP_CHANNELS = 4
+MAX_KSNP_BODY_BYTES = 64 * 1024 * 1024
 MAGIC = b"KSNP"
 HEADER_SIZE = 20
 LAYOUT_HWC = 0
 LAYOUT_CHW = 1
 LAYOUT_GRAY = 2
-TESTED_CANMV_VID_PID = (0x1209, 0xABD1)
-PORT_KEYWORDS = ("canmv", "kendryte", "k230", "usb serial device")
 
 
 IMAGE_HOOK = r'''
@@ -99,115 +108,6 @@ def log(message: str) -> None:
     print("[mpremote-snapshot] %s" % message)
 
 
-def require_serial():
-    try:
-        import serial
-        from serial.tools import list_ports
-    except ImportError as exc:
-        raise SystemExit("pyserial is required: python -m pip install pyserial") from exc
-    return serial, list_ports
-
-
-def get_ports():
-    _serial, list_ports = require_serial()
-    return list(list_ports.comports())
-
-
-def describe_port(port_info) -> str:
-    vid = getattr(port_info, "vid", None)
-    pid = getattr(port_info, "pid", None)
-    vid_pid = ""
-    if vid is not None and pid is not None:
-        vid_pid = " VID:PID=%04X:%04X" % (vid, pid)
-    text = "%s %s%s" % (port_info.device, port_info.description, vid_pid)
-    return text.strip()
-
-
-def is_likely_k230(port_info) -> bool:
-    vid = getattr(port_info, "vid", None)
-    pid = getattr(port_info, "pid", None)
-    if vid == TESTED_CANMV_VID_PID[0] and pid == TESTED_CANMV_VID_PID[1]:
-        return True
-
-    haystack = " ".join(
-        str(value)
-        for value in (
-            getattr(port_info, "description", ""),
-            getattr(port_info, "manufacturer", ""),
-            getattr(port_info, "product", ""),
-            getattr(port_info, "hwid", ""),
-        )
-    ).lower()
-    for keyword in PORT_KEYWORDS:
-        if keyword in haystack:
-            return True
-    return False
-
-
-def print_ports() -> None:
-    ports = get_ports()
-    if not ports:
-        print("No serial ports found.")
-        return
-
-    for item in ports:
-        marker = " *" if is_likely_k230(item) else "  "
-        print("%s %s" % (marker, describe_port(item)))
-
-
-def resolve_port(explicit_port: str | None) -> str:
-    if explicit_port:
-        return explicit_port
-
-    env_port = os.environ.get("K230_PORT") or os.environ.get("PORT")
-    if env_port:
-        return env_port
-
-    ports = get_ports()
-    likely = [item for item in ports if is_likely_k230(item)]
-    if len(likely) == 1:
-        return likely[0].device
-    if len(ports) == 1:
-        return ports[0].device
-    if likely:
-        choices = "\n".join("  %s" % describe_port(item) for item in likely)
-        raise SystemExit("Multiple likely K230 ports found; pass --port.\n%s" % choices)
-
-    choices = "\n".join("  %s" % describe_port(item) for item in ports)
-    if not choices:
-        choices = "  (none)"
-    raise SystemExit("No K230 port auto-detected; pass --port.\n%s" % choices)
-
-
-def resolve_mpremote(explicit: str | None) -> list[str]:
-    if explicit:
-        return [explicit]
-
-    env_mpremote = os.environ.get("MPREMOTE")
-    if env_mpremote:
-        return [env_mpremote]
-
-    found = shutil.which("mpremote")
-    if found:
-        return [found]
-
-    if importlib.util.find_spec("mpremote") is not None:
-        return [sys.executable, "-m", "mpremote"]
-
-    raise SystemExit("mpremote is required: python -m pip install mpremote")
-
-
-def command_text(command: list[str]) -> str:
-    return subprocess.list2cmdline(command)
-
-
-def run_checked(command: list[str], dry_run: bool, check: bool = True, timeout: float | None = None) -> subprocess.CompletedProcess:
-    print("$ %s" % command_text(command))
-    if dry_run:
-        return subprocess.CompletedProcess(command, 0)
-    return subprocess.run(command, check=check, timeout=timeout)
-
-
 def break_main_loop(port: str, baud: int, count: int, dry_run: bool) -> None:
     log("send Ctrl-C burst on %s" % port)
     if dry_run:
@@ -251,7 +151,7 @@ def reset_after_pull(mpremote: list[str], port: str, baud: int, mode: str, dry_r
     log("hard reset through mpremote")
     try:
         run_checked(mpremote + ["connect", port, "resume", "reset"], dry_run, timeout=20)
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+    except (CalledProcessError, TimeoutExpired) as exc:
         log("mpremote reset failed, fallback to Ctrl-D soft reset: %s" % exc)
         soft_reset(port, baud, dry_run)
 
@@ -269,6 +169,25 @@ def remote_arg(remote_path: str) -> str:
     if remote_path.startswith(":"):
         return remote_path
     return ":" + remote_path
+
+
+def validate_remote_snapshot_path(remote_path: str, allow_any: bool) -> str:
+    if allow_any:
+        return remote_path
+
+    if remote_path.startswith(":"):
+        check_path = remote_path[1:]
+    else:
+        check_path = remote_path
+
+    for prefix in SAFE_REMOTE_PREFIXES:
+        if check_path.startswith(prefix):
+            return remote_path
+
+    raise SystemExit(
+        "Refusing remote snapshot path outside safe prefixes: %s. "
+        "Use --force-any-remote when you intentionally need a custom path." % remote_path
+    )
 
 
 def delete_remote_snapshot(mpremote: list[str], port: str, remote_path: str, dry_run: bool) -> None:
@@ -298,6 +217,14 @@ def decode_ksnp(path: Path, out_path: Path | None) -> Path:
     channels = int.from_bytes(data[12:16], "little")
     layout = int.from_bytes(data[16:20], "little")
     body = data[20:]
+
+    if width <= 0 or height <= 0 or channels <= 0:
+        raise SystemExit("invalid snapshot shape: %dx%dx%d" % (width, height, channels))
+    if width > MAX_KSNP_WIDTH or height > MAX_KSNP_HEIGHT or channels > MAX_KSNP_CHANNELS:
+        raise SystemExit("snapshot shape too large: %dx%dx%d" % (width, height, channels))
+    if len(body) > MAX_KSNP_BODY_BYTES:
+        raise SystemExit("snapshot body too large: %d bytes" % len(body))
+
     expected = width * height * channels
     if len(body) != expected:
         raise SystemExit("snapshot body size %d != %d*%d*%d" % (len(body), width, height, channels))
@@ -354,11 +281,13 @@ def main() -> int:
     parser.add_argument("--out", default=None, help="local output path")
     parser.add_argument("--decode-out", default=None, help="JPEG/PNG output path when pulling KSNP .bin")
     parser.add_argument("--port", default=None, help="serial port such as COM14; defaults to auto-detect")
+    parser.add_argument("--allow-fuzzy-port", action="store_true", help="allow description-based serial auto-detection")
     parser.add_argument("--baud", type=int, default=DEFAULT_BAUD, help="serial baud for Ctrl-C/Ctrl-D")
     parser.add_argument("--mpremote", default=None, help="mpremote executable; defaults to PATH or python -m mpremote")
     parser.add_argument("--break-count", type=int, default=DEFAULT_BREAK_COUNT, help="number of Ctrl-C bytes before pull")
     parser.add_argument("--no-break", action="store_true", help="do not interrupt the running main.py first")
     parser.add_argument("--delete", action="store_true", help="delete the remote snapshot after pulling")
+    parser.add_argument("--force-any-remote", action="store_true", help="allow custom remote path outside safe snapshot prefixes")
     parser.add_argument("--reset-after", choices=("soft", "hard", "none"), default="soft", help="reset after pull")
     parser.add_argument("--list-ports", action="store_true", help="list serial ports and exit")
     parser.add_argument("--open", action="store_true", help="open the final local image with the OS viewer")
@@ -373,22 +302,23 @@ def main() -> int:
         print_ports()
         return 0
 
-    port = resolve_port(args.port)
-    mpremote = resolve_mpremote(args.mpremote)
-    local_path = Path(args.out) if args.out else default_output(args.remote)
+    remote_path = validate_remote_snapshot_path(args.remote, args.force_any_remote)
+    port = resolve_port(args.port, allow_fuzzy=args.allow_fuzzy_port)
+    mpremote = resolve_mpremote(args.mpremote, required=(not args.dry_run))
+    local_path = Path(args.out) if args.out else default_output(remote_path)
     decode_out = Path(args.decode_out) if args.decode_out else None
 
     log("port: %s" % port)
     log("mpremote: %s" % command_text(mpremote))
-    log("remote: %s" % args.remote)
+    log("remote: %s" % remote_path)
 
     if not args.no_break:
         break_main_loop(port, args.baud, args.break_count, args.dry_run)
 
     try:
-        pull_snapshot(mpremote, port, args.remote, local_path, args.dry_run)
+        pull_snapshot(mpremote, port, remote_path, local_path, args.dry_run)
         if args.delete:
-            delete_remote_snapshot(mpremote, port, args.remote, args.dry_run)
+            delete_remote_snapshot(mpremote, port, remote_path, args.dry_run)
     finally:
         reset_after_pull(mpremote, port, args.baud, args.reset_after, args.dry_run)
 

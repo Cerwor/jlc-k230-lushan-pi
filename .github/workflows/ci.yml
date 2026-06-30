@@ -1,0 +1,80 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  pull_request:
+
+jobs:
+  offline-validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install host dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-host.txt
+
+      - name: Compile Python files
+        run: |
+          python - <<'PY'
+          import pathlib
+
+          root = pathlib.Path("jlc-k230-lushan-pi")
+          files = sorted(root.rglob("*.py"))
+          for path in files:
+              compile(path.read_text(encoding="utf-8"), str(path), "exec")
+          print("PY_SYNTAX_OK files=%d" % len(files))
+          PY
+
+      - name: Validate skill package
+        run: python jlc-k230-lushan-pi/scripts/validate_skill.py jlc-k230-lushan-pi
+
+      - name: Validate through repository entrypoint
+        shell: pwsh
+        run: ./tools/validate.ps1
+
+      - name: Smoke test model package validator
+        run: |
+          python - <<'PY'
+          import json
+          import pathlib
+          import subprocess
+          import sys
+          import tempfile
+
+          with tempfile.TemporaryDirectory() as temp_dir:
+              package = pathlib.Path(temp_dir)
+              (package / "demo.kmodel").write_bytes(b"\x00\x01demo")
+              (package / "labels.txt").write_text("target\n", encoding="utf-8")
+              manifest = {
+                  "model_name": "ci-demo",
+                  "task_type": "detect",
+                  "yolo_class": "YOLOv8",
+                  "kmodel_file": "demo.kmodel",
+                  "labels_file": "labels.txt",
+                  "board_kmodel_path": "/sdcard/models/demo.kmodel",
+                  "model_input_size": [320, 320],
+                  "confidence_threshold": 0.35,
+                  "nms_threshold": 0.45,
+                  "labels": ["target"],
+                  "preprocess": "documented",
+                  "postprocess": "documented",
+              }
+              (package / "model_manifest.json").write_text(
+                  json.dumps(manifest, ensure_ascii=False, indent=2),
+                  encoding="utf-8",
+              )
+              subprocess.run(
+                  [sys.executable, "jlc-k230-lushan-pi/scripts/check_model_package.py", str(package)],
+                  check=True,
+              )
+          PY

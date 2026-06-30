@@ -7,7 +7,7 @@ This repository-level matrix helps maintainers choose the right test without loa
 | Layer | Goal | Default command | Board access | Writes board files | User setup | Pass signal |
 | --- | --- | --- | --- | --- | --- | --- |
 | Offline preflight | Check skill structure, docs, Python syntax, and quick validation | `.\tools\test.ps1` | No | No | None | `VALIDATE_SKILL_OK`, `Skill is valid!`, `TEST_OK` |
-| Port discovery | Confirm the K230 serial port and auto-detection hint | `.\tools\test.ps1 -ListPorts -SkipValidate` | Enumerates host ports | No | Board connected by USB | K230-like port marked with `*`, usually COM14 on the tested setup |
+| Port discovery | Confirm the K230 serial port and auto-detection hint | `.\tools\test.ps1 -ListPorts -SkipValidate` | Enumerates host ports | No | Board connected by USB | `*` means tested VID:PID match; `?` means fuzzy description match and should normally be passed with `--port` |
 | Smoke | Verify raw REPL, camera, MediaManager, and 3.1-inch LCD | `.\tools\test.ps1 -Board -Port COM14` | Yes, raw REPL | No, RAM-only | Board connected, screen attached | `SMOKE_DONE frames=20 fps=...` |
 | Core vision chain | Verify camera/LCD, Sensor modes, and Otsu threshold chain | `.\tools\test.ps1 -Board -Vision all-core -Port COM14` | Yes, raw REPL | No, RAM-only | Board connected; black/white target useful for Otsu | `SMOKE_DONE`, `SENSOR_PROBE_DONE`, `OTSU_PROBE_DONE` |
 | Board resources | Discover `.kmodel` and AI/example files without assuming paths | `.\tools\test.ps1 -Board -Vision resources -Port COM14` | Yes, raw REPL | No, RAM-only | Board connected with SD card | `RESOURCE_PROBE_DONE...` plus `ACCEPT_RESOURCES status=...` |

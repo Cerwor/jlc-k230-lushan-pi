@@ -144,6 +144,7 @@ tools/
 - `jlc-k230-lushan-pi/assets/contest-template/`：可复制的电赛项目模板
 - `jlc-k230-lushan-pi/assets/model-package/model_manifest.example.json`：自训练 `.kmodel` 交付包 manifest 示例
 - `jlc-k230-lushan-pi/scripts/run_canmv_raw_repl.py`：通过 raw REPL 从 RAM 临时运行脚本
+- `jlc-k230-lushan-pi/scripts/_host_tools.py`：主机端串口、`mpremote` 和命令执行公共 helper，供部署/快照脚本复用
 - `jlc-k230-lushan-pi/scripts/mpremote_deploy.py`：显式把本地文件复制到板端 `/sdcard` 的 `mpremote` 部署助手
 - `jlc-k230-lushan-pi/scripts/mpremote_snapshot.py`：拉取并解码运行中快照文件的 `mpremote` 调试助手
 - `jlc-k230-lushan-pi/scripts/check_model_package.py`：检查自训练模型包的 manifest、labels 和 `.kmodel`
@@ -321,6 +322,7 @@ python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-p
 显式使用 `mpremote` 部署 `main.py` 到板端 `/sdcard`：
 
 ```powershell
+python -m pip install -r .\requirements-host.txt
 python ".\jlc-k230-lushan-pi\scripts\mpremote_deploy.py" --port COM14 main.py
 ```
 
@@ -330,6 +332,8 @@ python ".\jlc-k230-lushan-pi\scripts\mpremote_deploy.py" --port COM14 main.py
 python ".\jlc-k230-lushan-pi\scripts\mpremote_snapshot.py" --emit-hook image
 python ".\jlc-k230-lushan-pi\scripts\mpremote_snapshot.py" --port COM14 --remote /sdcard/codex_snap.jpg --delete --open
 ```
+
+`mpremote_*` 工具默认只自动选择已实测的 CanMV USB VID:PID 端口；如果你的系统只显示通用 USB 串口描述，优先传 `--port COM14`，确实需要按描述模糊匹配时再加 `--allow-fuzzy-port`。`mpremote_snapshot.py --delete` 默认只允许删除 `/sdcard/codex_snap*` 或 `/sdcard/tmp/codex_snap*` 这类快照文件，自定义远端路径需要显式 `--force-any-remote`。
 
 ## 维护与验证
 
