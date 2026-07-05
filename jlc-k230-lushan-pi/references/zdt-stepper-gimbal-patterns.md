@@ -16,6 +16,7 @@ For general actuator safety and K230 UART pin rules, read `contest-patterns.md` 
 - Recommended Gimbal Control Pattern
 - Direct UART Speed-Mode Visual Servo Pattern
 - Tested Two-Axis Vision Gimbal Pattern
+- Model-ROI Plus Classical Refinement Speed Loop
 - Bring-Up Order
 - Safety Rules
 - Untested Or Deferred Features
@@ -65,7 +66,7 @@ The following free-protocol commands returned valid acknowledgments or data on t
 | --- | --- | --- |
 | Enable | `01 F3 AB 01 00 6B` | Lock/enable motor before motion |
 | Disable | `01 F3 AB 00 00 6B` | Release motor; use cautiously on a loaded gimbal |
-| Stop now | `01 FE 98 00 6B` | Emergency stop and lost-target stop |
+| Stop now | `01 FE 98 00 6B` | Emergency stop; avoid as the normal lost-target action on a gravity-loaded mounted gimbal |
 | Read position | `01 36 6B` | Position feedback for control/debug |
 | Read speed | `01 35 6B` | Stop detection and diagnostics |
 | Read target position | `01 33 6B` | Debug active target during motion |
@@ -150,9 +151,12 @@ TRACK:
   if abs(error_deg) > deadband:
       send FC signed step pulses
 
-LOST or FAULT:
-  send FE 98 00 6B immediately
-  do not read or print several diagnostics before stopping
+LOST:
+  keep motor enabled and send zero-speed or zero-delta hold if the mounted axis has gravity load
+
+FAULT:
+  send FE 98 00 6B immediately for runaway, limit-hit, wiring, or safety faults
+  do not read or print several diagnostics before the emergency stop
 ```
 
 The tested single-axis simulation used target sequence `0 -> 15 -> -15 -> 8 -> -8 -> 0`, a `70 ms` control period, `KP=0.48`, `2.2 deg` max step, and `0.25 deg` deadband. Final target errors were roughly `0 deg` to `0.3 deg`, with no lost position reads and all fast-delta commands acknowledged.
@@ -190,7 +194,7 @@ Safety caveats:
 
 - Speed mode has no inherent position target. Add real software angle limits, limit switches, or periodic position reads before using it on a mechanism that can hit stops.
 - Add a maximum speed clamp even if the raw formula can produce larger values.
-- Add a lost-target timeout that sends stop or zero-speed frames to both axes.
+- Add a lost-target timeout that sends zero-speed hold frames to both axes on a mounted gimbal; reserve `FE 98` for emergency stop.
 - For final contest code, decide deliberately between speed mode for smooth tracking and `F1/FC` or `FD` position mode for bounded angle control.
 
 ## Tested Two-Axis Vision Gimbal Pattern
@@ -216,7 +220,7 @@ The current two-axis ZDT gimbal has been board-tested with a Lushan Pi K230 came
   - wider moving-target test `MAX_TOTAL_AXIS_DEG = 6`
   - `DEADBAND_X_PX` and `DEADBAND_Y_PX` around `20` to `36`
 - Require a vision precheck before enabling motors. A tested shape was `36` precheck frames with at least `24` valid rectangle hits.
-- On target loss, stop first. A tested path sent `FE 98 00 6B` after `3` consecutive missed frames and then suppressed further motion commands.
+- On target loss, choose the stop action by mechanical load. For an unloaded motor or emergency fault, `FE 98 00 6B` is acceptable. For a mounted pitch axis with gravity load, keep the motor enabled and repeatedly send zero-speed hold instead; otherwise the axis can fall or lift under gravity.
 - Do not use a black-blob detector as the final gimbal input in cluttered scenes; it can lock onto a computer screen or other dark regions. Use `cv_lite` rectangle corners or a model-assisted ROI before enabling ZDT motion.
 - Full tracking mode should remove only the short-test cumulative-angle limiter. Keep per-command `MAX_STEP_DEG`, target-loss stop, startup precheck, final stop, and real mechanical soft limits.
 
@@ -243,18 +247,19 @@ If the task requires continuous competition operation, do not leave the system p
 TRACK:
   target valid; send bounded FC deltas
 
-LOST_STOP:
-  after consecutive misses, send stop several times and suppress deltas
+LOST_HOLD:
+  after consecutive misses, keep enable and send zero-speed or neutral deltas
+  use FE emergency stop only for runaway, limit-hit, or safety fault
 
 REACQUIRE:
-  keep detecting with motors stopped
+  keep detecting while motion output is neutral
   require N stable rectangle hits before motion resumes
 
 TRACK:
   re-enable or re-arm only after reacquire passes
 ```
 
-This keeps the tested safety behavior while allowing the gimbal to resume after the target reappears.
+This keeps the tested safety behavior while allowing the gimbal to resume after the target reappears. If the axis can fall under gravity, prefer the name `LOST_HOLD` over `LOST_STOP` in final code so the behavior is unambiguous.
 
 ### Self-Trained YOLO Target Gimbal Notes
 
@@ -305,6 +310,46 @@ Important control lessons:
 - Keep stop/setup/enable commands ACK-checked even when FC deltas use sampled ACK.
 - If the user says the gimbal barely moves but direction is correct, increase per-step/period/gain only after position feedback confirms whether the motor physically followed the commands.
 
+## Model-ROI Plus Classical Refinement Speed Loop
+
+For the user's trained single-class rectangle model, the best current mounted-gimbal pattern is a hybrid:
+
+```text
+YOLOv8 Rec box -> expanded ROI -> cv_lite rectangle corners -> refined center -> ZDT F6 speed loop
+```
+
+Use explicit display modes in overlays so tuning is visible:
+
+| Mode | Meaning | Control use |
+| --- | --- | --- |
+| `M1/M2` | `cv_lite` strict/relaxed rectangle refinement inside the model ROI | Fine tracking |
+| `M3` | Short hold of the most recent refined rectangle center for 1-2 frames | Bridge brief `cv_lite` misses |
+| `M9` | YOLO box center fallback | Slow coarse reacquire only |
+
+Board-tested lessons from the mounted speed-loop run:
+
+- Do not let YOLO fallback drive the same aggressive loop as refined `cv_lite`. Use a larger deadband, lower gain, and smaller max RPM for `M9`; it should bring the target back near center, then wait for refinement.
+- Remove forced minimum speed near the center. A nonzero minimum RPM can make the gimbal push past the target even when the visual error is already small.
+- Add "cross-center" protection: if raw error changes sign relative to the filtered error, reset the filter for that axis. Otherwise the old EMA error can keep driving after the target has crossed center.
+- If `cv_lite` briefly misses during motion, hold the last refined center for only a couple of frames before falling back to YOLO. Long holds chase stale coordinates.
+- For black rectangle center display, average the four detected corners for the overlay/control center unless a task explicitly wants a perspective intersection. The diagonal-intersection center can look visibly off when corners are noisy or the rectangle is seen at an angle.
+- Add a small integral term only after the refined center is stable. Use it only in refined modes, clear it on lost target, mode switch, cross-center, and YOLO fallback, and show the integral sum on the LCD while tuning.
+- If the target appears and the gimbal turns past it, first reduce max RPM, slew rate, and proportional gain before increasing gains. The symptom is usually speed-loop inertia, not lack of gain.
+- For a mounted gravity-loaded pitch axis, ordinary lost target and ordinary program exit should keep enable plus zero-speed hold. Keep a separate emergency-stop script or action for real runaway.
+
+Conservative speed-loop starting points from the successful run:
+
+```text
+CONTROL_PERIOD_MS = 45
+MAX_SPEED_RPM = 8
+MIN_SPEED_RPM = 0
+SPEED_SLEW_RPM = 2
+DEADBAND_X/Y = about 22/18 px for refined modes
+COARSE_MAX_SPEED_RPM = 5
+COARSE_DEADBAND_X/Y = about 55/45 px for YOLO fallback
+small I term: refined modes only, disabled for YOLO fallback
+```
+
 ## Bring-Up Order
 
 Use this order for a new ZDT gimbal axis:
@@ -317,7 +362,7 @@ Use this order for a new ZDT gimbal axis:
 6. Set the intended gimbal center and reset current position to zero.
 7. Test absolute small angles such as `+15 deg`, `-15 deg`, and `0 deg`.
 8. Test `F1/FC` fast small deltas.
-9. Test lost-target stop.
+9. Test lost-target behavior: emergency stop for runaway, zero-speed hold for mounted gravity-loaded axes.
 10. Only after mechanical limits and laser safety are handled, integrate visual tracking.
 11. For vision tracking, run vision-only candidate labeling first, then enable motors only after the displayed target is confirmed to be the intended object.
 
@@ -327,8 +372,8 @@ Use this order for a new ZDT gimbal axis:
 - Always clamp angle, velocity, and per-frame step.
 - Add software limits before mounting the motor into a gimbal.
 - Do not use high-speed large-angle moves on an unbounded mechanism.
-- If the target is lost, send stop immediately; do not read position, target, error, and speed first.
-- Do not use `disable` as the normal lost-target action on a loaded gimbal, because the axis may fall or move freely.
+- If the target is lost on a mounted gravity-loaded gimbal, neutralize motion while keeping enable and holding torque. Use emergency stop only for runaway, limit-hit, wiring, or safety faults.
+- Do not use `disable` or routine `FE 98` as the normal lost-target action on a loaded gimbal, because the axis may fall or move freely.
 - Treat laser enable as a separate safety output; verify motor tracking before enabling the laser.
 
 ## Untested Or Deferred Features
