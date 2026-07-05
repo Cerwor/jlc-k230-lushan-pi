@@ -188,6 +188,27 @@ Observed useful implementation choices:
 - Convert filtered error directly to speed. A practical starting shape is a larger horizontal gain and smaller pitch gain, for example `yaw_speed = abs(filtered_x) * 20`, `pitch_speed = abs(filtered_y) * 7`, then clamp both to safe limits for the actual mechanism.
 - Send `vel=0` repeatedly while centered or lost; do not rely on the last nonzero command decaying inside the motor.
 
+When adapting the fast grayscale rectangle detector to a mounted ZDT gimbal, do not let the raw largest-rectangle center drive the motor directly. A visually correct overlay can still produce one-frame candidate switches that make a speed loop reverse suddenly.
+
+Use this safer control gate:
+
+```text
+raw cv_lite candidates
+  -> lock target by center, area, width, and height
+  -> reject candidates outside the lock ROI
+  -> update a separate control center with a per-frame slew limit
+  -> convert only the control center error to F6 speed
+```
+
+Practical bring-up rules:
+
+- Debug one axis at a time: set the inactive axis to repeated zero-speed hold before enabling both axes.
+- Draw both centers on the LCD: raw detection center and motor control center. If raw jumps but the control center stays smooth, the safety layer is working.
+- Use a wide deadband and low max RPM first, such as `30-50 px` deadband and `2-4 RPM` max yaw during direction tests.
+- Remove forced minimum speed near the center. It makes the gimbal chase detector noise.
+- If raw center changes sign around the screen center, stop that axis for a few frames or require repeated same-direction samples before reversing.
+- If target loss can unload a gravity-loaded pitch axis, keep enable plus zero-speed hold rather than routine emergency stop.
+
 This pattern feels smoother than small position deltas because the motor keeps moving while the target is off-center and slows as the target approaches center. It also has less per-frame serial overhead than ACK-checked `FC` loops.
 
 Safety caveats:

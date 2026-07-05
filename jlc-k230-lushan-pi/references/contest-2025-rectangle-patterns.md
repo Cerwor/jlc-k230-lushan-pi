@@ -13,6 +13,7 @@ Use this reference for black-tape rectangle targets, cv_lite rectangle corners, 
 - Strategy Ladder
 - Classical Rectangle Tracker
 - Optional cv_lite Rectangle Path
+- Fast Grayscale cv_lite Rectangle Detector
 - Direct Speed-Servo Rectangle Tracking
 - Model-Assisted ROI
 - UART Output
@@ -85,6 +86,43 @@ Board-tested result on the user's Lushan Pi K230 firmware:
   - Shadow: 450/450 hits, 443 strict and 7 fallback, center range `501..505`/`199..205`.
   - Dim light: 449/450 hits, 436 strict and 13 fallback, one miss, center range `501..505`/`199..204`.
 - For contest lighting changes, keep the fallback pass enabled even if the normal-light strict pass looks perfect. The fallback pass costs little when only run on strict misses and helps absorb exposure/contrast changes without target jumps.
+
+## Fast Grayscale cv_lite Rectangle Detector
+
+For clean black-rectangle targets on a light background, a very low-latency detector can skip YOLO and color processing:
+
+```text
+Sensor grayscale 640x480
+  -> cv_lite.grayscale_find_rectangles_with_corners
+  -> area-gated rectangle candidate
+  -> corner midpoint center
+  -> display/control
+```
+
+Useful implementation shape:
+
+- Use `Sensor(id=2, fps=90)` only after that camera mode is confirmed on the target firmware; otherwise use the normal tested `Sensor(id=2)` init.
+- Set `sensor.set_framesize(width=640, height=480)` and `sensor.set_pixformat(Sensor.GRAYSCALE)` when color is not part of the task.
+- Initialize the 3.1-inch LCD as `Display.ST7701, width=800, height=480`, and show the `640x480` camera image with an explicit `x` offset of `(800 - 640) / 2`.
+- Run `cv_lite.grayscale_find_rectangles_with_corners([480, 640], img.to_numpy_ref(), canny1, canny2, epsilon, area_ratio, max_angle_cos, blur)`.
+- A practical first pass is `canny1=50`, `canny2=150`, `epsilon=0.04`, `area_ratio=0.001`, `max_angle_cos=0.3`, `blur=5`.
+- Reject rectangles below a real target area threshold such as `6000` camera-frame pixels.
+- For quick display, compute the center as the midpoint of one diagonal from returned corner fields, for example `(r[4] + r[8]) / 2`, `(r[5] + r[9]) / 2`.
+- For final aiming, prefer a sorted-corner average or diagonal-intersection center if corner order or perspective can vary.
+
+Why it works:
+
+- Black tape on white paper creates high-contrast edges, so Canny plus polygon approximation often finds the rectangle very accurately.
+- The pipeline avoids model inference, RGB conversion, and large Python-side image processing, so it can feel much smoother than YOLO-assisted tracking.
+
+Do not promote this simple form directly to actuator control in a busy scene. The fast detector is good at finding rectangles, not at proving which rectangle is the intended target. A clean demo can choose the largest valid rectangle, but a mounted gimbal or contest field should add:
+
+- previous-center candidate scoring after the first lock;
+- lock ROI around the confirmed target;
+- width/height/area consistency checks;
+- raw detection center separated from the actuator control center;
+- per-frame control-center slew limiting;
+- lost-target hold and stable reacquire before motion resumes.
 
 ## Direct Speed-Servo Rectangle Tracking
 
