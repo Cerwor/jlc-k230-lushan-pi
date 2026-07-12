@@ -218,6 +218,25 @@ Safety caveats:
 - Add a lost-target timeout that sends zero-speed hold frames to both axes on a mounted gimbal; reserve `FE 98` for emergency stop.
 - For final contest code, decide deliberately between speed mode for smooth tracking and `F1/FC` or `FD` position mode for bounded angle control.
 
+### Continuous F6 Tracking Lessons
+
+The mounted two-axis gimbal was also board-tested with an OpenMV-style `cv_lite` rectangle detector ported to K230: full-screen `800x480` LCD, `480x320` grayscale detection, four-corner average center, and direct `F6` speed control.
+
+Use these rules when converting a bounded motion probe into continuous tracking:
+
+- Use a warm-up period followed by consecutive valid detections before arming. A fixed early-frame hit window failed when camera startup took 15-44 frames; warm-up plus 24 consecutive rectangle hits worked reliably.
+- Average the four rectangle corners for the control center. Do not use a noisy diagonal intersection as the speed-loop input unless perspective geometry is required.
+- On the tested shared two-axis UART wiring, sending back-to-back `F6` packets without consuming replies produced valid vision but almost no effective movement. During diagnosis, wait for and validate each `F6` ACK. For optimization, keep enough inter-command spacing and drain or sample replies deliberately; never assume fire-and-forget packets were executed.
+- Do not carry a short-test cumulative displacement latch into an unlimited continuous tracker. The symptom is one initial movement followed by a permanent stop. Use real mechanical limits that block only outward motion and permit recovery, or remove the cumulative guard only when the user explicitly accepts unlimited rotation.
+- Even without a position limit, keep maximum RPM, acceleration/slew limits, target-loss zero-speed hold, startup precheck, and final zero-speed hold. Warn about cable winding before unlimited yaw operation.
+- After a tracked target is lost, clear the armed state, keep both motors enabled at zero speed, and require consecutive valid detections before resuming.
+
+Board acceptance observations for this pattern:
+
+- Stable target runs reached `300/300` rectangle hits with no large center jumps at about `71-77 FPS`.
+- With ACK-checked `F6`, a fixed right-side target moved from about `x=627` toward `x=450`, confirming the yaw sign and convergence direction.
+- With the rectangle removed, a `120/120`-frame run found no candidates, never armed tracking, and kept both axes at zero speed.
+
 ## Tested Two-Axis Vision Gimbal Pattern
 
 The current two-axis ZDT gimbal has been board-tested with a Lushan Pi K230 camera mounted on the gimbal:

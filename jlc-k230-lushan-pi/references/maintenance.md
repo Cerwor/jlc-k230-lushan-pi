@@ -116,3 +116,4 @@ Recent maintenance entries:
 - 2026-06-29: Added reusable direct-UART ZDT speed-mode rectangle tracking guidance and cleaned third-party project URLs from operational references so only portable experience remains.
 - 2026-06-29: Slimmed `SKILL.md` working rules, added probe-result action guidance, documented raw-REPL Plan B, and strengthened `agents/openai.yaml` default prompt.
 - 2026-06-30: Added host-side CI, dependency manifest, regression tests, mpremote safety hardening, reference Scope guardrails, and repository/skill boundary checks.
+- 2026-07-12: Added board-tested continuous `cv_lite` rectangle plus ZDT `F6` tracking lessons: consecutive-hit arming, four-corner center averaging, ACK-aware two-axis UART timing, lost-target rearming, and removal of short-test cumulative displacement latches from explicitly unlimited trackers.
