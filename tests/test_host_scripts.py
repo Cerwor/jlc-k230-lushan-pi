@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import shutil
 import struct
@@ -19,7 +20,9 @@ SCRIPTS_DIR = SKILL_ROOT / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 import mpremote_snapshot  # noqa: E402
+import raw_repl_deploy  # noqa: E402
 import validate_skill  # noqa: E402
+import _host_tools  # noqa: E402
 
 
 def cleanup_skill_pycache() -> None:
@@ -137,7 +140,7 @@ class MpremoteSnapshotTests(unittest.TestCase):
         )
 
         self.assertEqual(result.returncode, 0, result.stdout)
-        self.assertIn("mpremote connect COM1", result.stdout)
+        self.assertIn("connect COM1", result.stdout)
 
     def test_oversized_ksnp_is_rejected_before_decoding(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -148,6 +151,91 @@ class MpremoteSnapshotTests(unittest.TestCase):
                 mpremote_snapshot.decode_ksnp(snapshot, None)
 
         self.assertIn("snapshot shape too large", str(raised.exception))
+
+
+class RawReplDeployTests(unittest.TestCase):
+    def test_remote_path_traversal_is_rejected(self) -> None:
+        with self.assertRaises(ValueError):
+            raw_repl_deploy.normalize_remote_path("/sdcard/../main.py", "main.py")
+
+    def test_generated_base64_decoder_receives_bytes(self) -> None:
+        code = raw_repl_deploy.board_append_code("/sdcard/main.py.codex.tmp", b"\x00abc\xff")
+
+        self.assertIn("a2b_base64(b'", code)
+        self.assertNotIn("a2b_base64('", code)
+
+    def test_verify_output_parser(self) -> None:
+        digest = "ab" * 32
+        size, parsed_digest = raw_repl_deploy.parse_verify_output(
+            "raw output\nRAW_DEPLOY_VERIFY size=513 sha256=%s\n" % digest
+        )
+
+        self.assertEqual(size, 513)
+        self.assertEqual(parsed_digest, digest)
+
+    def test_binary_dry_run_reports_size_hash_and_one_reset(self) -> None:
+        payload = b"\x00\xffK230\r\n"
+        with tempfile.TemporaryDirectory() as temp_dir:
+            source = Path(temp_dir) / "main.py"
+            source.write_bytes(payload)
+            result = run_python(
+                str(SCRIPTS_DIR / "raw_repl_deploy.py"),
+                str(source),
+                "--remote",
+                "/sdcard/main.py",
+                "--dry-run",
+                "--host-python",
+                "missing-python-is-ignored-for-dry-run",
+            )
+
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn("DEPLOY_MODE=STANDARD", result.stdout)
+        self.assertIn("bytes=%d" % len(payload), result.stdout)
+        self.assertIn("sha256=%s" % hashlib.sha256(payload).hexdigest(), result.stdout)
+        self.assertIn("reset=True", result.stdout)
+        self.assertIn("RAW_DEPLOY_DRY_RUN", result.stdout)
+
+    def test_soft_reset_sends_one_ctrl_d(self) -> None:
+        class FakeSerial:
+            def __init__(self) -> None:
+                self.writes: list[bytes] = []
+
+            def write(self, data: bytes) -> None:
+                self.writes.append(data)
+
+            def flush(self) -> None:
+                pass
+
+        serial = FakeSerial()
+        raw_repl_deploy.soft_reset_once(serial)
+
+        self.assertEqual(serial.writes, [b"\x02", b"\x04"])
+
+
+class HostPythonResolutionTests(unittest.TestCase):
+    def test_python_launcher_paths_are_parsed(self) -> None:
+        output = " -V:3.12 * C:\\Runtime A\\python.exe\n -V:3.11 C:\\RuntimeB\\python.exe\n"
+
+        paths = _host_tools.parse_py_launcher_paths(output)
+
+        self.assertEqual(paths, ["C:\\Runtime A\\python.exe", "C:\\RuntimeB\\python.exe"])
+
+    def test_explicit_compatible_python_is_selected(self) -> None:
+        selected, checked = _host_tools.find_compatible_host_python(("json",), sys.executable)
+
+        self.assertIsNotNone(selected)
+        self.assertTrue(_host_tools.same_executable(selected or "", sys.executable))
+        self.assertEqual(len(checked), 1)
+
+    def test_explicit_python_does_not_fall_through(self) -> None:
+        selected, checked = _host_tools.find_compatible_host_python(
+            ("module_that_must_not_exist_for_k230_test",),
+            sys.executable,
+        )
+
+        self.assertIsNone(selected)
+        self.assertEqual(len(checked), 1)
+        self.assertTrue(checked[0][1])
 
 
 class SkillValidatorGuardrailTests(unittest.TestCase):

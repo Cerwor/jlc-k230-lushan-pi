@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import shutil
 import sys
 import time
 from pathlib import Path
@@ -17,6 +18,7 @@ from subprocess import CalledProcessError
 from subprocess import TimeoutExpired
 
 from _host_tools import command_text
+from _host_tools import ensure_host_python
 from _host_tools import print_ports
 from _host_tools import require_serial
 from _host_tools import resolve_mpremote
@@ -137,6 +139,7 @@ def main() -> int:
     parser.add_argument("--allow-fuzzy-port", action="store_true", help="allow description-based serial auto-detection")
     parser.add_argument("--baud", type=int, default=DEFAULT_BAUD, help="serial baud for Ctrl-C/Ctrl-D")
     parser.add_argument("--mpremote", default=None, help="mpremote executable; defaults to PATH or python -m mpremote")
+    parser.add_argument("--host-python", default=None, help="host Python executable; defaults to current interpreter, then bounded auto-discovery")
     parser.add_argument("--break-count", type=int, default=DEFAULT_BREAK_COUNT, help="number of Ctrl-C bytes before copy")
     parser.add_argument("--no-break", action="store_true", help="do not interrupt the running main.py first")
     parser.add_argument("--reset", choices=("hard", "soft", "none"), default="hard", help="reset after copy")
@@ -146,8 +149,22 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.list_ports:
+        ensure_host_python(("serial",), args.host_python, __file__, sys.argv[1:])
         print_ports()
         return 0
+
+    if not args.dry_run:
+        external_mpremote = args.mpremote or os.environ.get("MPREMOTE") or shutil.which("mpremote")
+        required_modules = ("serial",) if external_mpremote else ("serial", "mpremote")
+        ensure_host_python(
+            required_modules,
+            args.host_python,
+            __file__,
+            sys.argv[1:],
+            capabilities=("serial", "mpremote"),
+        )
+    elif not args.port:
+        ensure_host_python(("serial",), args.host_python, __file__, sys.argv[1:])
 
     port = resolve_port(args.port, allow_fuzzy=args.allow_fuzzy_port)
     mpremote = resolve_mpremote(args.mpremote, required=(not args.dry_run))

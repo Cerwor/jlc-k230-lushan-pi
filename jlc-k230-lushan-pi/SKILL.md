@@ -56,6 +56,7 @@ Use `scripts/evaluate_probe_log.py` to interpret bounded probe output for rectan
 - Verify board-specific facts through official references before making hardware claims.
 - Check `sources-and-boundaries.md` before high-risk hardware, firmware, model-conversion, unsupported-board work, or unfamiliar official API calls.
 - Keep constants at the top: display mode, frame size, pins, UART baud rate, thresholds, model path, labels, and control limits.
+- For any board write, default to `STANDARD`; use `QUICK_PATCH` only when every gate in `references/offline-run-patterns.md#deployment-mode-gate` passes, and enter `RECOVERY` only after a deployment attempt fails.
 - For final delivery, provide a ready-to-copy `main.py`; mention SD-card placement, but leave copying/flashing to the user unless explicitly requested.
 - For ready-to-copy CanMV `main.py`, use `references/canmv-api-known-issues.md` conservative syntax rules: avoid f-strings, `lambda`, comprehensions, generator expressions, and complex multi-line inline calls unless the target firmware has been tested with them.
 - For user-trained models, assume the user trains and converts to `.kmodel`; request the `.kmodel`, label order, input size, task type, and conversion notes, then validate the package before writing final board code.

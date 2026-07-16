@@ -12,7 +12,9 @@ Use this reference only for explicit mpremote board-file deployment, runtime sna
 
 - When To Use mpremote
 - Prerequisites
+- Host Python Resolution
 - Windows-Friendly Deployment
+- Raw REPL Deployment Fallback
 - Runtime Snapshot Pull
 - Snapshot Hook Patterns
 - Safety And Failure Modes
@@ -24,7 +26,11 @@ Use `mpremote` only when the user asks to deploy to the board, pull files from t
 
 Do not use it as the default path for final answers. The skill default remains: provide final `main.py` content and let the user copy it unless they explicitly ask Codex to write the board.
 
+Before any board write, apply the single deployment-mode decision gate in `offline-run-patterns.md#deployment-mode-gate`. The selected transport does not determine the mode: an `mpremote` copy can still be `QUICK_PATCH`, while a one-line actuator or startup change remains `STANDARD`. Do not choose `RECOVERY` before a real deployment step fails.
+
 Prefer `scripts/run_canmv_raw_repl.py` for RAM-only smoke tests that should not touch `/sdcard`. Prefer `scripts/mpremote_deploy.py` when the user wants to update `/sdcard/main.py` or companion `.py` files.
+
+If `mpremote` is unavailable or one real `mpremote` copy/handshake attempt fails, use `scripts/raw_repl_deploy.py` as the bounded file-upload fallback. It reuses the proven handshake in `scripts/run_canmv_raw_repl.py`; do not improvise another base64 writer in the conversation.
 
 `scripts/_host_tools.py` is an internal shared helper for serial-port listing, conservative port resolution, `mpremote` lookup, and command execution. Do not call it directly from user-facing workflows.
 
@@ -58,6 +64,21 @@ The helper treats the tested CanMV USB VID:PID `1209:ABD1` as a high-confidence 
 
 By default, `mpremote_deploy.py` and `mpremote_snapshot.py` auto-select only the tested VID:PID match. If the board appears with a generic USB-serial description, pass `--port` explicitly. Use `--allow-fuzzy-port` only when the user accepts description-based matching.
 
+## Host Python Resolution
+
+`mpremote_deploy.py` and `raw_repl_deploy.py` validate host dependencies before opening the serial port. They first probe the Python interpreter that launched the script. Only when it lacks a required module do they perform bounded discovery through `K230_HOST_PYTHON`, active virtual/Conda environments, the Windows Python Launcher, and Python executables exposed through `PATH`.
+
+The `mpremote` deployment path requires `serial` plus an `mpremote` provider. When an explicit `--mpremote`, `MPREMOTE`, or PATH executable already provides `mpremote`, the selected Python only needs `serial`; otherwise it must import both modules. The raw REPL uploader requires only `serial`.
+
+To force one interpreter, pass `--host-python python`. `K230_HOST_PYTHON` adds a preferred fallback candidate after the current interpreter. An explicit `--host-python` is validated by itself and does not silently fall through to another interpreter. Before deployment, the helper reports the selected runtime:
+
+```text
+HOST_PYTHON=<selected interpreter>
+HOST_DEPENDENCIES=serial,mpremote
+```
+
+If another interpreter is selected, the deployment script is restarted under it once, before port ownership or board writes begin. Re-execution is limited to one level. The helper never installs packages, scans arbitrary disks, or tries a second interpreter after deployment has started. `--dry-run` with an explicit port remains dependency-free because it does not open the serial port or invoke `mpremote`.
+
 ## Windows-Friendly Deployment
 
 Deploy `main.py` from the current project directory to `/sdcard/main.py` and hard-reset:
@@ -85,6 +106,32 @@ The deployment helper:
 3. Runs `mpremote connect <port> resume reset`, with Ctrl-D soft-reset fallback.
 
 The `resume` step matters because ordinary `mpremote exec`, `run`, or `fs` commands can trigger auto soft-reset/raw-paste behavior. On K230, a busy `main.py` may swallow a single Ctrl-C and leave the handshake stuck.
+
+## Raw REPL Deployment Fallback
+
+Deploy one file without `mpremote`:
+
+```powershell
+python ".\jlc-k230-lushan-pi\scripts\raw_repl_deploy.py" main.py --remote /sdcard/main.py --port COM14
+```
+
+Preview the byte count, SHA-256, chunk count, selected deployment mode, and reset behavior without opening the serial port:
+
+```powershell
+python ".\jlc-k230-lushan-pi\scripts\raw_repl_deploy.py" main.py --remote /sdcard/main.py --dry-run
+```
+
+For a gate-approved quick patch, state the evidence explicitly:
+
+```powershell
+python ".\jlc-k230-lushan-pi\scripts\raw_repl_deploy.py" main.py --remote /sdcard/main.py --port COM14 --mode QUICK_PATCH --reason "Previously verified display-orientation-only change"
+```
+
+This uploader requires `pyserial`, but not `mpremote`. It reads the local file as bytes, writes base64-decoded byte chunks to a sibling `.codex.tmp` file, verifies temporary-file size and SHA-256, replaces the target with `os.replace()` when available or a rollback-safe rename sequence, verifies the final target again, and issues one soft reset. Use `--no-reset` only when the surrounding workflow owns the reset.
+
+The target is untouched until temporary-file verification passes. If a stale `.codex.bak` exists on firmware without `os.replace()`, stop and inspect it instead of deleting it automatically; it may contain the last good target. A failed handshake may try the next configured baud because no file write has started. Once writing starts, fail closed instead of silently changing transport or baud.
+
+Missing `mpremote` at dependency preflight does not by itself change the selected deployment mode; transport and behavioral risk are separate. After one actual `mpremote` deployment failure, enter `RECOVERY`, use this uploader once, and return to the original mode's unfinished acceptance step.
 
 ## Runtime Snapshot Pull
 
@@ -141,6 +188,7 @@ Do not auto-patch unknown `main.py` files by default. If patching is unavoidable
 - Use `--dry-run` on deployment commands before the first real board write.
 - Treat `mpremote_deploy.py` as a board-writing tool. Do not run it unless the user has explicitly asked to deploy or update board files.
 - Treat `mpremote_snapshot.py --delete` as a remote file deletion. Use it only for temporary snapshot artifacts.
+- On one failed copy or handshake, report the failed step and enter `RECOVERY`; do not repeat `mpremote`, resets, and serial listening without a new diagnostic reason.
 
 ## Provenance Hygiene
 
