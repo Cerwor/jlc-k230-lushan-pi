@@ -1,3 +1,7 @@
+# @runtime: canmv
+# @route: uart-diagnosis
+# @requires: uart2,loopback-wire
+
 import time
 
 from machine import FPIOA, Pin, UART

@@ -116,13 +116,13 @@ Write-Host ""
 Write-Host "Staged files:"
 $staged | ForEach-Object { Write-Host "  $_" }
 
-Invoke-Checked { & (Join-Path $repoRoot "tools\validate.ps1") } "run repository validation"
+Invoke-Checked { & (Join-Path $repoRoot "tools\test.ps1") } "run repository validation and unit tests"
 
 Invoke-Checked { git commit -m $Message } "commit"
 Invoke-Checked { git push -u origin $Branch } "push branch"
 
 if (-not $Body) {
-    $Body = "## Summary`n- $Message`n`n## Validation`n- tools/validate.ps1"
+    $Body = "## Summary`n- $Message`n`n## Validation`n- tools/test.ps1"
 }
 
 $prUrl = (Get-CheckedOutput {

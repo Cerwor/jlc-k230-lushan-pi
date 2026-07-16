@@ -13,17 +13,19 @@ import argparse
 import datetime as dt
 import os
 import sys
-import time
 from pathlib import Path
 from subprocess import CalledProcessError
 from subprocess import TimeoutExpired
 
 from _host_tools import command_text
+from _host_tools import ensure_host_python
+from _host_tools import mpremote_host_modules
 from _host_tools import print_ports
-from _host_tools import require_serial
 from _host_tools import resolve_mpremote
 from _host_tools import resolve_port
 from _host_tools import run_checked
+from _host_tools import send_ctrl_c_burst
+from _host_tools import send_soft_reset
 
 
 DEFAULT_BAUD = 115200
@@ -108,44 +110,14 @@ def log(message: str) -> None:
     print("[mpremote-snapshot] %s" % message)
 
 
-def break_main_loop(port: str, baud: int, count: int, dry_run: bool) -> None:
-    log("send Ctrl-C burst on %s" % port)
-    if dry_run:
-        return
-
-    serial, _list_ports = require_serial()
-    with serial.Serial(port, baud, timeout=0.3, write_timeout=2) as ser:
-        try:
-            ser.read(ser.in_waiting or 1)
-        except Exception:
-            pass
-        for _index in range(count):
-            ser.write(b"\x03")
-            ser.flush()
-            time.sleep(0.15)
-        try:
-            ser.read(4096)
-        except Exception:
-            pass
-
-
-def soft_reset(port: str, baud: int, dry_run: bool) -> None:
-    log("send Ctrl-D soft reset")
-    if dry_run:
-        return
-
-    serial, _list_ports = require_serial()
-    with serial.Serial(port, baud, timeout=0.3, write_timeout=2) as ser:
-        ser.write(b"\x04")
-        ser.flush()
-
-
 def reset_after_pull(mpremote: list[str], port: str, baud: int, mode: str, dry_run: bool) -> None:
     if mode == "none":
         log("skip reset")
         return
     if mode == "soft":
-        soft_reset(port, baud, dry_run)
+        log("send Ctrl-D soft reset")
+        if not dry_run:
+            send_soft_reset(port, baud)
         return
 
     log("hard reset through mpremote")
@@ -153,7 +125,8 @@ def reset_after_pull(mpremote: list[str], port: str, baud: int, mode: str, dry_r
         run_checked(mpremote + ["connect", port, "resume", "reset"], dry_run, timeout=20)
     except (CalledProcessError, TimeoutExpired) as exc:
         log("mpremote reset failed, fallback to Ctrl-D soft reset: %s" % exc)
-        soft_reset(port, baud, dry_run)
+        if not dry_run:
+            send_soft_reset(port, baud)
 
 
 def default_output(remote_path: str) -> Path:
@@ -284,6 +257,7 @@ def main() -> int:
     parser.add_argument("--allow-fuzzy-port", action="store_true", help="allow description-based serial auto-detection")
     parser.add_argument("--baud", type=int, default=DEFAULT_BAUD, help="serial baud for Ctrl-C/Ctrl-D")
     parser.add_argument("--mpremote", default=None, help="mpremote executable; defaults to PATH or python -m mpremote")
+    parser.add_argument("--host-python", help="Host Python executable; defaults to current interpreter, then bounded auto-discovery")
     parser.add_argument("--break-count", type=int, default=DEFAULT_BREAK_COUNT, help="number of Ctrl-C bytes before pull")
     parser.add_argument("--no-break", action="store_true", help="do not interrupt the running main.py first")
     parser.add_argument("--delete", action="store_true", help="delete the remote snapshot after pulling")
@@ -299,8 +273,20 @@ def main() -> int:
         return 0
 
     if args.list_ports:
+        ensure_host_python(("serial",), args.host_python, __file__, sys.argv[1:])
         print_ports()
         return 0
+
+    if not args.dry_run:
+        ensure_host_python(
+            mpremote_host_modules(args.mpremote),
+            args.host_python,
+            __file__,
+            sys.argv[1:],
+            capabilities=("serial", "mpremote"),
+        )
+    elif not args.port:
+        ensure_host_python(("serial",), args.host_python, __file__, sys.argv[1:])
 
     remote_path = validate_remote_snapshot_path(args.remote, args.force_any_remote)
     port = resolve_port(args.port, allow_fuzzy=args.allow_fuzzy_port)
@@ -313,7 +299,9 @@ def main() -> int:
     log("remote: %s" % remote_path)
 
     if not args.no_break:
-        break_main_loop(port, args.baud, args.break_count, args.dry_run)
+        log("send Ctrl-C burst on %s" % port)
+        if not args.dry_run:
+            send_ctrl_c_burst(port, args.baud, args.break_count)
 
     try:
         pull_snapshot(mpremote, port, remote_path, local_path, args.dry_run)

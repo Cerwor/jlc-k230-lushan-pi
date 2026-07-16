@@ -1,3 +1,7 @@
+# @runtime: canmv
+# @route: data-capture
+# @requires: camera,lcd,gpio,sdcard
+
 import os
 import time
 

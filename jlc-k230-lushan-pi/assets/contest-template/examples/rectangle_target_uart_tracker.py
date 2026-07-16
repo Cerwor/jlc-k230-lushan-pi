@@ -1,3 +1,7 @@
+# @runtime: canmv
+# @route: rectangle-tracking
+# @requires: camera,lcd,uart2
+
 import gc
 import os
 import time

@@ -1,3 +1,7 @@
+# @runtime: canmv
+# @route: sensor-diagnosis
+# @requires: camera
+
 import gc
 import os
 import time

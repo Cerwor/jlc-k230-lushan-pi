@@ -32,6 +32,13 @@ CANMV_FORBIDDEN_NAMES = {
 }
 
 WINDOWS_ABSOLUTE_PATH_RE = re.compile(r"\b[A-Za-z]:\\[^\s`'\"<>|]+")
+SEMVER_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
+INLINE_LOCAL_DOC_RE = re.compile(
+    r"`((?:references/)?(?:SKILL|[A-Za-z0-9_.-]+)\.md(?:#[A-Za-z0-9_-]+)?)`"
+)
+MARKDOWN_LOCAL_DOC_RE = re.compile(
+    r"\[[^\]]+\]\(((?:references/)?(?:SKILL|[A-Za-z0-9_.-]+)\.md(?:#[A-Za-z0-9_-]+)?)\)"
+)
 MAX_TEMPLATE_EXAMPLES = 16
 REPO_ONLY_NAMES = (
     ".github",
@@ -40,6 +47,7 @@ REPO_ONLY_NAMES = (
     "tools",
     "README.md",
     "AGENT_USAGE.md",
+    "CHANGELOG.md",
     "LICENSE",
     "requirements-host.txt",
     "requirements.txt",
@@ -88,6 +96,16 @@ def check_skill_frontmatter(root: Path, failures: list[str]) -> None:
         failures.append("SKILL.md frontmatter missing description")
 
 
+def check_version_file(root: Path, failures: list[str]) -> None:
+    path = root / "VERSION"
+    if not path.exists():
+        failures.append("missing VERSION")
+        return
+    version = read_text(path).strip()
+    if not SEMVER_RE.fullmatch(version):
+        failures.append("VERSION must use MAJOR.MINOR.PATCH, got: %s" % version)
+
+
 def check_openai_yaml(root: Path, failures: list[str], warnings: list[str]) -> None:
     yaml_path = root / "agents" / "openai.yaml"
     if not yaml_path.exists():
@@ -109,22 +127,47 @@ def check_python_syntax(root: Path, py_files: list[Path], failures: list[str]) -
             failures.append("%s syntax error: %s" % (rel(path, root), exc))
 
 
+def runtime_metadata(path: Path) -> dict[str, str]:
+    metadata: dict[str, str] = {}
+    for line in read_text(path).splitlines()[:12]:
+        match = re.match(r"^#\s*@([a-z-]+):\s*(\S.*)$", line)
+        if match:
+            metadata[match.group(1)] = match.group(2).strip()
+    return metadata
+
+
 def is_board_side_python(root: Path, path: Path) -> bool:
-    rel_path = rel(path, root)
-    if rel_path.startswith("assets/contest-template/"):
-        return True
-    if rel_path in (
-        "scripts/probe_board_resources.py",
-        "scripts/probe_circle_target.py",
-        "scripts/probe_cvlite_rectangle_target.py",
-        "scripts/probe_k230_sensor_init.py",
-        "scripts/probe_otsu_threshold.py",
-        "scripts/probe_uart2_loopback.py",
-        "scripts/probe_yolo_runtime.py",
-        "scripts/smoke_camera_lcd.py",
-    ):
-        return True
-    return False
+    del root
+    return runtime_metadata(path).get("runtime") == "canmv"
+
+
+def check_runtime_contracts(root: Path, py_files: list[Path], failures: list[str]) -> None:
+    for path in py_files:
+        rel_path = rel(path, root)
+        metadata = runtime_metadata(path)
+        is_template = rel_path.startswith("assets/contest-template/")
+        is_probe = rel_path.startswith("scripts/probe_") or rel_path == "scripts/smoke_camera_lcd.py"
+
+        if is_template or is_probe:
+            if metadata.get("runtime") != "canmv":
+                failures.append("%s must declare # @runtime: canmv" % rel_path)
+        if is_template:
+            for key in ("route", "requires"):
+                if not metadata.get(key):
+                    failures.append("%s must declare # @%s" % (rel_path, key))
+
+        if metadata.get("runtime") != "canmv":
+            continue
+        text = read_text(path)
+        cleanup_pairs = (
+            ("Sensor(", ".stop(", "Sensor.stop"),
+            ("Display.init(", "Display.deinit(", "Display.deinit"),
+            ("MediaManager.init(", "MediaManager.deinit(", "MediaManager.deinit"),
+            ("PipeLine(", ".destroy(", "PipeLine.destroy"),
+        )
+        for initializer, cleanup, label in cleanup_pairs:
+            if initializer in text and cleanup not in text:
+                failures.append("%s initializes a resource without %s" % (rel_path, label))
 
 
 def check_canmv_conservative_style(root: Path, py_files: list[Path], failures: list[str]) -> None:
@@ -164,15 +207,80 @@ def check_python_documentation_links(root: Path, py_files: list[Path], failures:
             failures.append("%s is not referenced by skill docs/metadata" % rel_path)
 
 
-def check_reference_contents(root: Path, warnings: list[str]) -> None:
+def markdown_anchor(heading: str) -> str:
+    heading = re.sub(r"<[^>]+>", "", heading)
+    heading = heading.replace("`", "").strip().lower()
+    heading = re.sub(r"[^\w\- ]", "", heading)
+    return re.sub(r"\s+", "-", heading)
+
+
+def document_anchors(path: Path) -> set[str]:
+    anchors: set[str] = set()
+    duplicate_counts: dict[str, int] = {}
+    for line in read_text(path).splitlines():
+        match = re.match(r"^#{1,6}\s+(.+?)\s*#*\s*$", line)
+        if not match:
+            continue
+        base = markdown_anchor(match.group(1))
+        if not base:
+            continue
+        count = duplicate_counts.get(base, 0)
+        duplicate_counts[base] = count + 1
+        if count:
+            anchors.add("%s-%d" % (base, count))
+        else:
+            anchors.add(base)
+    return anchors
+
+
+def resolve_local_doc(root: Path, target: str) -> tuple[Path, str]:
+    path_text, separator, anchor = target.partition("#")
+    if path_text == "SKILL.md":
+        path = root / path_text
+    elif path_text.startswith("references/"):
+        path = root / Path(path_text)
+    else:
+        path = root / "references" / path_text
+    if not separator:
+        anchor = ""
+    return path, anchor.lower()
+
+
+def check_document_links(root: Path, failures: list[str]) -> None:
+    docs = [root / "SKILL.md"]
+    docs.extend(sorted((root / "references").glob("*.md")))
+    anchors_by_path: dict[Path, set[str]] = {}
+
+    for source in docs:
+        if not source.exists():
+            continue
+        text = read_text(source)
+        targets = INLINE_LOCAL_DOC_RE.findall(text)
+        targets.extend(MARKDOWN_LOCAL_DOC_RE.findall(text))
+        for target in targets:
+            path_text = target.partition("#")[0]
+            if path_text in REPO_ONLY_NAMES:
+                continue
+            path, anchor = resolve_local_doc(root, target)
+            if not path.exists():
+                failures.append("%s references missing document: %s" % (rel(source, root), target))
+                continue
+            if not anchor:
+                continue
+            if path not in anchors_by_path:
+                anchors_by_path[path] = document_anchors(path)
+            if anchor not in anchors_by_path[path]:
+                failures.append("%s references missing anchor: %s" % (rel(source, root), target))
+
+
+def check_reference_contents(root: Path, failures: list[str]) -> None:
     for path in sorted((root / "references").glob("*.md")):
         lines = read_text(path).splitlines()
-        if len(lines) > 100:
-            head = "\n".join(lines[:40])
-            if "## Contents" not in head:
-                warnings.append("%s is longer than 100 lines but has no early Contents section" % rel(path, root))
-            if "## Scope" not in head:
-                warnings.append("%s is longer than 100 lines but has no early Scope section" % rel(path, root))
+        head = "\n".join(lines[:40])
+        if "## Contents" not in head:
+            failures.append("%s has no Contents section in its first 40 lines" % rel(path, root))
+        if "## Scope" not in head:
+            failures.append("%s has no Scope section in its first 40 lines" % rel(path, root))
 
 
 def check_template_inventory(root: Path, warnings: list[str]) -> None:
@@ -252,8 +360,6 @@ def check_raw_repl_deployer(root: Path, failures: list[str]) -> None:
 
 def check_host_python_resolution(root: Path, failures: list[str]) -> None:
     host_tools = read_text(root / "scripts" / "_host_tools.py")
-    mpremote_deploy = read_text(root / "scripts" / "mpremote_deploy.py")
-    raw_deploy = read_text(root / "scripts" / "raw_repl_deploy.py")
     workflow = read_text(root / "references" / "mpremote-debug-workflows.md")
 
     required_helpers = (
@@ -262,17 +368,90 @@ def check_host_python_resolution(root: Path, failures: list[str]) -> None:
         "find_compatible_host_python",
         "ensure_host_python",
         "HOST_REEXEC_DEPTH_ENV",
+        "send_ctrl_c_burst",
+        "send_soft_reset",
+        "mpremote_host_modules",
     )
     for marker in required_helpers:
         if marker not in host_tools:
             failures.append("_host_tools.py missing host-Python marker: %s" % marker)
-    for name, text in (("mpremote_deploy.py", mpremote_deploy), ("raw_repl_deploy.py", raw_deploy)):
+    script_names = (
+        "run_board_probe.py",
+        "run_canmv_raw_repl.py",
+        "mpremote_deploy.py",
+        "mpremote_snapshot.py",
+        "raw_repl_deploy.py",
+    )
+    script_texts: dict[str, str] = {}
+    for name in script_names:
+        path = root / "scripts" / name
+        if not path.exists():
+            failures.append("missing host script: scripts/%s" % name)
+            continue
+        text = read_text(path)
+        script_texts[name] = text
         if "--host-python" not in text or "ensure_host_python" not in text:
             failures.append("%s must use bounded host-Python resolution" % name)
+
+    raw_runner = script_texts.get("run_canmv_raw_repl.py", "")
+    for marker in ("def require_serial", "def print_ports", "def resolve_port"):
+        if marker in raw_runner:
+            failures.append("run_canmv_raw_repl.py duplicates shared host helper: %s" % marker)
+
+    for name in ("mpremote_deploy.py", "mpremote_snapshot.py"):
+        text = script_texts.get(name, "")
+        for marker in ("def break_main_loop", "def soft_reset"):
+            if marker in text:
+                failures.append("%s duplicates shared serial reset helper: %s" % (name, marker))
+
     if "## Host Python Resolution" not in workflow:
         failures.append("mpremote-debug-workflows.md missing Host Python Resolution guidance")
     if "never installs packages" not in workflow:
         failures.append("host-Python workflow must forbid automatic package installation")
+
+
+def check_board_probe_entry(root: Path, failures: list[str]) -> None:
+    path = root / "scripts" / "run_board_probe.py"
+    if not path.exists():
+        failures.append("scripts/run_board_probe.py is missing")
+        return
+
+    text = read_text(path)
+    for marker in ("PROBE_MODES", "run_canmv_raw_repl.py", "evaluate_probe_log.py", "writes_sdcard=0"):
+        if marker not in text:
+            failures.append("run_board_probe.py missing self-contained probe marker: %s" % marker)
+
+    skill_text = read_text(root / "SKILL.md")
+    if "scripts/run_board_probe.py" not in skill_text:
+        failures.append("SKILL.md must document scripts/run_board_probe.py as the board-test entry")
+
+    for doc in collect_files(root, (".md",)):
+        if doc.name == "maintenance.md":
+            continue
+        if "tools/test.ps1 -Board" in read_text(doc):
+            failures.append("%s depends on repository-only board tooling" % rel(doc, root))
+
+
+def check_reference_boundaries(root: Path, failures: list[str]) -> None:
+    legacy = root / "references" / "user-example-patterns.md"
+    if legacy.exists():
+        failures.append("user-example-patterns.md must stay merged into local-code-examples.md")
+
+    for doc in collect_files(root, (".md", ".yaml", ".yml")):
+        if "user-example-patterns.md" in read_text(doc):
+            failures.append("%s references removed user-example-patterns.md" % rel(doc, root))
+
+    rectangle_text = read_text(root / "references" / "contest-2025-rectangle-patterns.md")
+    for marker in ("F6", "F1/FC", "motion ACK"):
+        if marker in rectangle_text:
+            failures.append("rectangle reference contains motor-protocol marker: %s" % marker)
+    if "actuator-neutral observation" not in rectangle_text:
+        failures.append("rectangle reference must end at an actuator-neutral observation")
+
+    yolo_text = read_text(root / "references" / "yolo-module-patterns.md")
+    for marker in ("exec(code)", "replacements = ("):
+        if marker in yolo_text:
+            failures.append("YOLO reference duplicates launcher implementation: %s" % marker)
 
 
 def load_extra_local_path_patterns(config_path: str | None, warnings: list[str]) -> list[str]:
@@ -332,17 +511,22 @@ def main() -> int:
     extra_local_path_patterns = load_extra_local_path_patterns(args.local_path_config, warnings)
     py_files = collect_files(root, (".py",))
     check_skill_frontmatter(root, failures)
+    check_version_file(root, failures)
     check_openai_yaml(root, failures, warnings)
     check_python_syntax(root, py_files, failures)
+    check_runtime_contracts(root, py_files, failures)
     check_canmv_conservative_style(root, py_files, failures)
     check_python_documentation_links(root, py_files, failures)
-    check_reference_contents(root, warnings)
+    check_document_links(root, failures)
+    check_reference_contents(root, failures)
     check_template_inventory(root, warnings)
     check_installable_boundary(root, failures)
     check_actuator_boundaries(root, warnings)
     check_deployment_mode_gate(root, failures)
     check_raw_repl_deployer(root, failures)
     check_host_python_resolution(root, failures)
+    check_board_probe_entry(root, failures)
+    check_reference_boundaries(root, failures)
     check_no_local_paths(root, failures, extra_local_path_patterns)
     check_no_pycache(root, failures)
 

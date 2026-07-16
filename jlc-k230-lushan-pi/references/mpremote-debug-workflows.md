@@ -28,7 +28,7 @@ Do not use it as the default path for final answers. The skill default remains: 
 
 Before any board write, apply the single deployment-mode decision gate in `offline-run-patterns.md#deployment-mode-gate`. The selected transport does not determine the mode: an `mpremote` copy can still be `QUICK_PATCH`, while a one-line actuator or startup change remains `STANDARD`. Do not choose `RECOVERY` before a real deployment step fails.
 
-Prefer `scripts/run_canmv_raw_repl.py` for RAM-only smoke tests that should not touch `/sdcard`. Prefer `scripts/mpremote_deploy.py` when the user wants to update `/sdcard/main.py` or companion `.py` files.
+Prefer `scripts/run_board_probe.py` for standard RAM-only probes that should not touch `/sdcard`, and use `scripts/run_canmv_raw_repl.py` only for an arbitrary script or handshake diagnosis. Prefer `scripts/mpremote_deploy.py` when the user wants to update `/sdcard/main.py` or companion `.py` files.
 
 If `mpremote` is unavailable or one real `mpremote` copy/handshake attempt fails, use `scripts/raw_repl_deploy.py` as the bounded file-upload fallback. It reuses the proven handshake in `scripts/run_canmv_raw_repl.py`; do not improvise another base64 writer in the conversation.
 
@@ -66,7 +66,7 @@ By default, `mpremote_deploy.py` and `mpremote_snapshot.py` auto-select only the
 
 ## Host Python Resolution
 
-`mpremote_deploy.py` and `raw_repl_deploy.py` validate host dependencies before opening the serial port. They first probe the Python interpreter that launched the script. Only when it lacks a required module do they perform bounded discovery through `K230_HOST_PYTHON`, active virtual/Conda environments, the Windows Python Launcher, and Python executables exposed through `PATH`.
+`run_board_probe.py`, `run_canmv_raw_repl.py`, `mpremote_deploy.py`, `mpremote_snapshot.py`, and `raw_repl_deploy.py` validate host dependencies before opening the serial port. They first probe the Python interpreter that launched the script. Only when it lacks a required module do they perform bounded discovery through `K230_HOST_PYTHON`, active virtual/Conda environments, the Windows Python Launcher, and Python executables exposed through `PATH`.
 
 The `mpremote` deployment path requires `serial` plus an `mpremote` provider. When an explicit `--mpremote`, `MPREMOTE`, or PATH executable already provides `mpremote`, the selected Python only needs `serial`; otherwise it must import both modules. The raw REPL uploader requires only `serial`.
 

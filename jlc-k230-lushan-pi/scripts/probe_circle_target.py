@@ -1,3 +1,7 @@
+# @runtime: canmv
+# @route: circle-acceptance
+# @requires: camera,lcd
+
 import gc
 import os
 import time

@@ -1,3 +1,7 @@
+# @runtime: canmv
+# @route: threshold-acceptance
+# @requires: camera,lcd
+
 import gc
 import os
 import time

@@ -23,7 +23,7 @@ Use these as tested defaults when the user has not provided a different current 
 - Board-tested firmware reference: `CanMV_K230_LCKFB_micropython_v1.6-57-gce3418e_nncase_v2.11.0`.
 - Treat the firmware string as a compatibility/debugging reference, not a universal requirement.
 - If API behavior differs, ask the user to confirm the board firmware string and compare with the official wiki/API pages.
-- When this firmware reference changes, update this file and add a short note to `maintenance.md#maintenance-summary`; put long chronological test history in repository-level `docs/BOARD_TEST_LOG.md` when available.
+- When this firmware reference changes, update this file and add a short note to `maintenance.md#tested-baseline`; put long chronological test history in repository-level `docs/BOARD_TEST_LOG.md` when available.
 
 ## Project Bring-Up
 
@@ -55,11 +55,13 @@ When the user explicitly asks to deploy files to `/sdcard`, pull a runtime snaps
 
 When hardware is connected and a quick camera/LCD check is needed, run `scripts/smoke_camera_lcd.py` through `scripts/run_canmv_raw_repl.py`. It initializes the default CSI camera and the 3.1-inch `Display.ST7701` LCD, shows 20 frames, prints `SMOKE_DONE`, and exits. Use this before debugging a large application or an infinite-loop template.
 
+After the smoke test passes, use `python .\scripts\run_board_probe.py --vision resource-cycle --port COM14` when repeated camera/display startup, recovery code, or cleanup behavior is in scope. `scripts/probe_resource_lifecycle.py` performs exactly three RAM-only initialize/capture/deinitialize cycles and reports `ACCEPT_LIFECYCLE`; it does not write the SD card and is not a long-duration leak test.
+
 When camera identity or constructor behavior is uncertain, run `scripts/probe_k230_sensor_init.py` through `scripts/run_canmv_raw_repl.py`. It tries the Lushan default `Sensor(id=2)`, smaller QVGA modes, default `Sensor()`, and selected alternate ids, then prints which modes can snapshot. Use it before changing final camera code away from the normal `Sensor(id=2)` path.
 
 When black/white threshold calibration needs a board-side check without entering the infinite offline tuner loop, run `scripts/probe_otsu_threshold.py` through `scripts/run_canmv_raw_repl.py`. It samples 30 low-resolution grayscale frames, verifies blob detection, shows a short result screen on the 3.1-inch LCD, and exits.
 
-For user-preferred example style, read `user-example-patterns.md`. It contains distilled patterns from the user's prior working code, without relying on local machine paths.
+For user-preferred example style and portable porting rules, read `local-code-examples.md`. It contains the consolidated patterns without relying on local machine paths.
 
 For failures during bring-up, use `troubleshooting.md#first-pass` first, then the task-specific sections below.
 

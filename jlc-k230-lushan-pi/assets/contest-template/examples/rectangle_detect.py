@@ -1,3 +1,7 @@
+# @runtime: canmv
+# @route: rectangle-detection
+# @requires: camera,lcd
+
 import gc
 import os
 import time

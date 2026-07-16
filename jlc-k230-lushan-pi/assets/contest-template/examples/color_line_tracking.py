@@ -1,3 +1,7 @@
+# @runtime: canmv
+# @route: classical-vision
+# @requires: camera,lcd
+
 import gc
 import os
 import time

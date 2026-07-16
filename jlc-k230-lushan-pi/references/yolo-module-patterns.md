@@ -240,7 +240,7 @@ Treat these as demo defaults, not project facts.
 
 ## Contest-Oriented YOLO Guidance
 
-- Start with `scripts/probe_yolo_runtime.py` or `.\tools\test.ps1 -Board -Vision yolo -Port COM14` before assuming imports, model paths, or official example layout.
+- From the folder containing `SKILL.md`, start with `python .\scripts\run_board_probe.py --vision yolo --port COM14` before assuming imports, model paths, or official example layout.
 - Validate the `.kmodel` in still-image mode first.
 - Then run video mode with camera and LCD but no actuator output.
 - Then parse results and enable decision/control logic.
@@ -271,19 +271,9 @@ Useful ideas to keep from those samples:
 
 ## Board-Proven YOLO Smoke Results
 
-On the user's connected Lushan Pi K230, the vision capability probe confirmed:
+The reference firmware has successfully imported `nncase_runtime`, `aicube`, `PipeLine`, and the bundled YOLOv5/YOLOv8/YOLO11 classes. Official examples and models were also found under `/sdcard/examples/`, and both still-image and LCD video YOLOv8 smoke tests completed.
 
-- `nncase_runtime`, `aicube`, `libs.PipeLine`, and `libs.YOLO` imported successfully.
-- `YOLOv5`, `YOLOv8`, and `YOLO11` classes were available.
-- Official examples and models existed under `/sdcard/examples/20-YOLO-Module-Examples/`, `/sdcard/examples/05-AI-Demo/`, and `/sdcard/examples/kmodel/`.
-- `scripts/probe_yolo_runtime.py` through `tools/test.ps1 -Board -Vision yolo -Port COM14` produced `ACCEPT_YOLO status=pass`, finding 63 `.kmodel` files and 54 YOLO/detection examples with `truncated=0`.
-
-Known-good YOLOv8 detection smoke tests:
-
-- Still image: `/sdcard/examples/kmodel/fruit_det_yolov8n_320.kmodel` with `/sdcard/examples/utils/test_fruit.jpg` returned three detections. Measured timing was about `read=184 ms`, `init=747 ms`, `run=21 ms`, `draw=241 ms`.
-- Video: `PipeLine(rgb888p_size=[320,320], display_size=[800,480], display_mode="lcd")` with the same fruit detection model ran 60 camera frames on the 3.1-inch LCD at about 30-32 FPS and exited cleanly.
-
-Use these as smoke baselines only. For contest control, replace labels/model paths with the user's trained `.kmodel`, re-check result structure, and keep actuator output disabled until LCD overlays are stable.
+Treat this only as a runtime capability baseline. It does not validate a user's labels, model input, preprocessing, result tuple, or postprocessing. Exact resource counts and timing telemetry belong in the repository `docs/BOARD_TEST_LOG.md`.
 
 ## Board-Proven YOLOv8 LCD Launcher
 
@@ -295,48 +285,13 @@ On the tested board, `/data/model/yolov8/yolov8s.kmodel` did not exist. The SD-c
 
 Before assuming a model path, run `scripts/probe_board_resources.py` as a temporary CanMV IDE script or otherwise list board paths.
 
-The official `object_detect_yolov8n.py` example may default to HDMI and fail on the 3.1-inch LCD with `RuntimeError: init panel failed`. For the 3.1-inch LCD, use this launcher pattern instead of editing the official SD-card example:
+The official `object_detect_yolov8n.py` may default to HDMI and fail on the 3.1-inch LCD with `RuntimeError: init panel failed`. Use `assets/contest-template/examples/yolov8_lcd_official_launcher.py` rather than duplicating its runtime-patching code here.
 
-```python
-import os
+The launcher must keep these fail-fast invariants:
 
+- verify that the official example file exists;
+- require at least one known HDMI assignment to be replaced;
+- reject the launch if a known HDMI `display_mode` assignment remains;
+- report source-layout drift instead of silently executing the unchanged HDMI example.
 
-path = "/sdcard/examples/05-AI-Demo/object_detect_yolov8n.py"
-
-try:
-    os.stat(path)
-except Exception as e:
-    raise OSError("official YOLOv8 example not found: %s" % path)
-
-code = open(path).read()
-original_code = code
-
-replacements = (
-    ('display_mode="hdmi"', 'display_mode="lcd"'),
-    ("display_mode='hdmi'", "display_mode='lcd'"),
-    ('display_mode = "hdmi"', 'display_mode = "lcd"'),
-    ("display_mode = 'hdmi'", "display_mode = 'lcd'"),
-)
-
-index = 0
-while index < len(replacements):
-    pair = replacements[index]
-    code = code.replace(pair[0], pair[1])
-    index += 1
-
-if code == original_code:
-    raise RuntimeError("display_mode hdmi pattern was not replaced; official example may have changed")
-
-if 'display_mode="hdmi"' in code:
-    raise RuntimeError("display_mode hdmi remains after replacement")
-if "display_mode='hdmi'" in code:
-    raise RuntimeError("display_mode hdmi remains after replacement")
-if 'display_mode = "hdmi"' in code:
-    raise RuntimeError("display_mode hdmi remains after replacement")
-if "display_mode = 'hdmi'" in code:
-    raise RuntimeError("display_mode hdmi remains after replacement")
-
-exec(code)
-```
-
-This launcher was run through CanMV IDE on the user's connected board and produced a live camera preview at about 29 FPS without model-load errors. The bundled template now fails fast if the official file is missing, if no HDMI-to-LCD replacement occurred, or if a known HDMI `display_mode` assignment remains after replacement.
+The asset was board-tested with a live LCD preview. Revalidate it whenever the official SD-card example changes, because runtime source replacement is intentionally a compatibility workaround rather than a stable API.

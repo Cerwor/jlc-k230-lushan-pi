@@ -10,20 +10,20 @@ from __future__ import annotations
 
 import argparse
 import os
-import shutil
 import sys
-import time
 from pathlib import Path
 from subprocess import CalledProcessError
 from subprocess import TimeoutExpired
 
 from _host_tools import command_text
 from _host_tools import ensure_host_python
+from _host_tools import mpremote_host_modules
 from _host_tools import print_ports
-from _host_tools import require_serial
 from _host_tools import resolve_mpremote
 from _host_tools import resolve_port
 from _host_tools import run_checked
+from _host_tools import send_ctrl_c_burst
+from _host_tools import send_soft_reset
 
 
 DEFAULT_BAUD = 115200
@@ -64,38 +64,6 @@ def collect_files(files: list[str], src_dir: str, all_py: bool) -> list[Path]:
     return selected
 
 
-def break_main_loop(port: str, baud: int, count: int, dry_run: bool) -> None:
-    log("send Ctrl-C burst on %s" % port)
-    if dry_run:
-        return
-
-    serial, _list_ports = require_serial()
-    with serial.Serial(port, baud, timeout=0.3, write_timeout=2) as ser:
-        try:
-            ser.read(ser.in_waiting or 1)
-        except Exception:
-            pass
-        for _index in range(count):
-            ser.write(b"\x03")
-            ser.flush()
-            time.sleep(0.15)
-        try:
-            ser.read(4096)
-        except Exception:
-            pass
-
-
-def soft_reset(port: str, baud: int, dry_run: bool) -> None:
-    log("send Ctrl-D soft reset")
-    if dry_run:
-        return
-
-    serial, _list_ports = require_serial()
-    with serial.Serial(port, baud, timeout=0.3, write_timeout=2) as ser:
-        ser.write(b"\x04")
-        ser.flush()
-
-
 def remote_path(remote_dir: str, local_file: Path) -> str:
     clean_dir = remote_dir.rstrip("/")
     if not clean_dir:
@@ -118,7 +86,9 @@ def reset_device(mpremote: list[str], port: str, baud: int, mode: str, dry_run: 
         log("skip reset")
         return
     if mode == "soft":
-        soft_reset(port, baud, dry_run)
+        log("send Ctrl-D soft reset")
+        if not dry_run:
+            send_soft_reset(port, baud)
         return
 
     log("hard reset through mpremote")
@@ -126,7 +96,8 @@ def reset_device(mpremote: list[str], port: str, baud: int, mode: str, dry_run: 
         run_checked(mpremote + ["connect", port, "resume", "reset"], dry_run, timeout=20)
     except (CalledProcessError, TimeoutExpired) as exc:
         log("mpremote reset failed, fallback to Ctrl-D soft reset: %s" % exc)
-        soft_reset(port, baud, dry_run)
+        if not dry_run:
+            send_soft_reset(port, baud)
 
 
 def main() -> int:
@@ -154,8 +125,7 @@ def main() -> int:
         return 0
 
     if not args.dry_run:
-        external_mpremote = args.mpremote or os.environ.get("MPREMOTE") or shutil.which("mpremote")
-        required_modules = ("serial",) if external_mpremote else ("serial", "mpremote")
+        required_modules = mpremote_host_modules(args.mpremote)
         ensure_host_python(
             required_modules,
             args.host_python,
@@ -176,7 +146,9 @@ def main() -> int:
     log("selected files: %s" % ", ".join(path.name for path in files))
 
     if not args.no_break:
-        break_main_loop(port, args.baud, args.break_count, args.dry_run)
+        log("send Ctrl-C burst on %s" % port)
+        if not args.dry_run:
+            send_ctrl_c_burst(port, args.baud, args.break_count)
 
     for src in files:
         deploy_file(mpremote, port, src, args.remote_dir, args.dry_run)

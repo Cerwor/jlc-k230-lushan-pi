@@ -1,3 +1,7 @@
+# @runtime: canmv
+# @route: uart-smoke
+# @requires: uart2
+
 import time
 
 from machine import FPIOA, UART

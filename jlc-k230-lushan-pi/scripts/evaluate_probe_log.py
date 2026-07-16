@@ -286,7 +286,49 @@ def eval_resources(text: str, strict: bool) -> int:
     return emit("ACCEPT_RESOURCES", status, facts, notes, strict)
 
 
+def eval_lifecycle(text: str, strict: bool) -> int:
+    line = find_last_line(text, "LIFECYCLE_PROBE_DONE")
+    if not line:
+        return emit("ACCEPT_LIFECYCLE", "fail", [], ["missing LIFECYCLE_PROBE_DONE"], strict)
+
+    fields = fields_from_line(line)
+    cycles = to_int(fields, "cycles")
+    passed = to_int(fields, "passed")
+    mem_start = to_int(fields, "mem_start", -1)
+    mem_end = to_int(fields, "mem_end", -1)
+    min_mem = to_int(fields, "min_mem", -1)
+    mem_delta = -1
+    if mem_start >= 0 and mem_end >= 0:
+        mem_delta = mem_end - mem_start
+
+    status = "pass"
+    notes: list[str] = []
+    if cycles < 3:
+        status = worse_status(status, "fail")
+        notes.append("fewer than three lifecycle cycles were attempted")
+    if passed != cycles:
+        status = worse_status(status, "fail")
+        notes.append("one or more camera/display lifecycle cycles failed")
+    if mem_delta < -262144:
+        status = worse_status(status, "warn")
+        notes.append("Python heap dropped by more than 256 KiB across the bounded run")
+    if mem_start < 0 or mem_end < 0:
+        notes.append("Python heap telemetry is unavailable; native media pools still require board observation")
+
+    facts = [
+        "cycles=%d" % cycles,
+        "passed=%d" % passed,
+        "mem_start=%d" % mem_start,
+        "mem_end=%d" % mem_end,
+        "mem_delta=%d" % mem_delta,
+        "min_mem=%d" % min_mem,
+    ]
+    return emit("ACCEPT_LIFECYCLE", status, facts, notes, strict)
+
+
 def infer_kind(text: str) -> str:
+    if "LIFECYCLE_PROBE_DONE" in text:
+        return "lifecycle"
     if "RECT_PROBE_DONE" in text:
         return "rect"
     if "CIRCLE_PROBE_DONE" in text:
@@ -303,7 +345,11 @@ def infer_kind(text: str) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Evaluate K230 probe logs.")
     parser.add_argument("log", help="log file path, or - for stdin")
-    parser.add_argument("--kind", default="auto", choices=("auto", "rect", "circle", "yolo", "uart", "resources"))
+    parser.add_argument(
+        "--kind",
+        default="auto",
+        choices=("auto", "rect", "circle", "yolo", "uart", "resources", "lifecycle"),
+    )
     parser.add_argument("--strict", action="store_true", help="treat warnings as failures")
     args = parser.parse_args()
 
@@ -322,6 +368,8 @@ def main() -> int:
         return eval_uart(text, args.strict)
     if kind == "resources":
         return eval_resources(text, args.strict)
+    if kind == "lifecycle":
+        return eval_lifecycle(text, args.strict)
 
     print("ACCEPT_UNKNOWN status=fail")
     print("ACCEPT_UNKNOWN_NOTES could not infer probe type")

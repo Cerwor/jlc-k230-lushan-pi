@@ -1,271 +1,173 @@
 # 2025 Rectangle Target Patterns
 
-Use this reference for 2025-style e-contest vision tasks that need a K230 camera to find a rectangular target, estimate its center, and send coordinates to an external controller.
+Use this reference for K230 vision tasks that find a rectangular target, estimate its center, and publish an actuator-neutral target observation.
 
-For failures, use `troubleshooting.md`: `#camera-problems`, `#lcd-or-display-problems`, `#gpio-pwm-uart-i2c-spi-problems`, and `#contest-integration-problems`.
+For failures, use `troubleshooting.md`: camera, LCD, probe-result, and contest-integration sections.
 
 ## Scope
 
-Use this reference for black-tape rectangle targets, cv_lite rectangle corners, rectangle-center UART output, and 2025-style visual control tasks.
+Use this reference for black-tape rectangle targets, `cv_lite` corners, model-assisted ROI, center tracking, and UART coordinate output. Motor-specific packets and actuator tuning belong only in the confirmed actuator reference.
 
 ## Contents
 
 - Strategy Ladder
 - Classical Rectangle Tracker
-- Optional cv_lite Rectangle Path
-- Fast Grayscale cv_lite Rectangle Detector
-- Direct Speed-Servo Rectangle Tracking
+- cv_lite Rectangle Path
+- Fast Grayscale Detector
 - Model-Assisted ROI
+- Temporal Selection
+- Control Output Boundary
 - UART Output
-- What Not To Copy Directly
-- Built-In Template
+- Templates and Acceptance
 
 ## Strategy Ladder
 
-Prefer this order during contest bring-up:
+Use the smallest pipeline that rejects the actual field background:
 
-1. Start with `assets/contest-template/examples/rectangle_detect.py` to prove camera, LCD, and `find_rects`.
-2. Use ROI, grayscale/gamma/binary preprocessing, area filtering, aspect-ratio filtering, and diagonal-intersection center calculation.
-3. Add temporal target tracking so the selected rectangle does not jump between false positives.
-4. If the firmware provides `cv_lite`, test it as an optional rectangle-corner path after a small `import cv_lite` probe.
-5. If the background is too noisy, use a small single-class detector only to propose an ROI, then run classical rectangle/feature detection inside that ROI.
-6. Enable UART output only after on-screen target position is stable.
-7. Enable gimbal or motor output only after the same on-screen rectangle is confirmed through a vision-only candidate-labeling run.
+1. Prove camera and full-screen LCD with `rectangle_detect.py`.
+2. Try grayscale `cv_lite` corners for a clean black-on-white target.
+3. Add geometry, area, and temporal consistency filters.
+4. Add strict-first, relaxed-on-miss detection for lighting changes.
+5. If clutter still wins, use a single-class model only to propose an ROI, then refine the rectangle inside it.
+6. Stabilize the overlay and coordinate stream before enabling any actuator.
 
 ## Classical Rectangle Tracker
 
-Useful pattern:
+Use `image.find_rects(...)` as the compatibility path when `cv_lite` is unavailable:
 
-- Capture RGB565 at `800x480` for the 3.1-inch LCD.
-- Convert a copy to grayscale.
-- Apply `gamma_corr(...)` when the black/white contrast needs strengthening.
-- Apply `binary([(low, high)], roi=(x, y, w, h))` to restrict the search region.
-- Run `find_rects(threshold=...)`.
-- Reject candidates outside ROI, below minimum area, or outside aspect-ratio limits.
-- Compute the center from the intersection of the two diagonals formed by four corners.
-- When multiple candidates exist, choose the largest target at first, then choose the candidate closest to the previous target center.
+- capture a display frame suitable for the 3.1-inch LCD;
+- process a lower-resolution grayscale copy;
+- use ROI, gamma/binary preprocessing, minimum area, and aspect-ratio filters;
+- obtain all four corners and calculate the aim point from corner geometry;
+- select by area on first lock, then by distance and shape consistency relative to the previous target;
+- scale detection coordinates explicitly into the `800x480` display space.
 
-Do not rely only on `rect.rect()` center for perspective views. It is useful as a fallback, but the corner diagonal intersection is usually better for target aiming.
+Do not rely on the bounding-box center alone for a perspective target. The four-corner average is stable for tracking; diagonal intersection is useful only when the geometry and corner order have been verified.
 
-## Optional cv_lite Rectangle Path
+## cv_lite Rectangle Path
 
-A portable K230 rectangle pattern uses `cv_lite.rgb888_find_rectangles_with_corners(...)` on an RGB888 camera frame to return corner points directly. Treat this as an optional acceleration/accuracy path, not as a baseline dependency.
-
-Useful shape:
+Probe `import cv_lite` before making it a final dependency. A useful pipeline is:
 
 ```text
-RGB888 frame -> cv_lite rectangle candidates -> largest/most stable rectangle -> geometry checks -> diagonal-intersection center -> UART/control
+camera frame
+  -> strict cv_lite rectangle corners
+  -> relaxed pass only when strict misses
+  -> geometry and area gates
+  -> temporal candidate selection
+  -> four-corner center
 ```
 
-Keep these guards when adapting it:
+Keep these invariants:
 
-- First run a tiny `import cv_lite` probe on the target firmware; fall back to `image.find_rects(...)` when unavailable.
-- Keep the LCD surface full-screen at `800x480`, even if detection runs at `480x320`, `400x240`, or another lower resolution.
-- Explicitly scale and rotate candidate corners into LCD coordinates before drawing or sending UART values.
-- Filter candidates by area, side-length consistency, parallel/perpendicular angle checks, and center stability.
-- Convert desktop-style f-strings, `.format(...)`, comprehensions, and complex inline calls to conservative CanMV MicroPython syntax before final `main.py` delivery.
+- `cv_lite.grayscale_find_rectangles_with_corners(...)` is the preferred high-FPS path for high-contrast black tape on white material.
+- RGB888 `cv_lite` is a fallback when color contrast carries useful information.
+- `find_blobs` is only a coarse fallback because a filled-region center can be biased from the rectangle-corner center.
+- Full-frame `find_rects` is not the primary high-FPS route unless ROI and geometry filters are strong.
+- Run the relaxed detector only after a strict miss; always reapply the same final area and geometry gates.
+- Convert desktop-only syntax to conservative CanMV MicroPython before deployment.
 
-Board-tested result on the user's Lushan Pi K230 firmware:
+Board-tested conclusions on the reference firmware:
 
-- `cv_lite` imported successfully, and `rgb888_find_rectangles_with_corners` existed.
-- Official examples were present under `/sdcard/examples/23-CV_Lite/`, including RGB888 and grayscale rectangle-corner demos.
-- A bounded RGB888 test using `480x320` detection plus full-screen `800x480` LCD display ran 120 frames without crashing and stabilized around 58-59 FPS.
-- With no intentional rectangle target, detections were sparse; tune Canny thresholds, area ratio, and angle cosine on the real contest target before using it for control.
-- With a real black-tape rectangle on white paper centered in view, a 300-frame comparison showed:
-  - `cv_lite.grayscale_find_rectangles_with_corners`: 299/300 hits, final FPS about 58, average LCD center `(418,214)`, x range `418..418`, y range `210..216`.
-  - `cv_lite.rgb888_find_rectangles_with_corners`: 297/300 hits, final FPS about 59, average LCD center `(418,215)`, x range `418..418`, y range `210..216`.
-  - Traditional `image.find_rects` after black-threshold binary: 297/300 hits but selected false rectangles repeatedly, final FPS about 22-23, center range `43..420`/`42..262`.
-  - Black-threshold `find_blobs`: 300/300 hits and final FPS about 46, but the blob center `(395,279)` was biased away from the rectangle-corner center, so use it only as coarse fallback.
-- For black-on-white rectangle targets, prefer grayscale `cv_lite` corners as the first high-FPS tracker. Use RGB888 `cv_lite` when grayscale preprocessing loses useful color contrast. Keep `find_blobs` as a coarse fallback and avoid traditional `find_rects` as the primary path unless extra ROI/geometry filters are added.
-- With the user moving, tilting, and changing distance of the same rectangle target during a 600-frame run, strict grayscale `cv_lite` corners reached 503/600 hits at about 59 FPS with no large target jumps (`max_step=26`, `big_jumps=0`). Adding a second relaxed pass only when strict detection returned no rectangles improved continuity to 578/600 hits, with 565 strict hits, 13 fallback hits, 22 misses, about 58 FPS, `max_step=13`, and no large jumps.
-- For moving rectangle targets, select candidates using the previous target center while the target has not been lost for too many frames. Use strict parameters first, then a relaxed fallback such as lower Canny thresholds, smaller area ratio, larger polygon epsilon, and larger angle cosine only on missed frames.
-- With a black-tape rectangle target on paper that also contained several small rectangles, the normal grayscale `cv_lite` tracker hit 299/300 frames at about 63-64 FPS; the small rectangles were rejected before candidate selection (`max_rects=1`, `big_jumps=0`, center range `446..449`/`180..183`). A deliberately relaxed stress probe reached up to six raw rectangle candidates and five valid candidates, still selected the max-area target on all hit frames, and held 177/180 hits with `big_jumps=0`, center range `445..449`/`180..183`, and about 56-62 FPS. This supports keeping area-first plus previous-center scoring for cluttered paper targets.
-- In a 1800-frame lighting robustness test with four 450-frame phases, the same strict-plus-relaxed-fallback tracker stayed stable at about 59 FPS:
-  - Normal light: 449/450 hits, all strict, one startup miss, center range `501..505`/`199..204`.
-  - Bright light: 450/450 hits, 440 strict and 10 fallback, center range `501..505`/`199..204`.
-  - Shadow: 450/450 hits, 443 strict and 7 fallback, center range `501..505`/`199..205`.
-  - Dim light: 449/450 hits, 436 strict and 13 fallback, one miss, center range `501..505`/`199..204`.
-- For contest lighting changes, keep the fallback pass enabled even if the normal-light strict pass looks perfect. The fallback pass costs little when only run on strict misses and helps absorb exposure/contrast changes without target jumps.
+- grayscale `cv_lite` remained stable near 58-64 FPS in clean, moving, cluttered, and changed-lighting target tests;
+- strict-first plus relaxed-on-miss improved continuity without introducing large target jumps;
+- area-first lock followed by previous-center scoring rejected smaller competing rectangles;
+- traditional `find_rects` was slower and more false-positive-prone, while `find_blobs` was useful only for coarse localization.
 
-## Fast Grayscale cv_lite Rectangle Detector
+Exact historical telemetry belongs in the repository `docs/BOARD_TEST_LOG.md`, not in this task reference.
 
-For clean black-rectangle targets on a light background, a very low-latency detector can skip YOLO and color processing:
+## Fast Grayscale Detector
+
+For a clean target, the low-latency shape is:
 
 ```text
 Sensor grayscale 640x480
-  -> cv_lite.grayscale_find_rectangles_with_corners
-  -> area-gated rectangle candidate
-  -> corner midpoint center
-  -> display/control
+  -> cv_lite grayscale corners
+  -> area and geometry gates
+  -> corner center
+  -> display/observation output
 ```
 
-Useful implementation shape:
+Practical starting points, which still require field tuning:
 
-- Use `Sensor(id=2, fps=90)` only after that camera mode is confirmed on the target firmware; otherwise use the normal tested `Sensor(id=2)` init.
-- Set `sensor.set_framesize(width=640, height=480)` and `sensor.set_pixformat(Sensor.GRAYSCALE)` when color is not part of the task.
-- Initialize the 3.1-inch LCD as `Display.ST7701, width=800, height=480`, and show the `640x480` camera image with an explicit `x` offset of `(800 - 640) / 2`.
-- Run `cv_lite.grayscale_find_rectangles_with_corners([480, 640], img.to_numpy_ref(), canny1, canny2, epsilon, area_ratio, max_angle_cos, blur)`.
-- A practical first pass is `canny1=50`, `canny2=150`, `epsilon=0.04`, `area_ratio=0.001`, `max_angle_cos=0.3`, `blur=5`.
-- Reject rectangles below a real target area threshold such as `6000` camera-frame pixels.
-- For quick display, compute the center as the midpoint of one diagonal from returned corner fields, for example `(r[4] + r[8]) / 2`, `(r[5] + r[9]) / 2`.
-- For final aiming, prefer a sorted-corner average or diagonal-intersection center if corner order or perspective can vary.
+- Canny thresholds around `50/150`;
+- polygon epsilon around `0.04`;
+- area ratio around `0.001`;
+- maximum angle cosine around `0.3`;
+- blur size around `5`;
+- a real target area floor, rather than accepting every rectangle.
 
-Why it works:
-
-- Black tape on white paper creates high-contrast edges, so Canny plus polygon approximation often finds the rectangle very accurately.
-- The pipeline avoids model inference, RGB conversion, and large Python-side image processing, so it can feel much smoother than YOLO-assisted tracking.
-
-Do not promote this simple form directly to actuator control in a busy scene. The fast detector is good at finding rectangles, not at proving which rectangle is the intended target. A clean demo can choose the largest valid rectangle, but a mounted gimbal or contest field should add:
-
-- previous-center candidate scoring after the first lock;
-- lock ROI around the confirmed target;
-- width/height/area consistency checks;
-- raw detection center separated from the actuator control center;
-- per-frame control-center slew limiting;
-- lost-target hold and stable reacquire before motion resumes.
-
-## Direct Speed-Servo Rectangle Tracking
-
-For a black rectangle target on a clean field, a very effective low-latency architecture is:
-
-```text
-640x480 grayscale frame
-  -> cv_lite grayscale rectangle corners
-  -> largest valid rectangle
-  -> corner-based center
-  -> signed pixel error
-  -> EMA filter
-  -> ZDT speed-mode command
-```
-
-This keeps the K230 doing both vision and control, with no external MCU. It works best when the target is a high-contrast geometric mark and the motor driver accepts direct speed commands over UART.
-
-Useful tuning pattern:
-
-- Capture grayscale instead of RGB when color is not part of the rule.
-- Use `Sensor(id=2, fps=90)` only after the camera module and firmware have been tested; fall back to the normal `Sensor(id=2)` pattern if needed.
-- Keep the 3.1-inch LCD at `800x480`; if the camera frame is `640x480`, explicitly track the difference between camera coordinates and display offset.
-- Use `screen_center_x = cam_w / 2`; tune `screen_center_y` with a small offset if the camera or gimbal mounting is biased.
-- Select the largest rectangle and reject targets below a real area threshold such as `6000` camera-frame pixels.
-- When no valid rectangle is found, use the screen center as the temporary target so the error becomes zero and the speed command stops.
-- Use a small deadband around `3 px`.
-- Use a simple EMA on signed error, for example `filtered = 0.7 * raw + 0.3 * previous`.
-- Convert error to speed with per-axis gains; horizontal yaw often tolerates a larger gain than pitch.
-
-The reason this looks smooth is that speed mode behaves like continuous visual servoing: a large error commands faster motion, and the command naturally shrinks near the center. The tradeoff is that speed mode is less inherently bounded than position deltas, so final code needs speed clamps, lost-target stop, and real mechanical angle limits.
-
-Board-tested ZDT gimbal integration notes:
-
-- Do not use a simple black `find_blobs` target as the actuator input in scenes that contain a computer screen or other large dark objects. A blob-based smoke test can prove the motor chain, but it can chase the wrong object.
-- Use `cv_lite` rectangle candidates for black-rectangle gimbal tracking. Confirm the displayed `#1` candidate is the intended paper target before sending any motor command.
-- In a cluttered scene with several small black objects, candidate labeling showed the main rectangle as `#1` with area about `20467`; a small dark object appeared as `#2` with area about `630`, so area-first plus geometry filtering selected the correct target.
-- A 300-frame cluttered-scene probe reached `298/300` hits, `big_jumps=0`, and about `63 FPS`.
-- During active two-axis ZDT tracking with clutter, the tested loop kept `120/120` hits and `15/15` motion ACKs with no target jump.
-- Lost-target safety was board-tested: after the rectangle was removed, the loop sent ZDT stop after `3` consecutive missed frames and suppressed later tracking commands.
-- Four-direction short tests showed correct convergence directions for a mounted camera: left, right, above, and below targets all moved toward the LCD center under bounded ZDT `FC` control.
-- A long fixed/slow target closed-loop run reached `3597/3600` hits, `big_jumps=0`, and `54/54` motion ACKs.
-- A full tracking run with the short-test cumulative angle limiter disabled reached `7089/7200` hits at about `50 FPS`, with `486/490` motion ACKs and one large target jump. The target-loss stop fired after `3` consecutive misses, proving the safety path, but also showing that a final competition program should include reacquisition if continued operation is required.
-
-Recommended vision-to-gimbal gate:
-
-```text
-PRECHECK:
-  run cv_lite rectangle detection only
-  require enough hits, stable center, and displayed target confirmation
-
-TRACK:
-  send bounded signed pixel-error control to the gimbal
-  clamp per-step and total axis motion
-
-LOST:
-  after a small number of consecutive misses, send motor stop immediately
-  do not continue using the last known target center
-
-REACQUIRE:
-  if continuous operation is needed, keep motors stopped
-  require the rectangle to be stable again before returning to TRACK
-```
+If a `640x480` frame is shown unscaled on the `800x480` LCD, account for the horizontal display offset in overlays. Keep detection, display, and output coordinate spaces explicitly named.
 
 ## Model-Assisted ROI
 
-A portable one-class `AnchorBaseDet` KModel path generated for K230 with nncase 2.9.0 uses `nncase_runtime`, `aicube`, and `deploy_config.json`, then calls `aicube.anchorbasedet_post_process(...)`.
-
-Observed model properties:
-
-- `model_type`: `AnchorBaseDet`
-- `chip_type`: `k230`
-- `nncase_version`: `2.9.0`
-- `img_size`: `[640, 640]`
-- `num_classes`: `1`
-- `categories`: `["1"]`
-- `confidence_threshold`: `0.5`
-- `nms_threshold`: `0.5`
-
-Use this as an architecture pattern, not as a universal model:
+When geometry alone cannot distinguish the intended target, use a detector as a coarse semantic gate:
 
 ```text
-single-class detector -> coarse box/ROI -> classical rectangle corners -> center -> UART/control
+single-class model box
+  -> expand and clip ROI
+  -> strict/relaxed cv_lite corners inside ROI
+  -> refined center
+  -> observation output
 ```
 
-This is often better than pure YOLO for fixed contest targets, because the model only needs to suppress scene interference while geometry code computes the precise target center.
+The model does not need to provide the final aiming center. It should suppress background candidates, while corner geometry supplies the precise center. Before using a custom `.kmodel`, read `model-vision-pipeline.md` and the relevant YOLO or AnchorBaseDet API reference.
+
+If refinement misses briefly, hold the last refined center for only one or two frames. A model-box-center fallback should be labeled as coarse, use lower confidence in downstream control, and never masquerade as a refined center.
+
+## Temporal Selection
+
+Maintain a small target state containing:
+
+- center, width, height, area, and four corners;
+- detection mode and confidence/quality;
+- frame sequence or timestamp;
+- consecutive hit and miss counts.
+
+On first acquisition, prefer the largest geometrically valid candidate. While locked, score candidates by distance from the previous center plus width, height, and area change. Clear the lock after bounded misses and require consecutive valid hits before reporting reacquisition.
+
+Draw the raw candidate and stabilized output center separately while tuning. This exposes candidate switches without allowing a one-frame jump to propagate into control.
+
+## Control Output Boundary
+
+This reference ends at an actuator-neutral observation:
+
+```text
+target_valid, center_x, center_y, error_x, error_y,
+quality, mode, sequence, timestamp
+```
+
+The vision layer may apply bounded center filtering and mark data stale, but it must not invent motor frames, axis signs, holding behavior, or mechanical limits. Route confirmed ZDT hardware to `zdt-stepper-gimbal-patterns.md`; route other actuators to their own protocol reference. If the actuator is unknown, output coordinates only.
 
 ## UART Output
 
-For target center output, keep the first version simple and readable:
+Readable bring-up format:
 
 ```text
 t,<x>,<y>\n
 ```
 
-For centering control, it is often better to send signed pixel error from image center instead of absolute LCD coordinates:
+Signed center-error format:
 
 ```text
 e,<err_x>,<err_y>\n
 ```
 
-A compact bracketed packet style is useful when an external controller expects fixed-width signed errors:
+For a fixed packet, define framing, sequence, checksum, stale timeout, and one unambiguous lost-target state. Do not mix human debug text with controller packets on the same channel unless the receiver explicitly supports it.
 
-```text
-[+012-034*]
-```
+Use UART2 only after the pin pair is confirmed with `hardware-pin-resource-quickref.md` or `scripts/probe_uart2_loopback.py`.
 
-In that form the payload is four characters of signed `x` error followed by four characters of signed `y` error, framed by `[` and `*]`. If this format is used, define one consistent lost-target packet such as `[+999+999*]` or a separate `[LOST*]` state; do not mix readable debug strings with controller packets.
+## Templates and Acceptance
 
-Use UART2 only when it matches the user's wiring. The common Lushan Pi examples map:
+Use these templates in order:
 
-- `GPIO11 -> FPIOA.UART2_TXD`
-- `GPIO12 -> FPIOA.UART2_RXD`
-- baud rate `115200`
+- `assets/contest-template/examples/rectangle_detect.py` for first camera/LCD proof;
+- `assets/contest-template/examples/cvlite_rectangle_target_uart_tracker.py` for the preferred `cv_lite` path;
+- `assets/contest-template/examples/rectangle_target_uart_tracker.py` for the compatibility path.
 
-For final contest control, consider adding a header, sequence id, checksum, or timeout acknowledgment on the external MCU side.
-
-## What Not To Copy Directly
-
-- Do not hard-code third-party model paths such as `/sdcard/mp_deployment_source/` unless the user uses that deployment layout.
-- Do not assume the reviewed model files match the user's target or firmware.
-- Do not assume `cv_lite` exists on every CanMV firmware image; probe it before writing a final dependency.
-- Do not copy `.rknn`, `rknn.api`, OpenCV/Linux camera code, or RK3576 runtime code into a K230 CanMV script.
-- Do not keep a low-resolution camera frame centered on the `800x480` LCD without scaling; that causes the "small image in the middle" display failure.
-- Do not mix success and failure UART packet formats.
-- Do not assume `GPIO53` is the user's button pin.
-- Do not preserve temporary debug comments, Chinese mojibake, or unused imports from external examples.
-- Do not enable actuators from model output until the same coordinates are stable on LCD and serial logs.
-- Do not promote a black-blob smoke test to final gimbal control when the field may include screens, dark backgrounds, cables, or other dark objects.
-
-## Built-In Template
-
-Use `assets/contest-template/examples/cvlite_rectangle_target_uart_tracker.py` first for black-on-white rectangle targets on firmware where `cv_lite` is available. It encodes the board-tested strict-plus-relaxed-fallback `cv_lite` corner strategy, previous-center candidate selection, full-screen LCD overlay, and UART signed-error output.
-
-Use `assets/contest-template/examples/rectangle_target_uart_tracker.py` when `cv_lite` is unavailable or the user needs the older `image.find_rects` route.
-
-Use the simpler `assets/contest-template/examples/rectangle_detect.py` for the first camera/LCD smoke test.
-
-## Acceptance Probe
-
-For a black-tape rectangle target, run:
+From the folder containing `SKILL.md`, run the RAM-only target probe:
 
 ```powershell
-.\tools\test.ps1 -Board -Vision rect-target -Port COM14
+python .\scripts\run_board_probe.py --vision rect-target --port COM14
 ```
 
-`ACCEPT_RECT status=pass` means the 300-frame probe saw high hit rate, acceptable FPS, and no concerning center jumps under the current placement. `warn` usually means the target is partially out of ROI, too small/large, lighting changed, or false rectangles are competing. `fail` means do not enable control output from this result.
+`ACCEPT_RECT status=pass` means the bounded probe met its hit-rate, FPS, and center-jump gates in the current scene. For `warn` or `fail`, follow `troubleshooting.md#probe-result-actions`; do not enable actuator output from an unaccepted observation stream.

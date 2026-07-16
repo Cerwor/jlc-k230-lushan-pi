@@ -1,3 +1,7 @@
+# @runtime: canmv
+# @route: field-calibration
+# @requires: camera,lcd,gpio
+
 import gc
 import os
 import time

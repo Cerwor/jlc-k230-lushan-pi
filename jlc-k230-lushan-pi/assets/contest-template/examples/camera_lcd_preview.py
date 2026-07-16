@@ -1,3 +1,7 @@
+# @runtime: canmv
+# @route: bring-up
+# @requires: camera,lcd
+
 import os
 import time
 

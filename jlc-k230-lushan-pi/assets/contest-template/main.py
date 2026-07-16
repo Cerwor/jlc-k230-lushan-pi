@@ -1,3 +1,7 @@
+# @runtime: canmv
+# @route: contest-integration
+# @requires: camera,lcd
+
 import gc
 import os
 import time

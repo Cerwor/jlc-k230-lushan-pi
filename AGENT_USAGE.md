@@ -16,8 +16,8 @@
 
 - 默认交付可复制的 `main.py` 内容或文件。
 - 除非用户明确要求，不主动写入 SD 卡、不通过 IDE 保存到开发板、不覆盖板端文件。
-- 如果需要连接开发板测试，优先使用 `scripts/run_canmv_raw_repl.py` 从 RAM 临时运行。
-- 如果用户明确要求部署到板端或拉取运行中截图，再读取 `references/mpremote-debug-workflows.md` 并使用 `scripts/mpremote_deploy.py` / `scripts/mpremote_snapshot.py`。
+- 如果需要连接开发板测试，优先使用安装包内的 `scripts/run_board_probe.py`；它从 RAM 调度探针并自动判读，不写 SD 卡。
+- 如果用户明确要求部署到板端或拉取运行中截图，再读取 `references/mpremote-debug-workflows.md`。优先用 `mpremote_deploy.py` / `mpremote_snapshot.py`，握手不兼容时用 `raw_repl_deploy.py` 做单文件回退。
 - 对电赛项目，先验证摄像头/LCD，再验证识别，再验证串口，再进入执行器控制。
 - 对通用云台、激光打靶、激光描图或目标跟随任务，先按 `SKILL.md` 路由读取 `references/contest-patterns.md`，确认执行器类型后再进入具体协议。
 - 只有确认是 ZDT XS 系列闭环步进、Emm/ZDT free protocol、固定 `0x6B` 校验或 `F1/FC` 快速位置命令时，才读取并套用 `references/zdt-stepper-gimbal-patterns.md`。
@@ -81,24 +81,27 @@
 
 ## 连接开发板测试流程
 
-如果能访问仓库根目录，优先使用分层测试入口。默认只做离线预检；显式加 `-Board` 后才通过 raw REPL 连接开发板，且只从 RAM 运行，不写 `/sdcard/main.py`。
-测试选择和风险等级见仓库根目录的 `docs/TEST_MATRIX.md`。
+从 Skill 根目录优先使用自包含入口；除 `--list-ports` 外必须显式选择探针，所有探针只从 RAM 运行：
+
+```powershell
+python .\scripts\run_board_probe.py --list-ports
+python .\scripts\run_board_probe.py --vision all-core --port COM14
+python .\scripts\run_board_probe.py --vision rect-target --port COM14
+python .\scripts\run_board_probe.py --vision circle-target --port COM14
+python .\scripts\run_board_probe.py --vision yolo --port COM14
+python .\scripts\run_board_probe.py --vision uart-loopback --port COM14
+```
+
+对 `resources`、`rect-target`、`circle-target`、`yolo`、`uart-loopback`，入口会自动调用 `evaluate_probe_log.py`，打印 `ACCEPT_* status=pass|warn|fail`。`warn` 表示现场条件、摆放、接线或资源路径还需要人工确认；`fail` 表示当前链路不应继续集成。
+
+如果能访问仓库根目录，可用 `tools/test.ps1` 作为维护封装；默认执行离线校验和全部主机单元测试，显式 `-Board` 后才委托上述入口。测试选择和风险等级见 `docs/TEST_MATRIX.md`。
 
 ```powershell
 .\tools\test.ps1
-.\tools\test.ps1 -ListPorts -SkipValidate
-.\tools\test.ps1 -Board -Port COM14
 .\tools\test.ps1 -Board -Vision all-core -Port COM14
-.\tools\test.ps1 -Board -Vision resources -Port COM14
-.\tools\test.ps1 -Board -Vision rect-target -Port COM14
-.\tools\test.ps1 -Board -Vision circle-target -Port COM14
-.\tools\test.ps1 -Board -Vision yolo -Port COM14
-.\tools\test.ps1 -Board -Vision uart-loopback -Port COM14
 ```
 
-对 `resources`、`rect-target`、`circle-target`、`yolo`、`uart-loopback`，`tools/test.ps1` 会在 raw REPL 输出后自动调用 `scripts/evaluate_probe_log.py`，打印 `ACCEPT_* status=pass|warn|fail`。`warn` 表示现场条件、摆放、接线或资源路径还需要人工确认；`fail` 才表示当前链路不应继续集成。
-
-如果只有 Skill 文件夹或需要直接调用底层工具，再从仓库根目录执行：
+只有诊断统一入口本身时，才直接调用底层 raw-REPL 工具：
 
 ```powershell
 python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" --list-ports
@@ -140,6 +143,14 @@ python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-p
 python ".\jlc-k230-lushan-pi\scripts\mpremote_deploy.py" --port COM14 main.py
 ```
 
+`mpremote` 握手失败时，使用共享握手、临时文件、大小/SHA-256 校验、替换和一次复位的回退：
+
+```powershell
+python ".\jlc-k230-lushan-pi\scripts\raw_repl_deploy.py" main.py --remote /sdcard/main.py --port COM14
+```
+
+这些主机脚本会有限搜索已安装所需 `serial`/`mpremote` 能力的 Python；可传 `--host-python` 或设置 `K230_HOST_PYTHON`，但不得自动安装软件包。
+
 需要保留 Ctrl-C 前的运行中画面时，先让用户把 `mpremote_snapshot.py --emit-hook image` 或 `--emit-hook chw` 输出的钩子加入 `main.py`，再拉取 `/sdcard/codex_snap.jpg` 或 `/sdcard/codex_snap.bin`。
 
 如果串口无回显：
@@ -163,16 +174,16 @@ python ".\jlc-k230-lushan-pi\scripts\mpremote_deploy.py" --port COM14 main.py
 修改知识包时：
 
 1. 先确定事实属于哪个文件，不要到处重复。
-2. 新测试结论写入对应 `references/`。
+2. 只把可复用结论写入对应 `references/`；日期、计数、耗时和原始输出写入 `docs/BOARD_TEST_LOG.md`。
 3. 影响路由时更新 `SKILL.md`。
 4. 影响可复用代码时更新 `assets/contest-template/`。
 5. 官方链接、API 路由和适用边界写入 `references/sources-and-boundaries.md`。
 6. 可复用事实写入对应 `references/`；长历史流水账写入仓库根目录 `docs/BOARD_TEST_LOG.md`，不要塞回安装 skill。
 7. 按 `docs/TEST_MATRIX.md` 选择最小有用测试。
 8. 在仓库根目录优先运行 `tools/test.ps1`；只需要纯预检时可直接运行 `tools/validate.ps1`。
-9. `tools/test.ps1` 默认调用 `tools/validate.ps1`；`tools/validate.ps1` 会调用 `scripts/validate_skill.py`、`quick_validate.py` 和所有 `.py` 模板的桌面语法检查。
+9. `tools/test.ps1` 默认调用 `tools/validate.ps1`，随后运行全部主机单元测试；发布脚本必须经过同一入口。
 10. 如需发布，优先使用仓库根目录的 `tools/publish.ps1`，并显式传 `-Files` 或 `-All`。
-11. 如有开发板，优先用 `tools/test.ps1 -Board` 跑基础 smoke test，再按任务跑相关模板或专门 probe。
+11. 如有开发板，优先用安装包的 `run_board_probe.py`；仓库维护时可由 `tools/test.ps1 -Board` 委托它。
 12. 手动发布后重新复制 `jlc-k230-lushan-pi` 到 Codex skills 安装目录；如果使用 `tools/publish.ps1`，脚本会自动同步并校验安装副本。
 
 推荐校验命令：
