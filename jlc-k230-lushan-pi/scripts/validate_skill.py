@@ -213,6 +213,68 @@ def check_actuator_boundaries(root: Path, warnings: list[str]) -> None:
         warnings.append("contest-patterns.md should keep generic actuator guidance separate from motor-specific frames")
 
 
+def check_deployment_mode_gate(root: Path, failures: list[str]) -> None:
+    skill_text = read_text(root / "SKILL.md")
+    offline_text = read_text(root / "references" / "offline-run-patterns.md")
+    mpremote_text = read_text(root / "references" / "mpremote-debug-workflows.md")
+
+    if "default to `STANDARD`" not in skill_text:
+        failures.append("SKILL.md must keep STANDARD as the default board-write mode")
+    if "`QUICK_PATCH` is a strict whitelist exception" not in offline_text:
+        failures.append("offline-run-patterns.md must keep QUICK_PATCH as a strict whitelist exception")
+    if "Use `QUICK_PATCH` only when every condition below is true" not in offline_text:
+        failures.append("offline-run-patterns.md must require every QUICK_PATCH gate")
+    if "Enter `RECOVERY` only after `QUICK_PATCH` or `STANDARD` fails once" not in offline_text:
+        failures.append("offline-run-patterns.md must keep RECOVERY failure-triggered")
+    if "offline-run-patterns.md#deployment-mode-gate" not in mpremote_text:
+        failures.append("mpremote-debug-workflows.md must route board writes through the deployment mode gate")
+
+
+def check_raw_repl_deployer(root: Path, failures: list[str]) -> None:
+    path = root / "scripts" / "raw_repl_deploy.py"
+    if not path.exists():
+        failures.append("scripts/raw_repl_deploy.py is missing")
+        return
+
+    text = read_text(path)
+    required_markers = (
+        "from run_canmv_raw_repl import",
+        "a2b_base64(b'",
+        ".codex.tmp",
+        "hashlib.sha256",
+        "os.replace",
+        "RAW_DEPLOY_RESET_ONCE",
+    )
+    for marker in required_markers:
+        if marker not in text:
+            failures.append("raw_repl_deploy.py missing safety marker: %s" % marker)
+
+
+def check_host_python_resolution(root: Path, failures: list[str]) -> None:
+    host_tools = read_text(root / "scripts" / "_host_tools.py")
+    mpremote_deploy = read_text(root / "scripts" / "mpremote_deploy.py")
+    raw_deploy = read_text(root / "scripts" / "raw_repl_deploy.py")
+    workflow = read_text(root / "references" / "mpremote-debug-workflows.md")
+
+    required_helpers = (
+        "discover_python_candidates",
+        "probe_python_modules",
+        "find_compatible_host_python",
+        "ensure_host_python",
+        "HOST_REEXEC_DEPTH_ENV",
+    )
+    for marker in required_helpers:
+        if marker not in host_tools:
+            failures.append("_host_tools.py missing host-Python marker: %s" % marker)
+    for name, text in (("mpremote_deploy.py", mpremote_deploy), ("raw_repl_deploy.py", raw_deploy)):
+        if "--host-python" not in text or "ensure_host_python" not in text:
+            failures.append("%s must use bounded host-Python resolution" % name)
+    if "## Host Python Resolution" not in workflow:
+        failures.append("mpremote-debug-workflows.md missing Host Python Resolution guidance")
+    if "never installs packages" not in workflow:
+        failures.append("host-Python workflow must forbid automatic package installation")
+
+
 def load_extra_local_path_patterns(config_path: str | None, warnings: list[str]) -> list[str]:
     if not config_path:
         return []
@@ -278,6 +340,9 @@ def main() -> int:
     check_template_inventory(root, warnings)
     check_installable_boundary(root, failures)
     check_actuator_boundaries(root, warnings)
+    check_deployment_mode_gate(root, failures)
+    check_raw_repl_deployer(root, failures)
+    check_host_python_resolution(root, failures)
     check_no_local_paths(root, failures, extra_local_path_patterns)
     check_no_pycache(root, failures)
 

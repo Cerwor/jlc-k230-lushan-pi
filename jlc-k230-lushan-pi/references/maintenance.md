@@ -69,7 +69,8 @@ These scripts live in the distribution repository root and are not part of the i
 - `references/offline-run-patterns.md`: normal offline deployment.
 - `references/troubleshooting.md`: centralized failure diagnosis.
 - `scripts/run_canmv_raw_repl.py`: host-side helper for running MicroPython scripts from RAM over K230 raw REPL.
-- `scripts/mpremote_deploy.py`: host-side helper for explicit `/sdcard` file deployment through `mpremote`.
+- `scripts/raw_repl_deploy.py`: single-file `/sdcard` uploader that reuses the raw REPL handshake, preserves bytes, verifies size/SHA-256, replaces through a temporary file, and resets once.
+- `scripts/mpremote_deploy.py`: host-side helper for explicit `/sdcard` file deployment through `mpremote`, with bounded host-Python dependency discovery before serial access.
 - `scripts/mpremote_snapshot.py`: host-side helper for pulling and decoding runtime snapshot files written by explicit board hooks.
 - `scripts/check_model_package.py`: host-side helper for validating a self-trained model package manifest, labels, and `.kmodel` before board integration.
 - `scripts/probe_k230_sensor_init.py`: board-side diagnostic for trying several K230 `Sensor` construction and snapshot modes.
@@ -117,3 +118,4 @@ Recent maintenance entries:
 - 2026-06-29: Slimmed `SKILL.md` working rules, added probe-result action guidance, documented raw-REPL Plan B, and strengthened `agents/openai.yaml` default prompt.
 - 2026-06-30: Added host-side CI, dependency manifest, regression tests, mpremote safety hardening, reference Scope guardrails, and repository/skill boundary checks.
 - 2026-07-12: Added board-tested continuous `cv_lite` rectangle plus ZDT `F6` tracking lessons: consecutive-hit arming, four-corner center averaging, ACK-aware two-axis UART timing, lost-target rearming, and removal of short-test cumulative displacement latches from explicitly unlimited trackers.
+- 2026-07-16: Added a low-freedom deployment gate: `STANDARD` is the default, `QUICK_PATCH` requires every low-risk whitelist condition, and `RECOVERY` is failure-triggered. Added explicit mode/reason output and bounded stop conditions to prevent both unsafe fast deployment and unnecessary repeated validation. Added `raw_repl_deploy.py` as the single-file fallback with shared handshake logic, byte-preserving temporary writes, size/SHA-256 checks, atomic-or-rollback-safe replacement, and one reset. Added bounded host-Python discovery so deployment can reuse an existing `serial`/`mpremote` environment without automatic package installation.

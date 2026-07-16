@@ -13,6 +13,7 @@ Use this reference for final /sdcard/main.py boot behavior, TF-card deployment b
 ## Contents
 
 - Core Rule
+- Deployment Mode Gate
 - Boot Order
 - boot.py Guidance
 - main.py Guidance
@@ -30,6 +31,41 @@ For standalone/e-contest deployment, save the final program as `main.py` in the 
 User preference: normally provide the final `main.py` program only. The user will manually copy it to the SD card. Do not use CanMV IDE to save to board or modify the TF card unless the user explicitly asks.
 
 If the user explicitly asks for PC-assisted deployment, `references/mpremote-debug-workflows.md` documents `scripts/mpremote_deploy.py` as a supplemental path. It can copy files to `/sdcard` through `mpremote`, but this is still a board-write operation and should not become the default final-answer workflow.
+
+## Deployment Mode Gate
+
+Treat `STANDARD` as the default. `QUICK_PATCH` is a strict whitelist exception, not an equal option. `RECOVERY` is entered only after an attempted deployment fails. Classify by behavioral risk, not changed-line count.
+
+Before writing the board, print the selected mode and concise evidence:
+
+```text
+DEPLOY_MODE=QUICK_PATCH
+REASON=Previously verified program; display orientation only; no hardware, startup, control, or dependency changes
+```
+
+Use `QUICK_PATCH` only when every condition below is true:
+
+- The same program previously passed on the same board and firmware.
+- The user explicitly asked Codex to update the board.
+- One authoritative local file is replacing the known board target; no unknown board-only edits may be overwritten.
+- The change is limited to display orientation, visible text/color, or non-control diagnostics.
+- The change does not affect pins, buses, power, actuators, lasers, communication packets, control direction/gains, safety behavior, model files or inference parameters, camera/display/media initialization, resource cleanup, boot behavior, dependencies, file layout, or multiple files.
+- Conservative syntax validation passes before deployment.
+
+If any condition is false or unknown, use `STANDARD`. A one-line motor-direction, UART-pin, model-path, or startup change is still `STANDARD`.
+
+`QUICK_PATCH` sequence and stop condition:
+
+1. Syntax-check the changed file.
+2. Upload the single target file. Use `scripts/raw_repl_deploy.py` when the raw-REPL fallback is selected.
+3. Close the board file and verify byte count or hash; the raw-REPL uploader verifies both size and SHA-256 before and after replacement.
+4. Reset once.
+5. Ask the user to confirm the visible or functional result.
+6. Stop when confirmation passes. Do not add repeated REPL, reset, power-cycle, or auto-start tests unless the user requested them or a step failed.
+
+Use `STANDARD` for first deployment, new firmware/hardware, multi-file changes, unknown board state, or any runtime/hardware/control/startup impact. Apply the relevant subsystem probes and the deployment checklist in this file.
+
+Enter `RECOVERY` only after `QUICK_PATCH` or `STANDARD` fails once. State the failed step, stop repeating the same method, then follow the bounded recovery path in `canmv-workflows.md` or `troubleshooting.md`. A recovery success returns to the original mode's unfinished acceptance step; it does not restart every completed test.
 
 ## Boot Order
 

@@ -4,14 +4,197 @@
 from __future__ import annotations
 
 import importlib.util
+import locale
 import os
+import re
 import shutil
 import subprocess
 import sys
+from pathlib import Path
 
 
 TESTED_CANMV_VID_PID = (0x1209, 0xABD1)
 PORT_KEYWORDS = ("canmv", "kendryte", "k230", "usb serial device")
+HOST_PYTHON_ENV = "K230_HOST_PYTHON"
+HOST_REEXEC_DEPTH_ENV = "K230_HOST_REEXEC_DEPTH"
+HOST_PROBE_TIMEOUT = 8
+
+
+def _normalized_executable(value: str | None) -> str | None:
+    if not value:
+        return None
+    expanded = os.path.expandvars(os.path.expanduser(value.strip().strip('"')))
+    if os.path.isfile(expanded):
+        return str(Path(expanded).resolve())
+    found = shutil.which(expanded)
+    if found:
+        return str(Path(found).resolve())
+    return None
+
+
+def _executable_key(value: str) -> str:
+    return os.path.normcase(os.path.realpath(value))
+
+
+def same_executable(left: str, right: str) -> bool:
+    return _executable_key(left) == _executable_key(right)
+
+
+def parse_py_launcher_paths(output: str) -> list[str]:
+    paths: list[str] = []
+    for line in output.splitlines():
+        match = re.search(r"([A-Za-z]:[\\/].*?\.exe)(?:\s|$)", line, re.IGNORECASE)
+        if match:
+            paths.append(match.group(1).strip().strip('"'))
+    return paths
+
+
+def _command_output(command: list[str]) -> str:
+    try:
+        result = subprocess.run(
+            command,
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            encoding=locale.getpreferredencoding(False),
+            errors="replace",
+            timeout=5,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+    if result.returncode != 0:
+        return ""
+    return result.stdout
+
+
+def discover_python_candidates() -> list[str]:
+    candidates: list[str] = []
+    seen: set[str] = set()
+
+    def add(value: str | None) -> None:
+        resolved = _normalized_executable(value)
+        if not resolved:
+            return
+        key = _executable_key(resolved)
+        if key in seen:
+            return
+        seen.add(key)
+        candidates.append(resolved)
+
+    add(sys.executable)
+    add(os.environ.get(HOST_PYTHON_ENV))
+
+    for env_name in ("VIRTUAL_ENV", "CONDA_PREFIX"):
+        prefix = os.environ.get(env_name)
+        if not prefix:
+            continue
+        if os.name == "nt":
+            add(os.path.join(prefix, "python.exe"))
+        else:
+            add(os.path.join(prefix, "bin", "python"))
+
+    if os.name == "nt":
+        for path in parse_py_launcher_paths(_command_output(["py", "-0p"])):
+            add(path)
+        for command_name in ("python", "python3"):
+            for line in _command_output(["where.exe", command_name]).splitlines():
+                add(line.strip())
+    else:
+        for command_name in ("python3", "python"):
+            add(shutil.which(command_name))
+
+    return candidates
+
+
+def probe_python_modules(executable: str, modules: tuple[str, ...]) -> tuple[bool, str]:
+    code = (
+        "import importlib\n"
+        "modules=%r\n"
+        "for name in modules:\n"
+        "    importlib.import_module(name)\n"
+    ) % (modules,)
+    try:
+        result = subprocess.run(
+            [executable, "-c", code],
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=HOST_PROBE_TIMEOUT,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return False, str(exc)
+    if result.returncode == 0:
+        return True, ""
+    detail = result.stderr.strip().splitlines()
+    return False, detail[-1] if detail else "dependency probe failed"
+
+
+def find_compatible_host_python(
+    required_modules: tuple[str, ...], explicit: str | None = None
+) -> tuple[str | None, list[tuple[str, str]]]:
+    if explicit:
+        resolved = _normalized_executable(explicit)
+        if not resolved:
+            return None, [(explicit, "executable not found")]
+        candidates = [resolved]
+    else:
+        candidates = discover_python_candidates()
+
+    checked: list[tuple[str, str]] = []
+    for candidate in candidates:
+        compatible, detail = probe_python_modules(candidate, required_modules)
+        checked.append((candidate, detail))
+        if compatible:
+            return candidate, checked
+    return None, checked
+
+
+def ensure_host_python(
+    required_modules: tuple[str, ...],
+    explicit: str | None,
+    script_path: str,
+    argv: list[str],
+    capabilities: tuple[str, ...] | None = None,
+) -> None:
+    selected, checked = find_compatible_host_python(required_modules, explicit)
+    capability_names = capabilities or required_modules
+    capability_text = ",".join(capability_names)
+    if not selected:
+        details = []
+        for executable, reason in checked:
+            details.append("  %s: %s" % (executable, reason))
+        suffix = "\n" + "\n".join(details) if details else ""
+        raise SystemExit(
+            "No compatible host Python found for: %s. Pass --host-python or install the missing dependencies.%s"
+            % (capability_text, suffix)
+        )
+
+    if same_executable(selected, sys.executable):
+        print("HOST_PYTHON=%s" % selected)
+        print("HOST_DEPENDENCIES=%s" % capability_text)
+        return
+
+    try:
+        depth = int(os.environ.get(HOST_REEXEC_DEPTH_ENV, "0"))
+    except ValueError:
+        depth = 0
+    if depth >= 1:
+        raise SystemExit("Host Python re-execution limit reached before deployment")
+
+    print("HOST_PYTHON_REEXEC=%s" % selected)
+    print("HOST_DEPENDENCIES=%s" % capability_text)
+    sys.stdout.flush()
+    env = os.environ.copy()
+    env[HOST_REEXEC_DEPTH_ENV] = str(depth + 1)
+    try:
+        result = subprocess.run([selected, str(Path(script_path).resolve()), *argv], env=env, check=False)
+    except OSError as exc:
+        raise SystemExit("Could not start selected host Python %s: %s" % (selected, exc)) from exc
+    raise SystemExit(result.returncode)
 
 
 def require_serial():
