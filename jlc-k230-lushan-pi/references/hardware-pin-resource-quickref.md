@@ -166,7 +166,7 @@ Key resources:
 - The connector is intended for stable physical connection in mobile/contest projects.
 - Large 2.54 mm test pads expose power and signals, including `USB5V`, `PIN5V`, `8V-24V`, `UART3`, `UART0`, `UART2/IIC2`, and audio signals.
 - On tested firmware, `FPIOA.help(...)` reported UART2 can map to `PIN5/PIN6`, `PIN11/PIN12`, or `PIN44/PIN45`. Use the board silkscreen/schematic to match these K230 pin names to the actual connector or pad being touched.
-- Latest board loopback retest after reset found the user's current short as `PIN5/PIN6`, remapped UART2 to that pair, received four reads totaling 63 bytes, and reported `ACCEPT_UART status=pass` through `tools/test.ps1 -Board -Vision uart-loopback -Port COM14`.
+- The current setup has passed UART2 loopback on `PIN5/PIN6`. Reconfirm a new connector or board with `python .\scripts\run_board_probe.py --vision uart-loopback --port COM14`; exact historical byte counts remain in repository `docs/BOARD_TEST_LOG.md`.
 
 UART occupation notes from the schematic page:
 

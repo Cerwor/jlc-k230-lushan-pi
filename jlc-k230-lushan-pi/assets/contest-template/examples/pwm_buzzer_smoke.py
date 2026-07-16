@@ -1,3 +1,7 @@
+# @runtime: canmv
+# @route: pwm-smoke
+# @requires: pwm
+
 import time
 
 from machine import FPIOA, PWM

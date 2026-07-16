@@ -34,7 +34,7 @@ Check in this order:
 
 ## Probe Result Actions
 
-Use this table after `tools/test.ps1 -Board ...` prints `ACCEPT_* status=pass|warn|fail`. Do not enable motors, lasers, or other actuators from a `warn` or `fail` result unless the user deliberately accepts the risk and the next action is bounded.
+Use this table after `scripts/run_board_probe.py` prints `ACCEPT_* status=pass|warn|fail`. Do not enable motors, lasers, or other actuators from a `warn` or `fail` result unless the user deliberately accepts the risk and the next action is bounded.
 
 | Probe | `pass` | `warn` | `fail` |
 | --- | --- | --- | --- |
@@ -44,6 +44,7 @@ Use this table after `tools/test.ps1 -Board ...` prints `ACCEPT_* status=pass|wa
 | `ACCEPT_YOLO` runtime/resources | Runtime imports and board resources are available; still validate the user's exact `.kmodel`, labels, input size, and result tuple. | Probe actual model paths and example directories; reduce scan scope if truncated; verify SD-card mount and model package. | Split the issue: imports missing means firmware/library mismatch; model paths missing means board-file/package problem; `.kmodel` load failure means conversion/runtime mismatch and needs user artifacts/logs. |
 | `ACCEPT_UART` loopback/TX sweep | Use the passing pin pair and baud rate in final code. | Recheck TX/RX short or external MCU wiring; try `PIN5/PIN6`, `PIN11/PIN12`, and `PIN44/PIN45`; keep common ground. | Do not blame the peripheral first; verify FPIOA mapping, port ownership, baud, and whether another script is using UART. |
 | `ACCEPT_RESOURCES` board resources | Use the reported paths rather than hard-coded `/data/...` assumptions. | Treat missing or truncated directories as an SD-card/resource issue; reset and re-run with narrower scan. | Check SD-card insertion, firmware image resources, and whether `/sdcard/main.py` is blocking access. |
+| `ACCEPT_LIFECYCLE` camera/display cleanup | Repeated initialization and cleanup completed; continue to bounded recovery testing if the application needs it. | Reset once and repeat; inspect heap drift and cleanup warnings, but do not treat Python heap alone as proof about native media pools. | Stop recovery-loop integration; inspect the first failed cycle and verify `Sensor.stop()`, `Display.deinit()`, then `MediaManager.deinit()` ordering. |
 | `ACCEPT_OTSU` threshold | Use the calibrated threshold as a startup or user-triggered value. | Keep the fallback threshold visible on LCD; ask the user to fill the ROI with target/background and re-run. | Do not auto-calibrate in final code; use a manual threshold or a different feature detector. |
 
 ## Raw REPL or USB Serial Problems

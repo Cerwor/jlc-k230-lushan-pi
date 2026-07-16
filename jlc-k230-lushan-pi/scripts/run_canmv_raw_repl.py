@@ -2,72 +2,17 @@ import argparse
 import sys
 import time
 
+from _host_tools import ensure_host_python
+from _host_tools import print_ports
+from _host_tools import require_serial
+from _host_tools import resolve_port
 
 DEFAULT_BAUDS = (2000000, 115200)
-TESTED_CANMV_VID = 0x1209
-TESTED_CANMV_PID = 0xABD1
-PORT_KEYWORDS = ("canmv", "kendryte", "k230", "usb serial device")
 RAW_REPL_ATTEMPTS = 3
 
 
 class RawReplEnterError(Exception):
     pass
-
-
-def port_vid_pid(port):
-    if port.vid is None or port.pid is None:
-        return "VID:PID unknown"
-    return "VID:PID %04X:%04X" % (port.vid, port.pid)
-
-
-def is_likely_canmv_port(port):
-    if port.vid == TESTED_CANMV_VID and port.pid == TESTED_CANMV_PID:
-        return True
-
-    haystack = " ".join(
-        str(value)
-        for value in (
-            getattr(port, "description", ""),
-            getattr(port, "manufacturer", ""),
-            getattr(port, "product", ""),
-            getattr(port, "hwid", ""),
-        )
-    ).lower()
-    for keyword in PORT_KEYWORDS:
-        if keyword in haystack:
-            return True
-    return False
-
-
-def print_ports(list_ports):
-    ports = list(list_ports.comports())
-    if not ports:
-        print("No serial ports found.")
-        return
-    for port in ports:
-        marker = "*" if is_likely_canmv_port(port) else " "
-        print("%s %s  %s  %s" % (marker, port.device, port_vid_pid(port), port.description))
-
-
-def require_serial():
-    try:
-        import serial
-        import serial.tools.list_ports
-    except Exception as exc:
-        raise SystemExit("pyserial is required: python -m pip install pyserial") from exc
-    return serial, serial.tools.list_ports
-
-
-def autodetect_port(list_ports):
-    matches = []
-    for port in list_ports.comports():
-        if is_likely_canmv_port(port):
-            matches.append(port.device)
-    if len(matches) == 1:
-        return matches[0]
-    if not matches:
-        raise SystemExit("No likely CanMV/K230 USB serial port found. Pass --port COMx.")
-    raise SystemExit("Multiple likely CanMV/K230 ports found: %s. Pass --port COMx." % ", ".join(matches))
 
 
 def read_available(ser, window_s=0.25):
@@ -196,16 +141,18 @@ def main():
     parser.add_argument("--timeout", type=float, default=30.0, help="Seconds to wait for output")
     parser.add_argument("--chunk-size", type=int, default=128, help="Write chunk size for raw REPL upload")
     parser.add_argument("--list-ports", action="store_true", help="List detected serial ports and exit")
+    parser.add_argument("--host-python", help="Host Python executable; defaults to current interpreter, then bounded auto-discovery")
     args = parser.parse_args()
 
-    serial, list_ports = require_serial()
+    ensure_host_python(("serial",), args.host_python, __file__, sys.argv[1:])
     if args.list_ports:
-        print_ports(list_ports)
+        print_ports()
         return
     if not args.script:
         parser.error("script is required unless --list-ports is used")
 
-    port = args.port or autodetect_port(list_ports)
+    serial, _list_ports = require_serial()
+    port = resolve_port(args.port, allow_fuzzy=True)
     with open(args.script, "r", encoding="utf-8") as handle:
         code = handle.read()
 

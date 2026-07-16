@@ -1,121 +1,112 @@
-﻿# Maintenance
+# Maintenance
 
-Use this file to keep the skill current as CanMV firmware, LCKFB wiki pages, and user project patterns evolve.
+Use this file only when changing the skill package, routing, reusable assets, validators, or firmware-specific conclusions.
 
 ## Scope
 
-Use this reference only when maintaining the skill, updating routing, changing bundled resources, or recording reusable board-tested conclusions.
+This reference owns update policy, package boundaries, test entrypoints, and architecture guardrails. Task guidance belongs in its domain reference; chronological evidence belongs in the repository test log.
 
 ## Contents
 
 - Update Policy
-- Update Steps
-- Repository Tooling
-- File Ownership Map
-- Maintenance Summary
+- Change Workflow
+- Test Entrypoints
+- Ownership Map
+- Tested Baseline
 - Architecture Guardrails
 
 ## Update Policy
 
-Update this skill when:
+Update the skill when:
 
-- The user's firmware string changes.
-- Official LCKFB wiki pages move, rename, or change API signatures.
-- CanMV IDE changes offline-save behavior.
-- YOLO/PipeLine/Ai2d/AIBase constructor parameters change.
-- New working user examples prove a better contest pattern.
-- Hardware notes change for a new board revision, expansion board, screen, or camera.
+- firmware or bundled CanMV APIs change;
+- an official source moves or changes a signature;
+- a new board revision, camera, LCD, connector, or power path changes a hardware fact;
+- a repeated field failure proves that an existing workflow is incomplete;
+- a reusable project pattern passes bounded board testing.
 
-## Update Steps
+Record confidence explicitly: board-tested on a named firmware, documented by an official source, inferred from an example, or still unverified.
 
-1. Record the new firmware/version/source in this file or `canmv-workflows.md`.
-2. Update only the relevant reference file; avoid duplicating the same fact in multiple places.
-3. If the change affects routing, update `SKILL.md`.
-4. If the change affects reusable project code, update `assets/contest-template/`.
-5. Move troubleshooting facts to `troubleshooting.md`, not task-specific reference files.
-6. In the distribution repository, use `docs/TEST_MATRIX.md` to choose the smallest useful test.
-7. Prefer root `tools/test.ps1`; by default it calls `tools/validate.ps1` and keeps hardware tests opt-in.
-8. Use `tools/test.ps1 -Board` for raw-REPL smoke tests and `tools/test.ps1 -Board -Vision all-core` for camera/LCD, Sensor initialization, and Otsu threshold probes.
-9. If the root tools are unavailable, run `scripts/validate_skill.py` from this skill, then run `quick_validate.py` on the skill folder.
-10. Syntax-check any Python files in `assets/contest-template/` where possible.
-11. When hardware is available, run final-style templates in CanMV IDE or with `scripts/run_canmv_raw_repl.py`; desktop `py_compile` alone does not prove CanMV parser compatibility.
-12. Put long chronological test notes in repository-level `docs/BOARD_TEST_LOG.md`, not in this installable reference.
+## Change Workflow
 
-## Repository Tooling
+1. Identify one owning reference; do not add the same operational fact to several files.
+2. Update `SKILL.md` only when routing or a global invariant changes.
+3. Update a template only when the behavior is reusable, configurable, and accepted by `contest-patterns.md#template-admission-rules`.
+4. Put symptoms and recovery actions in `troubleshooting.md`.
+5. Put detailed run counters, dates, and transient board state in repository `docs/BOARD_TEST_LOG.md`.
+6. For a published behavior change, update the installable `VERSION` and repository `CHANGELOG.md` using semantic `MAJOR.MINOR.PATCH` versioning.
+7. Run the installable validator and system `quick_validate.py`.
+8. Run host regression tests before publishing.
+9. Add the smallest relevant RAM-only board probe when hardware evidence is needed.
+10. Recheck the installed copy after synchronization.
 
-These scripts live in the distribution repository root and are not part of the installed skill folder:
+Desktop compilation verifies host syntax only. Final CanMV programs must still follow `canmv-api-known-issues.md` and, when practical, run on the target firmware.
 
-- `tools/test.ps1`: layered test entrypoint. Default runs offline validation only; `-ListPorts` enumerates serial ports; `-Board` runs RAM-only raw REPL tests; `-Vision all-core` runs camera/LCD smoke, Sensor mode probing, and Otsu threshold probing; `-Vision resources` runs the bounded board resource probe; `-Vision rect-target` and `-Vision circle-target` run target-specific bounded probes; `-Vision yolo` probes YOLO runtime/resources; `-Vision uart-loopback` runs UART2 loopback/TX sweep. Supported probe modes automatically call `scripts/evaluate_probe_log.py`.
-- `tools/validate.ps1`: offline preflight that calls this skill's `scripts/validate_skill.py`, the system `quick_validate.py`, and desktop Python syntax checks.
-- `tools/publish.ps1`: validation, branch, commit, PR, squash-merge, local sync, installed-skill sync, and installed-copy validation.
+## Test Entrypoints
 
-## File Ownership Map
+The installed skill is self-contained:
 
-- `SKILL.md`: compact trigger context, quick routing, and global working rules.
-- `agents/openai.yaml`: UI metadata only; not an operational prompt.
-- `references/sources-and-boundaries.md`: applicability boundaries, official source link index, and official API manual routing table.
-- `references/canmv-api-known-issues.md`: compact K230 CanMV API pitfalls, conservative syntax, validation limits, and cross-firmware behavior notes.
-- `references/model-vision-pipeline.md`: user-trained `.kmodel` packaging, validation gates, and contest model integration workflow.
-- `references/local-code-examples.md`: built-in contest-oriented training patterns.
-- `references/hardware-pin-resource-quickref.md`: hardware resources, power, voltage, connectors, camera/DSI/touch.
-- `references/official-basic-image-patterns.md`: official GPIO/FPIOA/PWM/UART and image-recognition example patterns.
-- `references/mpremote-debug-workflows.md`: optional host-side `mpremote` deployment and runtime snapshot workflows.
-- `references/circle-detection-patterns.md`: circle/ring detection strategy, dual-channel display/detection mode, ROI/coordinate rules, and FPS cautions.
-- `references/canmv-workflows.md`: normal CanMV bring-up workflows and skeletons.
-- `references/yolo-module-patterns.md`: official YOLO module lifecycle and parameters.
-- `references/user-example-patterns.md`: portable patterns distilled from user working examples.
-- `references/contest-2025-rectangle-patterns.md`: 2025-style rectangle target tracking, single-class model-assisted ROI, and UART coordinate output.
-- `references/contest-patterns.md`: contest architecture and template usage.
-- `references/offline-run-patterns.md`: normal offline deployment.
-- `references/troubleshooting.md`: centralized failure diagnosis.
-- `scripts/run_canmv_raw_repl.py`: host-side helper for running MicroPython scripts from RAM over K230 raw REPL.
-- `scripts/raw_repl_deploy.py`: single-file `/sdcard` uploader that reuses the raw REPL handshake, preserves bytes, verifies size/SHA-256, replaces through a temporary file, and resets once.
-- `scripts/mpremote_deploy.py`: host-side helper for explicit `/sdcard` file deployment through `mpremote`, with bounded host-Python dependency discovery before serial access.
-- `scripts/mpremote_snapshot.py`: host-side helper for pulling and decoding runtime snapshot files written by explicit board hooks.
-- `scripts/check_model_package.py`: host-side helper for validating a self-trained model package manifest, labels, and `.kmodel` before board integration.
-- `scripts/probe_k230_sensor_init.py`: board-side diagnostic for trying several K230 `Sensor` construction and snapshot modes.
-- `scripts/probe_otsu_threshold.py`: board-side bounded Otsu grayscale threshold calibration probe for black/white targets.
-- `scripts/probe_cvlite_rectangle_target.py`: board-side bounded 300-frame cv_lite rectangle target probe with hit count, FPS, candidate, center-range, jump, and memory telemetry.
-- `scripts/probe_circle_target.py`: board-side bounded 300-frame circle target probe with detection-hit, overlay, FPS, center/radius range, jump, and memory telemetry.
-- `scripts/probe_yolo_runtime.py`: board-side bounded YOLO runtime/resource probe for `nncase_runtime`, `aicube`, `PipeLine`, YOLOv5/YOLOv8/YOLO11, `.kmodel`, and YOLO example discovery.
-- `scripts/evaluate_probe_log.py`: host-side acceptance explainer for rectangle, circle, YOLO, UART, and resource probe logs.
-- `scripts/validate_skill.py`: host-side preflight checker for skill structure, Python syntax, CanMV conservative syntax, doc references, local paths, and cache artifacts.
-- `scripts/smoke_camera_lcd.py`: board-side short smoke test for default camera and 3.1-inch LCD.
-- `assets/contest-template/`: copyable starter project.
-- `assets/model-package/`: manifest template for packaging self-trained `.kmodel` deployments.
+```powershell
+python .\scripts\validate_skill.py .
+python .\scripts\run_board_probe.py --list-ports
+python .\scripts\run_board_probe.py --vision all-core --port COM14
+python .\scripts\run_board_probe.py --vision resource-cycle --port COM14
+```
 
-## Maintenance Summary
+`run_board_probe.py` dispatches bounded raw-REPL probes from RAM, automatically evaluates supported telemetry, and never writes `/sdcard/main.py`.
 
-Keep this installable reference compact. Put task-specific facts in the task reference, not in a chronological log. Keep detailed historical board-test notes in the distribution repository file `docs/BOARD_TEST_LOG.md`, which is intentionally outside the installed skill.
+The distribution repository may additionally provide:
 
-Current tested baseline:
+- `tools/validate.ps1`: local validator plus system quick validation;
+- `tools/test.ps1`: validation, all host unit tests, and optional delegation to the installable board-probe entry;
+- `tools/publish.ps1`: branch, commit, PR, merge, sync, and installed-copy validation after the full test gate passes.
 
-- Lushan Pi K230 CanMV with GC2093 camera and 3.1-inch ST7701 LCD.
-- `scripts/run_canmv_raw_repl.py` is the default RAM-only board-test path and does not write `/sdcard/main.py`.
-- `tools/test.ps1` is the repository-level layered test entrypoint; use `-Board` only when hardware is intentionally involved.
-- `tools/test.ps1` prints `ACCEPT_* status=pass|warn|fail` for target/resource probes. Treat `warn` as a prompt to check placement, lighting, wiring, or SD-card resources before integration.
-- `tools/test.ps1 -Board -Vision yolo -Port COM14` is board-tested with `ACCEPT_YOLO status=pass` on the current SD-card image: YOLO imports passed, 63 `.kmodel` files and 54 YOLO/detection examples were found, and `truncated=0`.
-- `tools/test.ps1 -Board -Vision uart-loopback -Port COM14` is board-tested with `ACCEPT_UART status=pass` when the current loopback short connects `PIN5/PIN6`: UART2 remap received 63 bytes.
-- `cv_lite` grayscale rectangle tracking is the preferred black-tape rectangle target path on the tested firmware.
-- Circle detection is useful but more scene-sensitive; use raw-vs-tracked telemetry from `probe_circle_target.py` to judge field quality.
-- `mpremote_deploy.py` and snapshot pull/delete paths are explicit board-file workflows; dry-run is safe for command preview.
+Root tools are convenience wrappers, not dependencies of the installed skill.
+
+## Ownership Map
+
+| Area | Owner |
+| --- | --- |
+| Trigger, defaults, and routing | `SKILL.md` |
+| UI metadata | `agents/openai.yaml` |
+| CanMV bring-up and deployment | `canmv-workflows.md`, `offline-run-patterns.md`, `mpremote-debug-workflows.md` |
+| API compatibility and official boundaries | `canmv-api-known-issues.md`, `sources-and-boundaries.md` |
+| Classical vision and contest integration | matching circle/rectangle/basic-image reference plus `contest-patterns.md` |
+| Models | `model-vision-pipeline.md`, then `yolo-module-patterns.md` |
+| Hardware and generic actuators | `hardware-pin-resource-quickref.md`, `contest-patterns.md` |
+| Confirmed ZDT protocol only | `zdt-stepper-gimbal-patterns.md` |
+| Example adaptation | `local-code-examples.md` |
+| Failure diagnosis | `troubleshooting.md` |
+| Executable helpers and probes | `scripts/` |
+| Copyable project starts | `assets/` |
+
+Do not maintain a second exhaustive file inventory here. The filesystem and validator are the source of truth for package contents.
+
+## Tested Baseline
+
+Current reusable baseline:
+
+- Lushan Pi K230 CanMV with GC2093 camera and 3.1-inch ST7701 `800x480` LCD;
+- raw REPL RAM execution with bounded host-Python/serial discovery;
+- three-cycle camera/display/media resource lifecycle validation through the RAM-only board probe;
+- `cv_lite` grayscale corners as the preferred black-tape rectangle path on the reference firmware;
+- circle telemetry as a scene-sensitive diagnostic rather than an always-hit promise;
+- bundled YOLO runtime capability, with each user model still requiring package and result-shape validation;
+- UART2 pin mapping proven by loopback on the current setup, but requiring reconfirmation on a different connector;
+- explicit `STANDARD`, gated `QUICK_PATCH`, and failure-triggered `RECOVERY` board-write modes;
+- `mpremote` deployment/snapshot plus raw-REPL byte-preserving upload as explicit, user-authorized board-file workflows.
+
+See repository `docs/BOARD_TEST_LOG.md` for dates, exact firmware observations, counters, timings, and historical regressions.
 
 ## Architecture Guardrails
 
-- Every long reference must have early `## Scope` and `## Contents` sections so an agent can decide whether to continue reading.
-- `SKILL.md` remains the routing source. README and AGENT_USAGE may point at it but should not duplicate the full routing matrix.
-- Keep repository-only files such as `README.md`, `LICENSE`, `.github/`, `docs/`, `tests/`, `requirements-host.txt`, and root `tools/` outside the installable `jlc-k230-lushan-pi/` skill folder.
-- Add new templates only when `contest-patterns.md#template-admission-rules` is satisfied.
-- Keep generic actuator guidance in `contest-patterns.md`; keep ZDT command frames only in `zdt-stepper-gimbal-patterns.md`.
-- Keep only reusable conclusions here. Move raw chronological board-test details to repository-level `docs/BOARD_TEST_LOG.md`.
-
-Recent maintenance entries:
-
-- 2026-06-28: Added board-tested ZDT two-axis gimbal control notes: yaw `0x01`, pitch `0x02`, UART2 `PIN5/PIN6`, `cv_lite` rectangle precheck, target-loss stop, ACK retry guidance, and four-direction convergence results.
-- 2026-06-28: Added full ZDT gimbal tracking results after removing the short-test cumulative-angle limiter, including `7200`-frame tracking telemetry, lost-stop behavior, and the need for `LOST_STOP -> REACQUIRE -> TRACK` in final continuous-operation code.
-- 2026-06-28: Added self-trained single-class YOLOv8 `best.kmodel` board-test notes and ZDT model-tracking tuning guidance, including FC ACK sampling, time-based control periods, target smoothing, and position-feedback validation.
-- 2026-06-29: Added reusable direct-UART ZDT speed-mode rectangle tracking guidance and cleaned third-party project URLs from operational references so only portable experience remains.
-- 2026-06-29: Slimmed `SKILL.md` working rules, added probe-result action guidance, documented raw-REPL Plan B, and strengthened `agents/openai.yaml` default prompt.
-- 2026-06-30: Added host-side CI, dependency manifest, regression tests, mpremote safety hardening, reference Scope guardrails, and repository/skill boundary checks.
-- 2026-07-12: Added board-tested continuous `cv_lite` rectangle plus ZDT `F6` tracking lessons: consecutive-hit arming, four-corner center averaging, ACK-aware two-axis UART timing, lost-target rearming, and removal of short-test cumulative displacement latches from explicitly unlimited trackers.
-- 2026-07-16: Added a low-freedom deployment gate: `STANDARD` is the default, `QUICK_PATCH` requires every low-risk whitelist condition, and `RECOVERY` is failure-triggered. Added explicit mode/reason output and bounded stop conditions to prevent both unsafe fast deployment and unnecessary repeated validation. Added `raw_repl_deploy.py` as the single-file fallback with shared handshake logic, byte-preserving temporary writes, size/SHA-256 checks, atomic-or-rollback-safe replacement, and one reset. Added bounded host-Python discovery so deployment can reuse an existing `serial`/`mpremote` environment without automatic package installation.
+- Keep `SKILL.md` compact and treat its Quick Routing table as the single routing source.
+- Long references need early `## Scope` and `## Contents` sections.
+- Keep repository-only docs, tests, CI, and root tools outside `jlc-k230-lushan-pi/`.
+- Keep the installed skill's normal commands relative to the folder containing `SKILL.md`.
+- Keep generic vision output actuator-neutral; motor frames belong only to the confirmed actuator reference.
+- Keep one implementation of host serial, port, reset, and interpreter discovery helpers.
+- Prefer links to executable assets over copying their full code into references.
+- Add a reference or template only when it has a distinct owner and recurring use.
+- Never hard-code maintainer-local absolute paths into the skill or validator.
+- Never put raw chronology back into task references; summarize reusable conclusions and link to the repository log.

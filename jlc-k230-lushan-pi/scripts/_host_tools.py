@@ -10,6 +10,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 
@@ -206,6 +207,30 @@ def require_serial():
     return serial, list_ports
 
 
+def send_ctrl_c_burst(port: str, baud: int, count: int) -> None:
+    serial, _list_ports = require_serial()
+    with serial.Serial(port, baud, timeout=0.3, write_timeout=2) as ser:
+        try:
+            ser.read(ser.in_waiting or 1)
+        except Exception:
+            pass
+        for _index in range(count):
+            ser.write(b"\x03")
+            ser.flush()
+            time.sleep(0.15)
+        try:
+            ser.read(4096)
+        except Exception:
+            pass
+
+
+def send_soft_reset(port: str, baud: int) -> None:
+    serial, _list_ports = require_serial()
+    with serial.Serial(port, baud, timeout=0.3, write_timeout=2) as ser:
+        ser.write(b"\x04")
+        ser.flush()
+
+
 def get_ports():
     _serial, list_ports = require_serial()
     return list(list_ports.comports())
@@ -317,6 +342,13 @@ def resolve_mpremote(explicit: str | None, required: bool = True) -> list[str]:
         return ["mpremote"]
 
     raise SystemExit("mpremote is required: python -m pip install mpremote")
+
+
+def mpremote_host_modules(explicit: str | None) -> tuple[str, ...]:
+    external = explicit or os.environ.get("MPREMOTE") or shutil.which("mpremote")
+    if external:
+        return ("serial",)
+    return ("serial", "mpremote")
 
 
 def command_text(command: list[str]) -> str:

@@ -69,7 +69,7 @@ When creating a new contest project:
 5. Enable optional blocks such as `USE_YOLO`, `ENABLE_UART`, or `ENABLE_PWM_SAFE_OUTPUT`.
 6. Save the final integrated program as `main.py` for offline deployment.
 
-When the template changes because of firmware or API updates, record the reason in `maintenance.md#maintenance-summary`; put long chronological test history in repository-level `docs/BOARD_TEST_LOG.md` when available.
+When the template changes because of firmware or API updates, record the reason in `maintenance.md#tested-baseline`; put long chronological test history in repository-level `docs/BOARD_TEST_LOG.md` when available.
 
 ## Template Admission Rules
 
@@ -153,12 +153,12 @@ Before turning a tested probe into a competition `main.py`, require a field-mode
 7. Consecutive frame errors enter `RECOVER`; repeated recovery failure enters visible `FAULT`.
 8. The last check is a full reset or power cycle, not only the IDE green-run button.
 
-Use `tools/test.ps1` for the pre-integration probes:
+From the folder containing `SKILL.md`, use the self-contained RAM-only entry for pre-integration probes:
 
-- Rectangle target: `.\tools\test.ps1 -Board -Vision rect-target -Port COM14`; continue only after `ACCEPT_RECT status=pass` or a deliberate explanation for `warn`.
-- Circle target: `.\tools\test.ps1 -Board -Vision circle-target -Port COM14`; treat `warn` as a tuning prompt because circle detection is target-dependent.
-- YOLO: `.\tools\test.ps1 -Board -Vision yolo -Port COM14`; continue only if the runtime imports pass and the expected `.kmodel` path is known.
-- UART: `.\tools\test.ps1 -Board -Vision uart-loopback -Port COM14`; continue only after wiring is verified by loopback or by the external MCU observer.
+- Rectangle target: `python .\scripts\run_board_probe.py --vision rect-target --port COM14`; continue only after `ACCEPT_RECT status=pass` or a deliberate explanation for `warn`.
+- Circle target: `python .\scripts\run_board_probe.py --vision circle-target --port COM14`; treat `warn` as a tuning prompt because circle detection is target-dependent.
+- YOLO: `python .\scripts\run_board_probe.py --vision yolo --port COM14`; continue only if runtime imports pass and the expected `.kmodel` path is known.
+- UART: `python .\scripts\run_board_probe.py --vision uart-loopback --port COM14`; continue only after wiring is verified by loopback or by the external MCU observer.
 
 ## Vision Tasks
 

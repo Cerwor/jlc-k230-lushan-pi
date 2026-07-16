@@ -79,7 +79,7 @@ When uncertainty matters, state the uncertainty and give a verification step:
 
 ## Official Source Index
 
-Use these links as the source index for LCKFB/JLC Lushan Pi K230 work. If a link moves or an API page changes meaningfully, update the relevant reference file and record the change in `maintenance.md#maintenance-summary`; put long chronological test history in repository-level `docs/BOARD_TEST_LOG.md` when available.
+Use these links as the source index for LCKFB/JLC Lushan Pi K230 work. If a link moves or an API page changes meaningfully, update the relevant reference file and record the change in `maintenance.md#tested-baseline`; put long chronological test history in repository-level `docs/BOARD_TEST_LOG.md` when available.
 
 ### Board and Setup
 
@@ -132,6 +132,10 @@ The wiki currently marks the basic I2C tutorial as waiting for update. For I2C w
 ### AI Demo and Model Deployment
 
 - AI demo framework: https://wiki.lckfb.com/zh-hans/lushan-pi-k230/ai-demo/profile.html
+- CanMV K230 AI development and model conversion: https://www.kendryte.com/k230_canmv/en/main/ai_dev_doc.html
+- nncase model compilation API: https://www.kendryte.com/k230_rtos/en/main/api_reference/nncase/nncase_compile.html
+- nncase simulator API: https://www.kendryte.com/k230_rtos/en/main/api_reference/nncase/nncase_simulator.html
+- nncase runtime/version compatibility guide: https://www.kendryte.com/k230/en/main/03_other/K230_SDK_Updating_nncase_Runtime_Library_Guide.html
 
 Use the AI demo framework page for overall PipeLine/runtime structure. For exact YOLO and nncase APIs, use the API routing section below. Treat model conversion tools and nncase versions as toolchain-sensitive; verify against the user's conversion script, firmware, and conversion logs.
 

@@ -1,3 +1,7 @@
+# @runtime: canmv
+# @route: rectangle-acceptance
+# @requires: camera,lcd,cv_lite
+
 import gc
 import os
 import time

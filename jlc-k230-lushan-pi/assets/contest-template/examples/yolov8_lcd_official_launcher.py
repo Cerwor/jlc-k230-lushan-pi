@@ -1,3 +1,7 @@
+# @runtime: canmv
+# @route: model-smoke
+# @requires: camera,lcd,yolov8-example
+
 # Runs the official YOLOv8 object detection example on the 3.1-inch LCD.
 # Use after verifying that this file exists on the board:
 # /sdcard/examples/05-AI-Demo/object_detect_yolov8n.py

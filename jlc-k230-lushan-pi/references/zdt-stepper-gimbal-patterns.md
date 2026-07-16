@@ -11,7 +11,7 @@ For general actuator safety and K230 UART pin rules, read `contest-patterns.md` 
 - Scope
 - Tested Wiring And Protocol
 - Tested Commands
-- Motion Results
+- Board-Tested Capability Summary
 - Communication Timing
 - Recommended Gimbal Control Pattern
 - Direct UART Speed-Mode Visual Servo Pattern
@@ -85,33 +85,15 @@ For Emm position mode on the tested motor:
 - In `FD`, motion mode `01` means absolute to coordinate zero; motion mode `02` means relative to current real-time position.
 - In `F1/FC`, configure speed/acc/mode once with `F1`, then send signed int32 pulse deltas with `FC`.
 
-## Motion Results
+## Board-Tested Capability Summary
 
-Representative board-tested results:
+On the confirmed motor and protocol, enable/disable, speed motion, ordinary absolute and relative position moves, zero reset, fast small deltas, target overwrite, position/speed/status reads, and emergency stop all worked. Position moves settled close enough to their requested values for gimbal bring-up, but those observations do not replace mechanical calibration or real soft limits.
 
-- Speed mode at `20 RPM` for `2.5 s` changed position by about `337.5 deg`, then stopped cleanly.
-- Ordinary relative `+90 deg` and `-90 deg` moves reached `+90.000 deg` and `-90.000 deg` deltas in one test.
-- Current-position zero reset returned the real-time position to `0.000 deg`.
-- Absolute moves reached:
-  - `+45 deg` target: about `45.33 deg`
-  - `+90 deg` target: about `90.29 deg`
-  - `0 deg` target after return: about `-0.20 deg`
-- Fast position mode worked for `+10 deg` and `-10 deg` moves, ending within roughly `0.1 deg`.
-- Continuous `+1 deg` fast deltas and matching `-1 deg` deltas returned to the starting position within about `0.1 deg`.
-- Target overwrite worked: while moving toward `+60 deg`, sending a new `-20 deg` absolute target redirected and ended near `-20.02 deg`.
-- Stop command worked; final speed read as `0 RPM`.
+Exact historical commands, angles, acknowledgments, and long-run counters belong in the repository `docs/BOARD_TEST_LOG.md`.
 
 ## Communication Timing
 
-A pure read stress test ran `80` loops, reading position, speed, status, and bus voltage in each loop:
-
-- Total read commands: `320`
-- Failures: `0`
-- One feedback read: about `32 ms`
-- One full loop of four feedback reads: about `134 ms`
-- Bus voltage observed: about `11.78 V` to `11.82 V`
-
-Control implication: do not read every diagnostic value every camera frame. UART feedback is reliable but not free.
+A board stress test found feedback reliable, but one read took tens of milliseconds and four sequential diagnostics consumed roughly `0.13 s`. Do not read every diagnostic value on every camera frame.
 
 Recommended feedback rates:
 
@@ -231,11 +213,7 @@ Use these rules when converting a bounded motion probe into continuous tracking:
 - Even without a position limit, keep maximum RPM, acceleration/slew limits, target-loss zero-speed hold, startup precheck, and final zero-speed hold. Warn about cable winding before unlimited yaw operation.
 - After a tracked target is lost, clear the armed state, keep both motors enabled at zero speed, and require consecutive valid detections before resuming.
 
-Board acceptance observations for this pattern:
-
-- Stable target runs reached `300/300` rectangle hits with no large center jumps at about `71-77 FPS`.
-- With ACK-checked `F6`, a fixed right-side target moved from about `x=627` toward `x=450`, confirming the yaw sign and convergence direction.
-- With the rectangle removed, a `120/120`-frame run found no candidates, never armed tracking, and kept both axes at zero speed.
+Board acceptance established three useful properties: the high-FPS rectangle stream stayed stable, ACK-aware speed commands converged in the expected yaw direction, and a no-target run never armed motion and held both axes at zero speed. Recheck those properties after any camera orientation, address, wiring, or mechanism change.
 
 ## Tested Two-Axis Vision Gimbal Pattern
 
@@ -264,20 +242,15 @@ The current two-axis ZDT gimbal has been board-tested with a Lushan Pi K230 came
 - Do not use a black-blob detector as the final gimbal input in cluttered scenes; it can lock onto a computer screen or other dark regions. Use `cv_lite` rectangle corners or a model-assisted ROI before enabling ZDT motion.
 - Full tracking mode should remove only the short-test cumulative-angle limiter. Keep per-command `MAX_STEP_DEG`, target-loss stop, startup precheck, final stop, and real mechanical soft limits.
 
-Board-tested closed-loop observations:
+Board-tested closed-loop conclusions:
 
-- Camera/LCD plus UART2 motor control can run together. A camera+gimbal coexistence smoke test completed with all motion commands acknowledged and about `36 FPS`.
-- With `cv_lite` rectangle input, a black rectangle target was tracked at about `39` to `49 FPS` during ZDT control tests and about `62` to `63 FPS` in vision-only probes.
-- Small black object clutter did not steal the target when selecting by valid rectangle geometry and area: the main target stayed as candidate `#1`, while a small object appeared as candidate `#2`.
-- A 300-frame cluttered-scene vision probe reached `298/300` hits, `big_jumps=0`, and center ranges around `x=427..432`, `y=213..219`.
-- Four-direction tests confirmed the above sign mapping:
-  - target on left: x moved from about `224` to `272`, yaw total `+4 deg`;
-  - target on right: x moved from about `670` to `639`, yaw total `-4 deg`;
-  - target above center: y moved from about `128` to `170`, pitch total `-4 deg`;
-  - target below center: y moved from about `329` to `298`, pitch total `+4 deg`.
-- A moving-target test with clutter kept `260/260` target hits, no lost stop, and `63/63` motion ACKs; pitch reached the configured `6 deg` test limit.
-- A long closed-loop run with a fixed or slowly moved target completed `3600` frames with `3597` hits, `3` misses, about `60 FPS`, `54/54` motion ACKs, `max_step=11`, `big_jumps=0`, yaw total `-6.000 deg`, and pitch total `+4.426 deg`.
-- A full tracking run with the short-test cumulative limiter disabled completed `7200` frames at about `50 FPS`, with `7089` hits, `111` misses, `486/490` motion ACKs, `ack_miss=4`, target center range `x=154..519`, `y=140..324`, yaw total `-18.654 deg`, and pitch total `+2.382 deg`. It correctly entered lost-stop at frame `4193` after `3` consecutive missed detections.
+- Camera/LCD, rectangle vision, and two addressed UART axes can coexist at useful control rates.
+- Geometry, area, and temporal selection resisted small dark-object clutter.
+- Left, right, above, and below target tests confirmed the listed mounted-camera signs.
+- Bounded and long-running tracking converged, while occasional missed acknowledgments require retry/sampling logic rather than immediate release of the mechanism.
+- Consecutive target misses correctly entered neutral hold; continued competition operation therefore needs the reacquisition state below.
+
+Exact run lengths, hit counts, positions, and acknowledgment telemetry are retained in `docs/BOARD_TEST_LOG.md`.
 
 For final contest code, replace short-test total motion limits with real soft limits based on the actual gimbal mechanics. Keep software limits in axis angle space and keep an immediate repeated stop path for `LOST`, `FAULT`, and `KeyboardInterrupt`.
 
@@ -320,13 +293,7 @@ Use this bring-up sequence for a model-driven gimbal:
 3. Enable ZDT control with small FC deltas and real software angle limits.
 4. For tuning or suspected non-motion, read motor position before and after the test; command totals alone do not prove the axis moved.
 
-Board-tested YOLO + ZDT observations:
-
-- Conservative `FC` loop: `FAST_RPM=30`, `FAST_ACC=25`, `CONTROL_EVERY_N_FRAMES=4`, `MAX_STEP_DEG=0.40` tracked safely but could hit a small `12 deg` yaw test limit before reaching the target.
-- Wider safe test: `FAST_RPM=30`, `FAST_ACC=25`, wider `25 deg` limits, about `21 FPS`, `438/438` command ACKs, and only `12` misses in `1500` frames.
-- Smooth sampled-ACK test: `FAST_RPM=45`, `FAST_ACC=35`, `CONTROL_PERIOD_MS=70`, `MAX_STEP_DEG=0.25`, `SMOOTH_ALPHA=0.30`, `FC_ACK_SAMPLE_EVERY=20` improved loop FPS to about `30` and felt smoother than waiting for every FC ACK, but was slower to converge.
-- Medium sampled-ACK test: `FAST_RPM=55`, `FAST_ACC=45`, `CONTROL_PERIOD_MS=55`, `MAX_STEP_DEG=0.35`, `SMOOTH_ALPHA=0.35` sent more motion, but commanded totals alone were not enough to judge actual tracking.
-- Visible validation test: `FAST_RPM=60`, `FAST_ACC=50`, `CONTROL_PERIOD_MS=65`, `MAX_STEP_DEG=0.75`, `SMOOTH_ALPHA=0.45`, every-FC ACK, and position reads proved real movement: commanded yaw about `25.97 deg`, measured yaw delta about `23.61 deg`; commanded pitch about `1.90 deg`, measured pitch delta about `3.09 deg`.
+Board testing showed the expected tradeoff: every-command acknowledgments make motion proof clearer but reduce loop rate, while sampled acknowledgments improve smoothness but require occasional position feedback to prove that commanded motion happened. Small temporary angle limits can stop a correct tracker before convergence, so replace test limits with real mechanism limits rather than simply widening them without measurement.
 
 For final model tracking, start from a middle ground instead of the most aggressive validation mode:
 

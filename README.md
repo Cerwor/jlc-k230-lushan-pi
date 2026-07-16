@@ -37,15 +37,15 @@ jlc-k230-lushan-pi/
 | 固件参考 | `CanMV_K230_LCKFB_micropython_v1.6-57-gce3418e_nncase_v2.11.0` 是已测参考版本，不是强制要求 |
 | 3.1 寸屏 | 默认使用 `Display.ST7701`、`800x480`、全屏显示 |
 | 显示缩小问题 | 不要把低分辨率检测帧直接居中显示到 LCD；应 LCD 全屏显示，检测低分辨率后把坐标缩放回屏幕坐标 |
-| raw REPL | `scripts/run_canmv_raw_repl.py` 可从 RAM 临时运行脚本，已加入串口列举、握手诊断、`2000000/115200` 自动尝试 |
-| 探针验收 | `scripts/evaluate_probe_log.py` 可把矩形、圆形、YOLO、UART、资源探针日志判读为 `pass/warn/fail` |
-| mpremote 调试 | 提供 `scripts/mpremote_deploy.py` 和 `scripts/mpremote_snapshot.py` 作为显式授权后的板端文件部署、运行中截图拉取补充方案 |
+| 板端探针 | `scripts/run_board_probe.py` 是安装包内统一入口，从 RAM 运行并自动判读矩形、圆形、YOLO、UART、资源与生命周期探针，不写 `/sdcard/main.py` |
+| raw REPL | `scripts/run_canmv_raw_repl.py` 提供握手诊断与 `2000000/115200` 尝试；主机脚本会有限搜索已装 `serial`/`mpremote` 的 Python，不自动安装依赖 |
+| 部署与截图 | 显式授权后可用 `mpremote_deploy.py`、`mpremote_snapshot.py`；`mpremote` 握手失败时可用 `raw_repl_deploy.py` 做字节校验和原子替换的单文件回退 |
 | 离线运行 | TF 卡根目录 `main.py` 可上电自动运行；坏脚本阻塞时可改名为 `main_disabled.py` 后重启 |
-| 圆形检测 | 瓶盖目标长测约 63 FPS，适合低分辨率检测加结果保持 |
-| 矩形检测 | 黑色胶布白纸矩形优先用 `cv_lite.grayscale_find_rectangles_with_corners`，约 58-59 FPS |
+| 圆形检测 | 场景敏感，适合低分辨率检测、半径/ROI 约束和短时结果保持 |
+| 矩形检测 | 黑色胶布白纸矩形优先用 `cv_lite.grayscale_find_rectangles_with_corners`，并保留严格检测后的按需 fallback |
 | 移动矩形 | 严格参数加 relaxed fallback 的 `cv_lite` 跟踪在移动/倾斜/距离变化下更稳 |
 | 光照变化 | normal/bright/shadow/dim 四阶段测试中，fallback 可吸收曝光和对比度变化 |
-| Otsu 阈值 | `scripts/probe_otsu_threshold.py` 可短跑验证黑白目标自动阈值链路；本机实测 30 帧采样得 26 个有效样本，阈值约 `0..120` |
+| Otsu 阈值 | `scripts/probe_otsu_threshold.py` 可短跑验证黑白目标自动阈值、验证和默认值回退链路 |
 | YOLO | 已测固件支持 `nncase_runtime`、`aicube`、`libs.PipeLine`、YOLOv5/YOLOv8/YOLO11 |
 | UART2 | 不要假设唯一引脚；可用 `scripts/probe_uart2_loopback.py` 扫描常见 UART2 映射 |
 | 云台和 ZDT 电机 | 通用云台/激光跟随先走 `contest-patterns.md`；确认是 ZDT XS 系列闭环步进后，再用 `zdt-stepper-gimbal-patterns.md` 的 UART2、`F1/FC`、急停和反馈节流经验 |
@@ -96,6 +96,12 @@ $CODEX_HOME/skills/jlc-k230-lushan-pi/SKILL.md
 $HOME/.codex/skills/jlc-k230-lushan-pi/SKILL.md
 ```
 
+安装包版本可直接读取：
+
+```powershell
+Get-Content "$HOME\.codex\skills\jlc-k230-lushan-pi\VERSION"
+```
+
 可以这样触发：
 
 ```text
@@ -112,6 +118,7 @@ Use $jlc-k230-lushan-pi to write a K230 CanMV main.py for rectangle tracking on 
 
 ```text
 jlc-k230-lushan-pi/
+  VERSION
   SKILL.md
   agents/
     openai.yaml
@@ -127,40 +134,18 @@ AGENT_USAGE.md
 tools/
 ```
 
-关键文件：
+按职责查看即可，不维护第二份逐文件清单：
 
-- `jlc-k230-lushan-pi/SKILL.md`：Skill 入口、快速路由表、全局规则
-- `jlc-k230-lushan-pi/references/canmv-api-known-issues.md`：K230 CanMV API 坑点、保守语法、跨固件差异和代码生成检查
-- `jlc-k230-lushan-pi/references/sources-and-boundaries.md`：适用边界、官方来源链接和 API 手册路由
-- `jlc-k230-lushan-pi/references/model-vision-pipeline.md`：自训练 `.kmodel` 的模型包、验收闸门和比赛集成闭环
-- `jlc-k230-lushan-pi/references/canmv-workflows.md`：固件参考、摄像头、LCD、外设 bring-up 流程
-- `jlc-k230-lushan-pi/references/mpremote-debug-workflows.md`：`mpremote` 部署、运行中截图拉取和 SD 卡侧信道调试
-- `jlc-k230-lushan-pi/references/official-basic-image-patterns.md`：GPIO/FPIOA/PWM/UART 与基础图像处理模式
-- `jlc-k230-lushan-pi/references/circle-detection-patterns.md`：圆形/圆环检测与低分辨率检测坐标缩放策略
-- `jlc-k230-lushan-pi/references/contest-2025-rectangle-patterns.md`：2025 风格矩形靶、`cv_lite`、ROI、串口输出策略
-- `jlc-k230-lushan-pi/references/zdt-stepper-gimbal-patterns.md`：ZDT 闭环步进电机、激光云台轴控和单轴闭环模拟经验
-- `jlc-k230-lushan-pi/references/yolo-module-patterns.md`：YOLO/KModel/PipeLine 使用要点
-- `jlc-k230-lushan-pi/references/offline-run-patterns.md`：TF 卡 `main.py`、`boot.py`、离线自启动
-- `jlc-k230-lushan-pi/references/troubleshooting.md`：集中排障清单
-- `jlc-k230-lushan-pi/assets/contest-template/`：可复制的电赛项目模板
-- `jlc-k230-lushan-pi/assets/model-package/model_manifest.example.json`：自训练 `.kmodel` 交付包 manifest 示例
-- `jlc-k230-lushan-pi/scripts/run_canmv_raw_repl.py`：通过 raw REPL 从 RAM 临时运行脚本
-- `jlc-k230-lushan-pi/scripts/_host_tools.py`：主机端串口、`mpremote` 和命令执行公共 helper，供部署/快照脚本复用
-- `jlc-k230-lushan-pi/scripts/mpremote_deploy.py`：显式把本地文件复制到板端 `/sdcard` 的 `mpremote` 部署助手
-- `jlc-k230-lushan-pi/scripts/mpremote_snapshot.py`：拉取并解码运行中快照文件的 `mpremote` 调试助手
-- `jlc-k230-lushan-pi/scripts/check_model_package.py`：检查自训练模型包的 manifest、labels 和 `.kmodel`
-- `jlc-k230-lushan-pi/scripts/probe_k230_sensor_init.py`：尝试多种 K230 `Sensor` 初始化/抓帧方式的诊断脚本
-- `jlc-k230-lushan-pi/scripts/probe_otsu_threshold.py`：黑白目标 Otsu 自动阈值短跑探针
-- `jlc-k230-lushan-pi/scripts/probe_cvlite_rectangle_target.py`：黑胶布矩形靶 300 帧命中率/FPS/中心稳定性短跑探针
-- `jlc-k230-lushan-pi/scripts/probe_circle_target.py`：瓶盖/圆形目标 300 帧命中率/FPS/圆心稳定性短跑探针
-- `jlc-k230-lushan-pi/scripts/probe_yolo_runtime.py`：YOLO 运行时导入、YOLO 类可用性、板端模型和例程路径短探针
-- `jlc-k230-lushan-pi/scripts/evaluate_probe_log.py`：矩形、圆形、YOLO、UART、资源探针日志验收解释器
-- `jlc-k230-lushan-pi/scripts/validate_skill.py`：桌面端 Skill 预检脚本
-- `jlc-k230-lushan-pi/scripts/probe_uart2_loopback.py`：常见 UART2 映射扫描与回环测试
-- `jlc-k230-lushan-pi/scripts/smoke_camera_lcd.py`：短摄像头/LCD 冒烟测试
-- `docs/TEST_MATRIX.md`：仓库级测试矩阵，说明每类测试是否上板、是否写卡、需要什么人工准备
-- `docs/BOARD_TEST_LOG.md`：仓库级历史实测流水账，不安装到 Codex skill
-- `tests/test_host_scripts.py`：模型包、探针日志和 `mpremote` 安全边界的纯主机回归测试
+| 区域 | 职责 |
+| --- | --- |
+| `SKILL.md`、`agents/` | 触发、默认值、唯一任务路由和 UI 元数据 |
+| `references/` | 按任务加载的工作流、视觉、模型、硬件、控制和排障知识 |
+| `scripts/` | 主机公共能力、验证器、部署器、统一板端探针入口及板端短探针 |
+| `assets/contest-template/` | 可复制的电赛项目骨架和有限模板 |
+| `assets/model-package/` | 自训练 `.kmodel` 交付包约定 |
+| `docs/`、`tests/`、`tools/` | 仓库级测试矩阵、历史实测、主机回归和发布维护，不安装到 Skill |
+
+具体任务先看 `SKILL.md#Quick-Routing`；包内容完整性由 `scripts/validate_skill.py` 检查，而不是靠 README 手工同步文件名。
 
 ## 常用模板
 
@@ -198,6 +183,14 @@ python ".\jlc-k230-lushan-pi\scripts\check_model_package.py" ".\model-package"
 
 完整验收流程见 `jlc-k230-lushan-pi/references/model-vision-pipeline.md`。
 
+## 三条快速路径
+
+1. 经典视觉：先跑 `smoke`，再跑 `rect-target` 或 `circle-target`，从对应模板生成 `main.py`，确认稳定框和坐标后才接控制。
+2. 自训练模型：先校验模型包，再跑 `yolo` 资源探针，依次完成已知图片、摄像头 LCD、现场光照测试，最后开放执行器。
+3. 视觉闭环：先让视觉只输出有时效的屏幕误差，再验证 UART/执行器方向、限速和丢失保持，最后做小范围闭环及离线复位验收。
+
+每条路径遇到 `warn` 或 `fail` 都回到 `SKILL.md` 的 Quick Routing 和 `references/troubleshooting.md#probe-result-actions`，不要跳过未通过的前置层。
+
 ## 推荐开发流程
 
 1. 先让 Agent 读取 `SKILL.md`。
@@ -211,13 +204,12 @@ python ".\jlc-k230-lushan-pi\scripts\check_model_package.py" ".\model-package"
 
 ## 分层测试流程
 
-仓库根目录提供统一入口 `tools/test.ps1`。默认模式只做本地预检，不连接开发板、不写 SD 卡：
+安装后的 Skill 以 `scripts/run_board_probe.py` 为统一上板入口；它可以直接列端口、调度 RAM-only 探针并判读结果。仓库根目录的 `tools/test.ps1` 是维护封装，默认执行离线验证和全部主机单元测试，只有显式 `-Board` 才连接开发板：
 
 完整测试选择规则见 `docs/TEST_MATRIX.md`。
 
 ```powershell
 .\tools\test.ps1
-python -m unittest discover -s tests
 ```
 
 连接开发板后，先只列出串口：
@@ -244,6 +236,12 @@ python -m unittest discover -s tests
 .\tools\test.ps1 -Board -Vision resources -Port COM14
 ```
 
+验证摄像头、LCD 与媒体池能连续初始化和释放三轮：
+
+```powershell
+.\tools\test.ps1 -Board -Vision resource-cycle -Port COM14
+```
+
 短跑验证黑胶布矩形靶或瓶盖目标：
 
 ```powershell
@@ -264,14 +262,14 @@ python -m unittest discover -s tests
 .\tools\test.ps1 -Installed -Board -Vision smoke -Port COM14
 ```
 
-`tools/test.ps1` 的上板模式只使用 raw REPL 从 RAM 运行脚本，不会覆盖 `/sdcard/main.py`。对 `resources`、`rect-target`、`circle-target`、`yolo`、`uart-loopback` 模式，脚本会自动输出 `ACCEPT_* status=pass|warn|fail` 和简短原因。圆形、矩形、移动靶、光照变化、UART 回环、离线自启动这类依赖现场摆放或接线的测试，仍按对应 reference 的专门步骤执行，并把新的实测结论写入 `references/maintenance.md`。
+`tools/test.ps1` 委托安装包内的 `run_board_probe.py`，上板时只从 RAM 运行，不覆盖 `/sdcard/main.py`。对 `resources`、`resource-cycle`、`rect-target`、`circle-target`、`yolo`、`uart-loopback` 会自动输出 `ACCEPT_* status=pass|warn|fail`。可复用结论写入对应 reference；日期、计数、耗时等原始实测写入 `docs/BOARD_TEST_LOG.md`。
 
 ## 连接开发板时的常用命令
 
 列出串口：
 
 ```powershell
-python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" --list-ports
+python ".\jlc-k230-lushan-pi\scripts\run_board_probe.py" --list-ports
 ```
 
 从 RAM 临时运行摄像头/LCD 预览：
@@ -283,19 +281,19 @@ python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-p
 运行短冒烟测试：
 
 ```powershell
-python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\scripts\smoke_camera_lcd.py"
+python ".\jlc-k230-lushan-pi\scripts\run_board_probe.py" --vision smoke --port COM14
 ```
 
 探测板端模型、例程和资源：
 
 ```powershell
-python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\scripts\probe_board_resources.py"
+python ".\jlc-k230-lushan-pi\scripts\run_board_probe.py" --vision resources --port COM14
 ```
 
 探测 YOLO 运行时和资源：
 
 ```powershell
-python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\scripts\probe_yolo_runtime.py"
+python ".\jlc-k230-lushan-pi\scripts\run_board_probe.py" --vision yolo --port COM14
 ```
 
 单独判读已保存的探针日志：
@@ -307,19 +305,19 @@ python ".\jlc-k230-lushan-pi\scripts\evaluate_probe_log.py" --kind rect ".\rect.
 扫描常见 UART2 回环映射：
 
 ```powershell
-python ".\jlc-k230-lushan-pi\scripts\probe_uart2_loopback.py"
+python ".\jlc-k230-lushan-pi\scripts\run_board_probe.py" --vision uart-loopback --port COM14
 ```
 
 诊断摄像头初始化方式：
 
 ```powershell
-python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\scripts\probe_k230_sensor_init.py"
+python ".\jlc-k230-lushan-pi\scripts\run_board_probe.py" --vision sensor --port COM14
 ```
 
 短跑验证 Otsu 自动阈值：
 
 ```powershell
-python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\scripts\probe_otsu_threshold.py"
+python ".\jlc-k230-lushan-pi\scripts\run_board_probe.py" --vision otsu --port COM14
 ```
 
 显式使用 `mpremote` 部署 `main.py` 到板端 `/sdcard`：
@@ -329,6 +327,14 @@ python -m pip install -r .\requirements-host.txt
 python ".\jlc-k230-lushan-pi\scripts\mpremote_deploy.py" --port COM14 main.py
 ```
 
+如果 `mpremote` 无法与当前固件进入 REPL，可改用复用已测 raw-REPL 握手的单文件回退：
+
+```powershell
+python ".\jlc-k230-lushan-pi\scripts\raw_repl_deploy.py" main.py --remote /sdcard/main.py --port COM14
+```
+
+主机脚本会先检查当前解释器，再有限搜索系统中已经安装所需 `serial`/`mpremote` 能力的 Python；也可显式传 `--host-python` 或设置 `K230_HOST_PYTHON`。它不会自行安装软件包。
+
 输出运行中截图钩子并拉取快照：
 
 ```powershell
@@ -336,7 +342,7 @@ python ".\jlc-k230-lushan-pi\scripts\mpremote_snapshot.py" --emit-hook image
 python ".\jlc-k230-lushan-pi\scripts\mpremote_snapshot.py" --port COM14 --remote /sdcard/codex_snap.jpg --delete --open
 ```
 
-`mpremote_*` 工具默认只自动选择已实测的 CanMV USB VID:PID 端口；如果你的系统只显示通用 USB 串口描述，优先传 `--port COM14`，确实需要按描述模糊匹配时再加 `--allow-fuzzy-port`。`mpremote_snapshot.py --delete` 默认只允许删除 `/sdcard/codex_snap*` 或 `/sdcard/tmp/codex_snap*` 这类快照文件，自定义远端路径需要显式 `--force-any-remote`。
+`mpremote_*` 工具默认只自动选择已实测的 CanMV USB VID:PID 端口；如果系统只显示通用 USB 串口描述，优先传 `--port COM14`，确实需要时再加 `--allow-fuzzy-port`。`mpremote_snapshot.py --delete` 默认只允许删除 `/sdcard/codex_snap*` 或 `/sdcard/tmp/codex_snap*` 这类快照文件，自定义远端路径需要显式 `--force-any-remote`。所有板端写入仍受 `references/offline-run-patterns.md` 的部署档位门禁约束。
 
 ## 维护与验证
 
@@ -352,7 +358,7 @@ python ".\jlc-k230-lushan-pi\scripts\mpremote_snapshot.py" --port COM14 --remote
 python -c "import pathlib; root=pathlib.Path(r'.\jlc-k230-lushan-pi'); files=list(root.rglob('*.py')); [compile(p.read_text(encoding='utf-8'), str(p), 'exec') for p in files]; print('PY_SYNTAX_OK files=%d' % len(files))"
 ```
 
-`tools/validate.ps1` 会调用 `scripts/validate_skill.py`、系统 `quick_validate.py` 和桌面 Python 语法检查。注意：桌面 Python 语法检查不能证明 CanMV IDE 或 CanMV MicroPython 一定能运行。最终 `main.py` 仍应遵循 `references/canmv-api-known-issues.md#conservative-syntax-and-validation` 的保守语法规则，并尽量在开发板上用 CanMV IDE 或 raw REPL 验证。
+`tools/test.ps1` 会先调用 `tools/validate.ps1`，再运行 `tests/` 下全部主机回归测试；`tools/publish.ps1` 在创建和自动合并 PR 前调用同一测试入口。桌面测试不能证明 CanMV IDE 或 CanMV MicroPython 一定能运行，最终 `main.py` 仍应遵循保守语法规则，并尽量在开发板上验证。
 
 `scripts/validate_skill.py` 不再硬编码维护者本机路径。它会拒绝通用 Windows 绝对路径；如果需要追加本机私有路径模式，把这些模式放在仓库外的 UTF-8 文本文件中，并设置：
 
@@ -372,7 +378,7 @@ $env:JLC_K230_LOCAL_PATH_CONFIG = "$HOME\.jlc-k230-local-paths.txt"
 .\tools\publish.ps1 -Message "Update skill docs" -All
 ```
 
-`tools/publish.ps1` 会运行校验、建分支、提交、推送、创建 PR、确认 PR 可 clean merge、squash 合并、拉回 `master`、同步安装目录并校验安装副本。
+`tools/publish.ps1` 会运行校验和全部主机单测，再建分支、提交、推送、创建 PR、确认 PR 可 clean merge、squash 合并、拉回默认分支、同步安装目录并校验安装副本。
 
 更新原则：
 
@@ -394,4 +400,4 @@ $env:JLC_K230_LOCAL_PATH_CONFIG = "$HOME\.jlc-k230-local-paths.txt"
 
 Skill 已通过 `quick_validate.py` 校验。多个模板已经做过桌面语法检查，并按已测 CanMV MicroPython 环境调整为更保守的写法。
 
-已连接 Lushan Pi K230 实测过：摄像头/LCD、raw REPL、离线 `main.py` 自动运行、圆形检测、传统矩形检测、`cv_lite` 矩形角点检测、动态矩形跟踪、光照鲁棒性、Otsu 自动阈值、YOLO 能力探测、数据保存、USR 按键、UART2 回环扫描、ZDT 闭环步进电机单轴云台控制链路。仓库也提供了桌面端 `scripts/validate_skill.py` 作为 CI/PR 前的预检入口。
+已连接 Lushan Pi K230 实测过：摄像头/LCD、三轮资源生命周期、raw REPL、离线 `main.py` 自动运行、圆形检测、传统矩形检测、`cv_lite` 矩形角点检测、动态矩形跟踪、光照鲁棒性、Otsu 自动阈值、YOLO 能力探测、数据保存、USR 按键、UART2 回环扫描、ZDT 闭环步进电机单轴云台控制链路。仓库也提供了桌面端 `scripts/validate_skill.py` 作为 CI/PR 前的预检入口。

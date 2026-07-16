@@ -12,6 +12,7 @@ Use this reference for self-trained .kmodel handoff, model-package validation, l
 
 - When To Use A Model
 - User Artifact Handoff
+- Conversion Failure Handoff
 - Model Package Contract
 - Board Bring-Up Gates
 - Board-Tested Single-Class YOLO Notes
@@ -56,6 +57,20 @@ Assume the user owns training and `.kmodel` conversion. Before writing final boa
 - Conversion notes or logs if the `.kmodel` has not yet loaded successfully on a K230.
 
 Do not fabricate model paths, labels, input size, conversion success, or output tuple shape. If any of those are unknown, deliver a scaffold that marks the missing artifact clearly.
+
+## Conversion Failure Handoff
+
+Normal use of this skill starts after conversion. If a `.kmodel` cannot load, produces incompatible tensors, or disagrees with desktop inference, stop board integration and request the smallest conversion-debug bundle:
+
+- source `ONNX` or `TFLite` model when the user can provide it;
+- exact `nncase` compiler version, K230 target, compile options, and conversion log;
+- input tensor name, shape, layout, color order, normalization, and resize/letterbox behavior;
+- calibration dataset description for quantized models;
+- one known input plus desktop-framework and nncase-simulator outputs for comparison.
+
+Use the official [CanMV K230 AI development guide](https://www.kendryte.com/k230_canmv/en/main/ai_dev_doc.html), [nncase compilation API](https://www.kendryte.com/k230_rtos/en/main/api_reference/nncase/nncase_compile.html), and [nncase simulator API](https://www.kendryte.com/k230_rtos/en/main/api_reference/nncase/nncase_simulator.html) for current conversion and comparison steps. The official [runtime update/version guide](https://www.kendryte.com/k230/en/main/03_other/K230_SDK_Updating_nncase_Runtime_Library_Guide.html) states that a `.kmodel` does not carry its nncase version, so retain the compiler version in the manifest or conversion log instead of trying to infer it from the file.
+
+Do not silently reconvert or change preprocessing just to make the board program run. First reproduce the mismatch with a known input, then update the model package contract and board code together.
 
 ## Model Package Contract
 
@@ -106,7 +121,7 @@ The checker verifies file presence, manifest fields, label consistency when inli
 
 Use these gates before control integration:
 
-1. Runtime gate: run `tools/test.ps1 -Board -Vision yolo -Port COM14` or `scripts/probe_yolo_runtime.py`.
+1. Runtime gate: from the skill folder, run `python .\scripts\run_board_probe.py --vision yolo --port COM14`.
 2. Package gate: run `scripts/check_model_package.py` on the host-side model package.
 3. File gate: copy or place the `.kmodel` at the manifest board path only when the user explicitly asks to deploy.
 4. Still-image gate: run one known image through the `.kmodel`; verify labels, scores, boxes/masks, and draw coordinates.
@@ -141,12 +156,9 @@ center = (x + w / 2, y + h / 2)
 
 Do not assume this tuple shape for another model or firmware. Keep the result-structure gate in the first board run and draw/log a few parsed detections before enabling control output.
 
-Board-tested video gates for this model:
+Board testing established that this model could hold a fixed target and follow a moving target at useful video rates, while still producing brief lost segments and scene-dependent scores. Exact counters and score ranges are retained in repository `docs/BOARD_TEST_LOG.md`.
 
-- Fixed target probe: `300/300` hits, about `22.6 FPS`, score around `0.54` in the tested scene.
-- Moving target probe: `1168/1200` hits, about `26.9 FPS`, center range about `x=83..739`, `y=41..466`, score range about `0.25..0.54`, `8` short lost segments.
-
-Control implication: the model is stable enough to drive a gimbal, but final code should keep `LOST_STOP -> REACQUIRE -> TRACK`, candidate filtering, and a confidence threshold that can be lowered for dim scenes. A good starting `CONTROL_SCORE_THRESH` for this tested model is around `0.35`; re-test at the contest venue.
+Control implication: the model is suitable for a bounded gimbal trial, but final code should keep `LOST_STOP -> REACQUIRE -> TRACK`, candidate filtering, and a confidence threshold that can be lowered for dim scenes. A good starting `CONTROL_SCORE_THRESH` for this tested model is around `0.35`; re-test at the contest venue.
 
 ## Contest Integration Pattern
 

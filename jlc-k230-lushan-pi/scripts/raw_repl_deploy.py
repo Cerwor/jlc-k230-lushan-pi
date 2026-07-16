@@ -12,13 +12,13 @@ import time
 from pathlib import Path
 
 from _host_tools import ensure_host_python
+from _host_tools import print_ports
+from _host_tools import require_serial
+from _host_tools import resolve_port
 from run_canmv_raw_repl import (
     DEFAULT_BAUDS,
     RawReplEnterError,
-    autodetect_port,
     enter_raw_repl,
-    print_ports,
-    require_serial,
     run_code,
 )
 
@@ -215,8 +215,7 @@ def main() -> int:
 
     if args.list_ports:
         ensure_host_python(("serial",), args.host_python, __file__, sys.argv[1:])
-        _serial, list_ports = require_serial()
-        print_ports(list_ports)
+        print_ports()
         return 0
     if not args.local_file:
         parser.error("local_file is required unless --list-ports is used")
@@ -244,8 +243,8 @@ def main() -> int:
         return 0
 
     ensure_host_python(("serial",), args.host_python, __file__, sys.argv[1:])
-    serial, list_ports = require_serial()
-    port = args.port or autodetect_port(list_ports)
+    serial, _list_ports = require_serial()
+    port = resolve_port(args.port, allow_fuzzy=True)
     baud_list = (args.baud,) if args.baud else DEFAULT_BAUDS
     last_enter_error = None
 

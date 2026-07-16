@@ -1,3 +1,7 @@
+# @runtime: canmv
+# @route: actuator-smoke
+# @requires: gpio,pwm,timer
+
 import time
 
 from machine import FPIOA, Pin, PWM, Timer
