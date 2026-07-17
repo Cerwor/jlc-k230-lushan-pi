@@ -14,6 +14,13 @@ from typing import Any
 VALID_TASK_TYPES = {"classify", "detect", "segment"}
 VALID_YOLO_CLASSES = {"YOLOv5", "YOLOv8", "YOLO11", "custom"}
 THRESHOLD_FIELDS = ("confidence_threshold", "nms_threshold", "mask_threshold")
+CONVERSION_FIELDS = (
+    "source_format",
+    "nncase_version",
+    "target_chip",
+    "quantization",
+    "target_firmware",
+)
 
 
 def fail(message: str, failures: list[str]) -> None:
@@ -91,6 +98,31 @@ def validate_thresholds(data: dict[str, Any], failures: list[str]) -> None:
             fail("manifest field %s must be a number in [0, 1]" % key, failures)
 
 
+def validate_conversion_metadata(
+    data: dict[str, Any],
+    failures: list[str],
+    warnings: list[str],
+) -> None:
+    conversion = data.get("conversion")
+    if conversion is None:
+        warnings.append("manifest has no conversion metadata; retain the nncase and firmware versions externally")
+        return
+    if not isinstance(conversion, dict):
+        fail("manifest field conversion must be an object", failures)
+        return
+
+    for key in CONVERSION_FIELDS:
+        value = conversion.get(key)
+        if value is None:
+            warnings.append("conversion metadata missing %s" % key)
+        elif not isinstance(value, str) or not value.strip():
+            fail("manifest field conversion.%s must be a non-empty string" % key, failures)
+
+    target_chip = conversion.get("target_chip")
+    if isinstance(target_chip, str) and target_chip.strip() and "k230" not in target_chip.lower():
+        warnings.append("conversion target_chip does not mention K230: %s" % target_chip)
+
+
 def file_sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -133,6 +165,7 @@ def validate_package(package_root: Path) -> tuple[list[str], list[str]]:
     validate_size_list(data, "rgb888p_size", failures, required=False)
     validate_size_list(data, "display_size", failures, required=False)
     validate_thresholds(data, failures)
+    validate_conversion_metadata(data, failures, warnings)
 
     kmodel_path = package_relative_path(package_root, kmodel_file, "kmodel_file", failures)
     labels_path = package_relative_path(package_root, labels_file, "labels_file", failures)

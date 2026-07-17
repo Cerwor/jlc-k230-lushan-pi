@@ -8,6 +8,13 @@
   "rgb888p_size": [320, 320],
   "display_size": [800, 480],
   "board_kmodel_path": "/sdcard/models/contest_target.kmodel",
+  "conversion": {
+    "source_format": "onnx",
+    "nncase_version": "2.11.0",
+    "target_chip": "k230",
+    "quantization": "uint8",
+    "target_firmware": "CanMV_K230_LCKFB_micropython_v1.6-57-gce3418e_nncase_v2.11.0"
+  },
   "confidence_threshold": 0.5,
   "nms_threshold": 0.45,
   "max_boxes_num": 20,

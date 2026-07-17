@@ -26,7 +26,7 @@ Use `mpremote` only when the user asks to deploy to the board, pull files from t
 
 Do not use it as the default path for final answers. The skill default remains: provide final `main.py` content and let the user copy it unless they explicitly ask Codex to write the board.
 
-Before any board write, apply the single deployment-mode decision gate in `offline-run-patterns.md#deployment-mode-gate`. The selected transport does not determine the mode: an `mpremote` copy can still be `QUICK_PATCH`, while a one-line actuator or startup change remains `STANDARD`. Do not choose `RECOVERY` before a real deployment step fails.
+Before any board write, apply the single deployment-mode decision gate in `references/deployment/offline-run-patterns.md#deployment-mode-gate`. The selected transport does not determine the mode: an `mpremote` copy can still be `QUICK_PATCH`, while a one-line actuator or startup change remains `STANDARD`. Do not choose `RECOVERY` before a real deployment step fails.
 
 Prefer `scripts/run_board_probe.py` for standard RAM-only probes that should not touch `/sdcard`, and use `scripts/run_canmv_raw_repl.py` only for an arbitrary script or handshake diagnosis. Prefer `scripts/mpremote_deploy.py` when the user wants to update `/sdcard/main.py` or companion `.py` files.
 

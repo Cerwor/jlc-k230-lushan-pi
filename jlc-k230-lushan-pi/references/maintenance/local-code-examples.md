@@ -21,14 +21,14 @@ This file owns example selection, CanMV porting style, data-collection patterns,
 
 | Task | Primary reference | Starting asset |
 | --- | --- | --- |
-| Camera/LCD proof | `canmv-workflows.md` | `camera_lcd_preview.py` |
-| Rectangle target | `contest-2025-rectangle-patterns.md` | `cvlite_rectangle_target_uart_tracker.py` |
-| Circle target | `circle-detection-patterns.md` | `circle_detect.py` |
-| Color/line tracking | `contest-patterns.md` | `color_line_tracking.py` |
-| Threshold calibration | `contest-patterns.md` | `offline_threshold_tuner.py` |
-| Model inference | `model-vision-pipeline.md`, then `yolo-module-patterns.md` | model-specific project code |
-| UART and pins | `hardware-pin-resource-quickref.md` | `uart2_loopback.py` |
-| Generic centering | `contest-patterns.md` | `pid_target_centering.py` |
+| Camera/LCD proof | `references/platform/canmv-workflows.md` | `camera_lcd_preview.py` |
+| Rectangle target | `references/vision/contest-2025-rectangle-patterns.md` | `cvlite_rectangle_target_uart_tracker.py` |
+| Circle target | `references/vision/circle-detection-patterns.md` | `circle_detect.py` |
+| Color/line tracking | `references/control/contest-patterns.md` | `color_line_tracking.py` |
+| Threshold calibration | `references/control/contest-patterns.md` | `offline_threshold_tuner.py` |
+| Model inference | `references/vision/model-vision-pipeline.md`, then `references/vision/yolo-module-patterns.md` | model-specific project code |
+| UART and pins | `references/platform/hardware-pin-resource-quickref.md` | `uart2_loopback.py` |
+| Generic centering | `references/control/contest-patterns.md` | `pid_target_centering.py` |
 
 Do not repeat a domain algorithm here. Read the owner reference and use this file only for adapting the source example's structure.
 
@@ -41,7 +41,7 @@ When reviewing an example from another project:
 3. Replace camera, display, filesystem, tensor, and UART APIs with the tested K230 CanMV equivalents.
 4. Reconfirm every model path, label order, input size, sensor id, pin, baud rate, and packet format.
 5. Remove local absolute paths and provenance-only comments from generated project code.
-6. Convert desktop syntax to the conservative CanMV style described in `canmv-api-known-issues.md`.
+6. Convert desktop syntax to the conservative CanMV style described in `references/platform/canmv-api-known-issues.md`.
 
 Linux OpenCV, RKNN, OpenMV, and desktop Python examples are design inputs, not directly executable K230 code.
 
@@ -88,7 +88,7 @@ For heavy detection, infer every second frame as an initial performance experime
 
 For pose/keypoint projects, use an `AIBase` application with `Ai2d` preprocessing, the firmware's matching postprocess helper, and explicit scaling from inference coordinates to LCD coordinates. Copy skeleton topology only when it matches that model's exported keypoint order.
 
-Model defaults found in examples are not project facts. Verify the `.kmodel`, labels, input tensor layout, preprocessing, and postprocessing through `model-vision-pipeline.md` before actuator integration.
+Model defaults found in examples are not project facts. Verify the `.kmodel`, labels, input tensor layout, preprocessing, and postprocessing through `references/vision/model-vision-pipeline.md` before actuator integration.
 
 ## Scheduling and Cleanup
 

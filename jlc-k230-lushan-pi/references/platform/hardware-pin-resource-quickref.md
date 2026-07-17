@@ -4,7 +4,7 @@ This file distills the official LCKFB/JLC Lushan Pi K230 schematic diagram page 
 
 Official source: https://wiki.lckfb.com/zh-hans/lushan-pi-k230/open-source-hardware/diagram.html
 
-For wiring, voltage, and peripheral failures, use `troubleshooting.md#gpio-pwm-uart-i2c-spi-problems`. For scope boundaries and safety assumptions, use `sources-and-boundaries.md#applicability-boundaries`.
+For wiring, voltage, and peripheral failures, use `references/platform/troubleshooting.md#gpio-pwm-uart-i2c-spi-problems`. For scope boundaries and safety assumptions, use `references/maintenance/sources-and-boundaries.md#applicability-boundaries`.
 
 ## Scope
 
@@ -87,7 +87,7 @@ Hardware-level notes:
 - The board is designed for compatibility with many Raspberry Pi-style expansion modules, but software/pin multiplexing still needs verification.
 - The schematic page notes CSI camera connectors also follow Raspberry Pi 5 / Raspberry Pi Zero style mechanical definitions.
 
-Use `official-basic-image-patterns.md` for common GPIO/FPIOA, I2C, PWM, and UART mappings extracted from the official examples.
+Use `references/vision/official-basic-image-patterns.md` for common GPIO/FPIOA, I2C, PWM, and UART mappings extracted from the official examples.
 
 ## Common Pin and Connector Quick Table
 
@@ -148,7 +148,7 @@ Common non-40Pin connectors and pads:
 | Resource | Known signal/pad | Use |
 | --- | --- | --- |
 | GH1.25 UART2/IIC2 | UART2_TXD `GPIO11`, UART2_RXD `GPIO12`; also IIC2_SCL/SDA on the same pair | Preferred locking connector for an external MCU when the connector is used |
-| UART2 alternate pads | `PIN5/PIN6`, `PIN11/PIN12`, `PIN44/PIN45` on tested firmware | Use `scripts/probe_uart2_loopback.py` when the physical short/wiring is uncertain |
+| UART2 alternate pads | `PIN5/PIN6`, `PIN11/PIN12`, `PIN44/PIN45` on tested firmware | Use `scripts/run_board_probe.py --vision uart-loopback` when the physical short/wiring is uncertain |
 | UART TX sweep candidates | UART1 `GPIO3`, UART2 `GPIO5/GPIO11/GPIO44`, UART3 `GPIO32/GPIO50`, UART4 `GPIO36/GPIO48` | Same probe sends distinctive test frames on each candidate so an external MCU can identify the real TX pad |
 | GH1.25 UART3 | UART3_TXD `GPIO50`, UART3_RXD `GPIO51` | User-available serial on newer CanMV firmware; verify occupation on old Linux+RT-Smart firmware |
 | USR button | Physical USR tested as `BUTTON_PAD=52`, `FPIOA.GPIO53`, `Pin(53, Pin.PULL_DOWN)` | Idle `0`, pressed `1`; do not use `RST` or `BOOT` as normal user input |

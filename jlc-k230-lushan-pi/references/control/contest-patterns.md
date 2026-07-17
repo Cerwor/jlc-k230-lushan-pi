@@ -1,6 +1,6 @@
 # Electronic Design Contest Patterns
 
-For integration failures, use `troubleshooting.md#contest-integration-problems`. For scope limits such as actuator safety, unsupported boards, or uncertain pins, use `sources-and-boundaries.md#applicability-boundaries`.
+For integration failures, use `references/platform/troubleshooting.md#contest-integration-problems`. For scope limits such as actuator safety, unsupported boards, or uncertain pins, use `references/maintenance/sources-and-boundaries.md#applicability-boundaries`.
 
 ## Scope
 
@@ -46,19 +46,19 @@ Current template files:
 
 - `assets/contest-template/main.py`: integrated contest scaffold. It runs camera-to-LCD preview by default and has optional UART, PWM safe output, and YOLO video pipeline switches.
 - `assets/contest-template/boot.py`: minimal boot file that does not block `main.py`.
-- `assets/contest-template/examples/camera_lcd_preview.py`: first smoke test for camera + 3.1-inch LCD.
-- `assets/contest-template/examples/uart2_loopback.py`: UART2 communication smoke test.
-- `assets/contest-template/examples/pwm_buzzer_smoke.py`: PWM/buzzer smoke test.
-- `assets/contest-template/examples/button_capture.py`: button-triggered image capture template for dataset collection.
-- `assets/contest-template/examples/yolov8_lcd_official_launcher.py`: board-proven launcher for the official YOLOv8 object detection example on the 3.1-inch LCD.
-- `assets/contest-template/examples/rectangle_detect.py`: board-tested classical rectangle detection and annotation example using `find_rects`.
-- `assets/contest-template/examples/rectangle_target_uart_tracker.py`: contest-style rectangle center tracker with ROI, binary preprocessing, diagonal-intersection center, temporal target selection, and UART output.
-- `assets/contest-template/examples/cvlite_rectangle_target_uart_tracker.py`: high-FPS black-on-white rectangle tracker using `cv_lite` grayscale corners, strict-plus-relaxed fallback detection, previous-center target selection, LCD overlay, and UART signed-error output.
-- `assets/contest-template/examples/circle_detect.py`: full-screen LCD circle detection template using low-resolution detection, scaled overlay coordinates, ROI, throttled detection, and throttled serial print.
-- `assets/contest-template/examples/color_line_tracking.py`: color blob and line segment tracking pattern.
-- `assets/contest-template/examples/servo_laser_stepper_patterns.py`: laser GPIO, servo PWM, stepper phase-table, and button mode pattern.
-- `assets/contest-template/examples/offline_threshold_tuner.py`: button-based LAB threshold tuner for offline contest use.
-- `assets/contest-template/examples/pid_target_centering.py`: PID and UART packet helpers for target-centering control.
+- `assets/contest-template/examples/hardware/camera_lcd_preview.py`: first smoke test for camera + 3.1-inch LCD.
+- `assets/contest-template/examples/hardware/uart2_loopback.py`: UART2 communication smoke test.
+- `assets/contest-template/examples/hardware/pwm_buzzer_smoke.py`: PWM/buzzer smoke test.
+- `assets/contest-template/examples/hardware/button_capture.py`: button-triggered image capture template for dataset collection.
+- `assets/contest-template/examples/model/yolov8_lcd_official_launcher.py`: board-proven launcher for the official YOLOv8 object detection example on the 3.1-inch LCD.
+- `assets/contest-template/examples/vision/rectangle_detect.py`: board-tested classical rectangle detection and annotation example using `find_rects`.
+- `assets/contest-template/examples/control/rectangle_target_uart_tracker.py`: contest-style rectangle center tracker with ROI, binary preprocessing, diagonal-intersection center, temporal target selection, and UART output.
+- `assets/contest-template/examples/control/cvlite_rectangle_target_uart_tracker.py`: high-FPS black-on-white rectangle tracker using `cv_lite` grayscale corners, strict-plus-relaxed fallback detection, previous-center target selection, LCD overlay, and UART signed-error output.
+- `assets/contest-template/examples/vision/circle_detect.py`: full-screen LCD circle detection template using low-resolution detection, scaled overlay coordinates, ROI, throttled detection, and throttled serial print.
+- `assets/contest-template/examples/vision/color_line_tracking.py`: color blob and line segment tracking pattern.
+- `assets/contest-template/examples/control/servo_laser_stepper_patterns.py`: laser GPIO, servo PWM, stepper phase-table, and button mode pattern.
+- `assets/contest-template/examples/vision/offline_threshold_tuner.py`: button-based LAB threshold tuner for offline contest use.
+- `assets/contest-template/examples/control/pid_target_centering.py`: PID and UART packet helpers for target-centering control.
 
 When creating a new contest project:
 
@@ -69,7 +69,7 @@ When creating a new contest project:
 5. Enable optional blocks such as `USE_YOLO`, `ENABLE_UART`, or `ENABLE_PWM_SAFE_OUTPUT`.
 6. Save the final integrated program as `main.py` for offline deployment.
 
-When the template changes because of firmware or API updates, record the reason in `maintenance.md#tested-baseline`; put long chronological test history in repository-level `docs/BOARD_TEST_LOG.md` when available.
+When the template changes because of firmware or API updates, record the reason in `references/maintenance/maintenance.md#tested-baseline`; put long chronological test history in repository-level `docs/BOARD_TEST_LOG.md` when available.
 
 ## Template Admission Rules
 
@@ -171,11 +171,11 @@ For color/shape/line tasks, start with classical image processing before YOLO:
 - Display tuning values on LCD by default. Avoid per-frame `print(...)` in real-time vision loops because serial output can dominate frame time.
 - Save fallback threshold presets for the competition site lighting, and make the active preset visible on LCD.
 
-For 2025-style rectangle target or laser aiming tasks, read `contest-2025-rectangle-patterns.md` before writing final code. Prefer `cvlite_rectangle_target_uart_tracker.py` when `cv_lite` is available; use the `find_rects` tracker as a fallback route.
+For 2025-style rectangle target or laser aiming tasks, read `references/vision/contest-2025-rectangle-patterns.md` before writing final code. Prefer `cvlite_rectangle_target_uart_tracker.py` when `cv_lite` is available; use the `find_rects` tracker as a fallback route.
 
-For circle/ring detection, read `circle-detection-patterns.md`. Prefer full-screen `800x480` display with `400x240` or `320x240` detection, ROI, coordinate scaling, and detection every `N` frames.
+For circle/ring detection, read `references/vision/circle-detection-patterns.md`. Prefer full-screen `800x480` display with `400x240` or `320x240` detection, ROI, coordinate scaling, and detection every `N` frames.
 
-For any ready-to-copy `main.py`, read `canmv-api-known-issues.md#conservative-syntax-and-validation` and use conservative CanMV MicroPython syntax.
+For any ready-to-copy `main.py`, read `references/platform/canmv-api-known-issues.md#conservative-syntax-and-validation` and use conservative CanMV MicroPython syntax.
 
 For YOLO/model tasks:
 
@@ -195,7 +195,7 @@ For UART-connected motor controllers or MCUs:
 - Use one success format and one lost-target/timeout format; avoid mixing debug strings and controller packets on the same UART stream.
 - Add timeout handling.
 - Echo or log received responses during bring-up.
-- Only for confirmed ZDT XS-series closed-loop stepper motors using the tested ZDT free protocol, read `zdt-stepper-gimbal-patterns.md`. Prefer tested `F1/FC` fast relative position deltas for visual closed-loop tracking, throttle feedback reads, and send the stop command immediately on target loss.
+- Only for confirmed ZDT XS-series closed-loop stepper motors using the tested ZDT free protocol, read `references/control/zdt-stepper-gimbal-patterns.md`. Prefer tested `F1/FC` fast relative position deltas for visual closed-loop tracking, throttle feedback reads, and send the stop command immediately on target loss.
 
 For K230 plus MSPM0/MSPM0G-style dual-core contest systems:
 
@@ -205,7 +205,7 @@ For K230 plus MSPM0/MSPM0G-style dual-core contest systems:
 - Start with a human-readable packet such as `e,<err_x>,<err_y>\n`, then move to a fixed binary frame only after wiring and direction are verified.
 - For Wheeltec-compatible bring-up, a common 8-byte test shape is `FF FE pan tilt 00 00 00 BCC`, where `BCC` is the XOR of bytes 0 through 6. Use it only when the receiver expects that frame family.
 - Verify common ground and baud rate before tuning vision. Some public dual-chip examples used 9600 baud for bring-up even when 115200 was used elsewhere.
-- Use `scripts/probe_uart2_loopback.py` to identify the K230 TX pad before blaming the MCU parser.
+- Use `scripts/run_board_probe.py --vision uart-loopback` to identify the K230 TX pad before blaming the MCU parser.
 
 For PWM/servo/motor outputs:
 
@@ -215,7 +215,7 @@ For PWM/servo/motor outputs:
 
 ## Debugging
 
-Use `troubleshooting.md` for failure diagnosis. Keep this file focused on the intended contest architecture and normal development flow.
+Use `references/platform/troubleshooting.md` for failure diagnosis. Keep this file focused on the intended contest architecture and normal development flow.
 
 ## Response Style
 

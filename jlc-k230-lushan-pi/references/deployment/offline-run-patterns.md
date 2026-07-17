@@ -4,7 +4,7 @@ These notes distill the official LCKFB/JLC Lushan Pi K230 page for running code 
 
 Official source: https://wiki.lckfb.com/zh-hans/lushan-pi-k230/ide-usage/offline-run.html
 
-For failures, use `troubleshooting.md#no-offline-auto-run`.
+For failures, use `references/platform/troubleshooting.md#no-offline-auto-run`.
 
 ## Scope
 
@@ -30,7 +30,7 @@ For standalone/e-contest deployment, save the final program as `main.py` in the 
 
 User preference: normally provide the final `main.py` program only. The user will manually copy it to the SD card. Do not use CanMV IDE to save to board or modify the TF card unless the user explicitly asks.
 
-If the user explicitly asks for PC-assisted deployment, `references/mpremote-debug-workflows.md` documents `scripts/mpremote_deploy.py` as a supplemental path. It can copy files to `/sdcard` through `mpremote`, but this is still a board-write operation and should not become the default final-answer workflow.
+If the user explicitly asks for PC-assisted deployment, `references/deployment/mpremote-debug-workflows.md` documents `scripts/mpremote_deploy.py` as a supplemental path. It can copy files to `/sdcard` through `mpremote`, but this is still a board-write operation and should not become the default final-answer workflow.
 
 ## Deployment Mode Gate
 
@@ -65,7 +65,7 @@ If any condition is false or unknown, use `STANDARD`. A one-line motor-direction
 
 Use `STANDARD` for first deployment, new firmware/hardware, multi-file changes, unknown board state, or any runtime/hardware/control/startup impact. Apply the relevant subsystem probes and the deployment checklist in this file.
 
-Enter `RECOVERY` only after `QUICK_PATCH` or `STANDARD` fails once. State the failed step, stop repeating the same method, then follow the bounded recovery path in `canmv-workflows.md` or `troubleshooting.md`. A recovery success returns to the original mode's unfinished acceptance step; it does not restart every completed test.
+Enter `RECOVERY` only after `QUICK_PATCH` or `STANDARD` fails once. State the failed step, stop repeating the same method, then follow the bounded recovery path in `references/platform/canmv-workflows.md` or `references/platform/troubleshooting.md`. A recovery success returns to the original mode's unfinished acceptance step; it does not restart every completed test.
 
 ## Boot Order
 
@@ -151,4 +151,4 @@ Before saying a project is contest-ready:
 
 ## Troubleshooting
 
-Use `troubleshooting.md` for offline boot failures. This file only defines the normal deployment process.
+Use `references/platform/troubleshooting.md` for offline boot failures. This file only defines the normal deployment process.

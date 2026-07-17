@@ -2,7 +2,7 @@
 
 These notes distill the LCKFB/JLC Lushan Pi K230 official wiki pages for GPIO/FPIOA, PWM, UART, and image-recognition examples. Prefer these defaults before inventing new examples.
 
-For failures, route to `troubleshooting.md`: `#gpio-pwm-uart-i2c-spi-problems` for peripherals, `#camera-problems` for sensor issues, `#lcd-or-display-problems` for display issues, and `#yolo-kmodel-or-ai-problems` for model-related issues.
+For failures, route to `references/platform/troubleshooting.md`: `#gpio-pwm-uart-i2c-spi-problems` for peripherals, `#camera-problems` for sensor issues, `#lcd-or-display-problems` for display issues, and `#yolo-kmodel-or-ai-problems` for model-related issues.
 
 ## Scope
 
@@ -155,7 +155,7 @@ if data:
 
 Official notes mark `readline` and `readinto` examples as needing more testing. For robust contest communication, use `uart.read()` plus a small packet parser, timeout handling, and optional checksum.
 
-When loopback wiring is uncertain, run `scripts/probe_uart2_loopback.py`. It scans the common UART2 FPIOA pairs before opening UART2. A live test found a user's wire on `PIN5/PIN6`; the default `PIN11/PIN12` UART2 template therefore transmitted but received `rx=0`.
+When loopback wiring is uncertain, run `scripts/run_board_probe.py --vision uart-loopback`. It scans the common UART2 FPIOA pairs before opening UART2. A live test found a user's wire on `PIN5/PIN6`; the default `PIN11/PIN12` UART2 template therefore transmitted but received `rx=0`.
 
 The same helper also performs a bounded all-UART TX sweep after the loopback test. It sequentially maps common header/connector TX candidates for UART1, UART2, UART3, and UART4, then sends a short Wheeltec-style `FF FE pan tilt 00 00 00 BCC` frame at 9600 baud with a different `pan` byte for each candidate. Use this when an external MCU receives nothing and the physical K230 TX pad is uncertain. Watch the MCU-side raw bytes or OLED debug page to identify which candidate arrives.
 
@@ -289,7 +289,7 @@ Contest guidance:
 - Add an ROI to avoid false detections.
 - Print and overlay blob center, area, and confidence-like size.
 - Tune thresholds at the actual contest lighting site.
-- For black/white targets, use an Otsu calibration pass when fixed grayscale thresholds are brittle: sample around 30 frames, discard thresholds outside a sane range, average the remaining values, verify several detection frames, then fall back to a known default if verification fails. `scripts/probe_otsu_threshold.py` is the bounded board-side probe; `assets/contest-template/examples/offline_threshold_tuner.py` includes the same idea as an optional startup path through `ENABLE_STARTUP_OTSU`.
+- For black/white targets, use an Otsu calibration pass when fixed grayscale thresholds are brittle: sample around 30 frames, discard thresholds outside a sane range, average the remaining values, verify several detection frames, then fall back to a known default if verification fails. Use `scripts/run_board_probe.py --vision otsu` for the bounded board-side probe; `assets/contest-template/examples/vision/offline_threshold_tuner.py` includes the same idea as an optional startup path through `ENABLE_STARTUP_OTSU`.
 
 ## Feature Detection
 
@@ -311,7 +311,7 @@ It does not support compressed or Bayer images.
 
 ## Circle Detection
 
-Official circle detection uses `image.find_circles(...)`, a Hough-transform style method. It is useful for circles, rings, round marks, balls, coins, and circular target centers. Keep this section as the official API baseline; for contest strategy, board-tested parameters, LCD scaling, and FPS tradeoffs, route to `circle-detection-patterns.md`.
+Official circle detection uses `image.find_circles(...)`, a Hough-transform style method. It is useful for circles, rings, round marks, balls, coins, and circular target centers. Keep this section as the official API baseline; for contest strategy, board-tested parameters, LCD scaling, and FPS tradeoffs, route to `references/vision/circle-detection-patterns.md`.
 
 Core API shape:
 
@@ -328,7 +328,7 @@ circles = img.find_circles(roi=ROI,
 Performance warning:
 
 - Do not run `find_circles` over full `800x480` by default; it can make FPS too low for live contest control.
-- Use `assets/contest-template/examples/circle_detect.py` and `circle-detection-patterns.md` for full-screen LCD display plus low-resolution circle detection.
+- Use `assets/contest-template/examples/vision/circle_detect.py` and `references/vision/circle-detection-patterns.md` for full-screen LCD display plus low-resolution circle detection.
 - ROI coordinates belong to the detection image. Scale circle center/radius back to LCD coordinates before drawing or sending control coordinates.
 
 `find_circles` does not support compressed or Bayer images.

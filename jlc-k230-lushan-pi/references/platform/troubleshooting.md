@@ -51,6 +51,7 @@ Use this table after `scripts/run_board_probe.py` prints `ACCEPT_* status=pass|w
 
 - On Windows, the board may enumerate as a USB composite device with both `USB Serial Device (COMx)` and `WPD CanMV`; WPD presence does not mean a normal drive letter is available.
 - If `scripts/run_canmv_raw_repl.py` fails, close CanMV IDE and any serial terminals, then retry with an explicit port such as `--port COM14`.
+- If raw REPL remains unavailable, use `run_board_probe.py --vision <single-mode> --export-main .\probe-export\main.py`. This creates only a local file; run it manually in CanMV IDE or copy it to the SD card only after the normal board-write gate and backup steps.
 - If the CanMV USB serial port disappears after removing the SD card, reinsert the SD card and retry; the tested Lushan Pi K230 setup may depend on SD-card CanMV system/resources to bring up the USB serial service.
 - If the USB serial port exists but REPL has no echo, check whether `/sdcard/main.py` or `/sdcard/boot.py` is auto-running and blocking REPL. Rename them to `main_disabled.py` or `boot_disabled.py`, reboot, then retry raw REPL.
 - If the helper reports that no serial bytes were received, reset or replug the board before retrying; a previous interrupted upload can leave the port openable but silent.
@@ -60,7 +61,7 @@ Use this table after `scripts/run_board_probe.py` prints `ACCEPT_* status=pass|w
 - If the helper reports `Board script raised an exception`, inspect the printed traceback first; the serial connection worked and the uploaded MicroPython code failed on the board.
 - If the helper reports `Timed out before raw REPL completion marker`, the uploaded script did not return to raw REPL cleanly. Increase `--timeout` for slow probes, or reset the board before running another script.
 - When `--baud` is omitted, `scripts/run_canmv_raw_repl.py` tries `2000000` and then `115200`. During board testing, the same COM14 device sometimes had no bytes at one baud but worked at the other, so prefer omitting `--baud` unless a fixed baud is being diagnosed.
-- Use `scripts/smoke_camera_lcd.py` as the first hardware test when raw REPL works but camera/LCD behavior is uncertain.
+- Use `scripts/run_board_probe.py --vision smoke` as the first hardware test when raw REPL works but camera/LCD behavior is uncertain.
 - If `mpremote` hangs while a complex `/sdcard/main.py` is auto-running, send a raw Ctrl-C burst first or use `scripts/mpremote_deploy.py`, which does this before `mpremote ... resume fs cp`.
 
 ## No Offline Auto-Run
@@ -75,7 +76,7 @@ Use this table after `scripts/run_board_probe.py` prints `ACCEPT_* status=pass|w
 ## Camera Problems
 
 - Default board camera is usually `CSI2`; `Sensor()` is equivalent to `Sensor(id=2)` in official notes.
-- If a new camera/firmware rejects the normal constructor, run `scripts/probe_k230_sensor_init.py` through raw REPL. Use the first snapshot-capable mode only as a local workaround until it is board-tested.
+- If a new camera/firmware rejects the normal constructor, run `scripts/run_board_probe.py --vision sensor`. Use the first snapshot-capable mode only as a local workaround until it is board-tested.
 - Check FPC orientation, seating, and whether the selected connector matches the code.
 - Start with a raw camera/LCD preview before adding AI.
 - Reduce resolution if memory pressure or frame drops appear.
@@ -96,14 +97,14 @@ Use this table after `scripts/run_board_probe.py` prints `ACCEPT_* status=pass|w
 - Use `fpioa.help(pin)` or `fpioa.help(func, func=True)` to inspect possible mappings.
 - Avoid UART0 for user peripherals; prefer UART2 or UART3.
 - For UART, cross TX/RX, share GND, and match baud/data/parity/stop settings.
-- If a UART2 loopback test reports transmit success but `rx=0`, do not assume the UART peripheral failed. First run `scripts/probe_uart2_loopback.py` to verify whether the physical short is on `PIN5/PIN6`, `PIN11/PIN12`, or `PIN44/PIN45`; tested wiring on `PIN5/PIN6` worked after changing the FPIOA mapping.
-- If an external MCU receives nothing, use the all-UART TX sweep inside `scripts/probe_uart2_loopback.py`. Each candidate sends a different Wheeltec-style frame at 9600 baud, so the MCU-side raw-byte/OLED view can identify the actual K230 TX pad.
+- If a UART2 loopback test reports transmit success but `rx=0`, do not assume the UART peripheral failed. First run `scripts/run_board_probe.py --vision uart-loopback` to verify whether the physical short is on `PIN5/PIN6`, `PIN11/PIN12`, or `PIN44/PIN45`; tested wiring on `PIN5/PIN6` worked after changing the FPIOA mapping.
+- If an external MCU receives nothing, use the all-UART TX sweep selected by `scripts/run_board_probe.py --vision uart-loopback`. Each candidate sends a different Wheeltec-style frame at 9600 baud, so the MCU-side raw-byte/OLED view can identify the actual K230 TX pad.
 - For PWM, use one duty representation at a time: `duty`, `duty_u16`, or `duty_ns`.
 - For motors/servos, clamp outputs and provide a neutral/stop path in exceptions.
 
 ## CanMV API or Firmware Quirks
 
-- Read `canmv-api-known-issues.md` before changing working templates because of a single API failure.
+- Read `references/platform/canmv-api-known-issues.md` before changing working templates because of a single API failure.
 - If `img.to_lab()` or `img.get_pixel(...)` is missing, prefer ROI `copy(...)` plus `get_statistics()` instead of per-pixel sampling.
 - If dual-channel capture fails on a different firmware, fall back to single-channel full-screen capture with ROI/stride/skip-frame processing; do not discard the dual-channel templates that were board-tested on the user's firmware.
 - If `Display.bind_layer(...)` fails, return to the simpler `snapshot -> draw -> Display.show_image(img)` path before debugging OSD/video layers.
@@ -114,8 +115,8 @@ Use this table after `scripts/run_board_probe.py` prints `ACCEPT_* status=pass|w
 - Validate the `.kmodel` with still-image inference before camera video mode.
 - Confirm model family, task type, labels order, `model_input_size`, and input color/layout.
 - Confirm the model path exists on board. Do not assume `/data/...`; tested LCKFB SD-card images may place examples and models under `/sdcard/examples/`.
-- If `OSError: Kmodel file not exist.` appears, run `scripts/probe_board_resources.py` or a small `os.listdir(...)` script on the board to find actual `.kmodel` paths.
-- If an official YOLO example fails with `RuntimeError: init panel failed`, check display mode. Official examples may default to HDMI; for the 3.1-inch LCD, force `display_mode="lcd"` or use the launcher in `yolo-module-patterns.md#board-proven-yolov8-lcd-launcher`.
+- If `OSError: Kmodel file not exist.` appears, run `scripts/run_board_probe.py --vision resources` or a small `os.listdir(...)` script on the board to find actual `.kmodel` paths.
+- If an official YOLO example fails with `RuntimeError: init panel failed`, check display mode. Official examples may default to HDMI; for the 3.1-inch LCD, force `display_mode="lcd"` or use the launcher in `references/vision/yolo-module-patterns.md#board-proven-yolov8-lcd-launcher`.
 - For video mode, start with `PipeLine` display only, then add `yolo.run`, then add control logic.
 - Lower `rgb888p_size` or skip frames if inference is too slow.
 - Call `gc.collect()` periodically and release `yolo.deinit()`/`pl.destroy()` in `finally`.

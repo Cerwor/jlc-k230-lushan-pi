@@ -23,7 +23,7 @@ Use these as tested defaults when the user has not provided a different current 
 - Board-tested firmware reference: `CanMV_K230_LCKFB_micropython_v1.6-57-gce3418e_nncase_v2.11.0`.
 - Treat the firmware string as a compatibility/debugging reference, not a universal requirement.
 - If API behavior differs, ask the user to confirm the board firmware string and compare with the official wiki/API pages.
-- When this firmware reference changes, update this file and add a short note to `maintenance.md#tested-baseline`; put long chronological test history in repository-level `docs/BOARD_TEST_LOG.md` when available.
+- When this firmware reference changes, update this file and add a short note to `references/maintenance/maintenance.md#tested-baseline`; put long chronological test history in repository-level `docs/BOARD_TEST_LOG.md` when available.
 
 ## Project Bring-Up
 
@@ -47,23 +47,23 @@ If raw REPL is unavailable or repeatedly silent, use this Plan B instead of repe
 
 1. Close CanMV IDE and serial terminals, reset the board, and retry once with an explicit `--port`.
 2. If `/sdcard/main.py` or `/sdcard/boot.py` may be blocking REPL, rename it to `main_disabled.py` or `boot_disabled.py`, reboot, and retry.
-3. If the user can use CanMV IDE, run the same probe script manually from the IDE and report the console/LCD result.
-4. If board-file deployment is acceptable, copy a bounded probe as `/sdcard/main.py`, reboot, observe LCD/serial output, then restore the original `main.py`.
-5. If file deployment through serial is requested, switch to `mpremote-debug-workflows.md`; use `scripts/mpremote_deploy.py` or its bounded `scripts/raw_repl_deploy.py` fallback, and treat either as an explicit board-write path rather than a RAM-only smoke test.
+3. Export one self-contained probe with `python .\scripts\run_board_probe.py --vision smoke --export-main .\probe-export\main.py`, then open that file in CanMV IDE and report the console/LCD result. Export is host-only, needs no serial package, and refuses to replace an existing file unless `--force-export` is explicit.
+4. If board-file deployment is acceptable, manually copy the exported bounded probe as `/sdcard/main.py`, reboot, observe LCD/serial output, then restore the original `main.py`.
+5. If file deployment through serial is requested, switch to `references/deployment/mpremote-debug-workflows.md`; use `scripts/mpremote_deploy.py` or its bounded `scripts/raw_repl_deploy.py` fallback, and treat either as an explicit board-write path rather than a RAM-only smoke test.
 
-When the user explicitly asks to deploy files to `/sdcard`, pull a runtime snapshot, or iterate with `mpremote`, read `mpremote-debug-workflows.md` and use `scripts/mpremote_deploy.py`, `scripts/raw_repl_deploy.py`, or `scripts/mpremote_snapshot.py` as appropriate. Keep file deployment separate from RAM-only raw REPL testing because both deployment helpers write board files.
+When the user explicitly asks to deploy files to `/sdcard`, pull a runtime snapshot, or iterate with `mpremote`, read `references/deployment/mpremote-debug-workflows.md` and use `scripts/mpremote_deploy.py`, `scripts/raw_repl_deploy.py`, or `scripts/mpremote_snapshot.py` as appropriate. Keep file deployment separate from RAM-only raw REPL testing because both deployment helpers write board files.
 
-When hardware is connected and a quick camera/LCD check is needed, run `scripts/smoke_camera_lcd.py` through `scripts/run_canmv_raw_repl.py`. It initializes the default CSI camera and the 3.1-inch `Display.ST7701` LCD, shows 20 frames, prints `SMOKE_DONE`, and exits. Use this before debugging a large application or an infinite-loop template.
+When hardware is connected and a quick camera/LCD check is needed, run `scripts/run_board_probe.py --vision smoke`. It initializes the default CSI camera and the 3.1-inch `Display.ST7701` LCD, shows 20 frames, prints `SMOKE_DONE`, and exits. Use this before debugging a large application or an infinite-loop template.
 
-After the smoke test passes, use `python .\scripts\run_board_probe.py --vision resource-cycle --port COM14` when repeated camera/display startup, recovery code, or cleanup behavior is in scope. `scripts/probe_resource_lifecycle.py` performs exactly three RAM-only initialize/capture/deinitialize cycles and reports `ACCEPT_LIFECYCLE`; it does not write the SD card and is not a long-duration leak test.
+After the smoke test passes, use `python .\scripts\run_board_probe.py --vision resource-cycle --port COM14` when repeated camera/display startup, recovery code, or cleanup behavior is in scope. The selected lifecycle probe performs exactly three RAM-only initialize/capture/deinitialize cycles and reports `ACCEPT_LIFECYCLE`; it does not write the SD card and is not a long-duration leak test.
 
-When camera identity or constructor behavior is uncertain, run `scripts/probe_k230_sensor_init.py` through `scripts/run_canmv_raw_repl.py`. It tries the Lushan default `Sensor(id=2)`, smaller QVGA modes, default `Sensor()`, and selected alternate ids, then prints which modes can snapshot. Use it before changing final camera code away from the normal `Sensor(id=2)` path.
+When camera identity or constructor behavior is uncertain, run `scripts/run_board_probe.py --vision sensor`. It tries the Lushan default `Sensor(id=2)`, smaller QVGA modes, default `Sensor()`, and selected alternate ids, then prints which modes can snapshot. Use it before changing final camera code away from the normal `Sensor(id=2)` path.
 
-When black/white threshold calibration needs a board-side check without entering the infinite offline tuner loop, run `scripts/probe_otsu_threshold.py` through `scripts/run_canmv_raw_repl.py`. It samples 30 low-resolution grayscale frames, verifies blob detection, shows a short result screen on the 3.1-inch LCD, and exits.
+When black/white threshold calibration needs a board-side check without entering the infinite offline tuner loop, run `scripts/run_board_probe.py --vision otsu`. It samples 30 low-resolution grayscale frames, verifies blob detection, shows a short result screen on the 3.1-inch LCD, and exits.
 
-For user-preferred example style and portable porting rules, read `local-code-examples.md`. It contains the consolidated patterns without relying on local machine paths.
+For user-preferred example style and portable porting rules, read `references/maintenance/local-code-examples.md`. It contains the consolidated patterns without relying on local machine paths.
 
-For failures during bring-up, use `troubleshooting.md#first-pass` first, then the task-specific sections below.
+For failures during bring-up, use `references/platform/troubleshooting.md#first-pass` first, then the task-specific sections below.
 
 ## FPIOA and GPIO
 
@@ -82,7 +82,7 @@ The official GPIO/FPIOA page states that FPIOA can map pins to functions such as
 
 The current official GPIO tutorial notes that CanMV firmware does not support configuring pins as interrupt mode. Prefer polling or timer-based checks unless the user's installed firmware proves otherwise.
 
-If GPIO or FPIOA mapping does not work, use `troubleshooting.md#gpio-pwm-uart-i2c-spi-problems`.
+If GPIO or FPIOA mapping does not work, use `references/platform/troubleshooting.md#gpio-pwm-uart-i2c-spi-problems`.
 
 ## UART
 
@@ -102,9 +102,9 @@ uart.write("hello\r\n")
 
 Verify pin numbers against the official pin table or user schematic before presenting code as final.
 
-When the user is not sure which UART2 pins are shorted or wired, run `scripts/probe_uart2_loopback.py` through raw REPL. It first scans common UART2 FPIOA pairs `(5, 6)`, `(11, 12)`, and `(44, 45)` as GPIO links, then runs a bounded UART2 loopback test on the linked pair.
+When the user is not sure which UART2 pins are shorted or wired, run `scripts/run_board_probe.py --vision uart-loopback`. It first scans common UART2 FPIOA pairs `(5, 6)`, `(11, 12)`, and `(44, 45)` as GPIO links, then runs a bounded UART2 loopback test on the linked pair.
 
-If UART data is missing, garbled, or one-way only, use `troubleshooting.md#gpio-pwm-uart-i2c-spi-problems`.
+If UART data is missing, garbled, or one-way only, use `references/platform/troubleshooting.md#gpio-pwm-uart-i2c-spi-problems`.
 
 ## PWM
 
@@ -120,25 +120,25 @@ pwm = PWM(0, freq=50, duty=7.5, enable=True)
 
 For servos, expose constants for min/max pulse and clamp outputs. For motor control, separate direction GPIO from speed PWM.
 
-If PWM output does not appear or actuator behavior is unsafe, use `troubleshooting.md#gpio-pwm-uart-i2c-spi-problems`.
+If PWM output does not appear or actuator behavior is unsafe, use `references/platform/troubleshooting.md#gpio-pwm-uart-i2c-spi-problems`.
 
 ## I2C and SPI
 
 The basic I2C tutorial may be unavailable or marked waiting for update, so use the I2C/SPI API manuals and the user's installed firmware. Always ask for module address, required bus speed, and wiring. For SPI displays or sensors, ask for mode, chip select pin, and maximum clock.
 
-If I2C/SPI devices do not respond, use `troubleshooting.md#gpio-pwm-uart-i2c-spi-problems`.
+If I2C/SPI devices do not respond, use `references/platform/troubleshooting.md#gpio-pwm-uart-i2c-spi-problems`.
 
 ## Camera
 
 Use the Sensor module for camera input. The official camera page says Lushan Pi's default camera interface is CSI2; when `Sensor()` does not specify an id, it is equivalent to `Sensor(id=2)` for the default board camera.
 
-Use `assets/contest-template/examples/camera_lcd_preview.py` as the copyable camera/LCD skeleton. This reference keeps only workflow rules: initialize `Sensor`, `Display`, and `MediaManager` in order; keep display selection as a top-level constant; run `sensor.stop()`, `Display.deinit()`, `os.exitpoint(os.EXITPOINT_ENABLE_SLEEP)`, and `MediaManager.deinit()` in cleanup.
+Use `assets/contest-template/examples/hardware/camera_lcd_preview.py` as the copyable camera/LCD skeleton. This reference keeps only workflow rules: initialize `Sensor`, `Display`, and `MediaManager` in order; keep display selection as a top-level constant; run `sensor.stop()`, `Display.deinit()`, `os.exitpoint(os.EXITPOINT_ENABLE_SLEEP)`, and `MediaManager.deinit()` in cleanup.
 
 Adjust resolution to fit the display, algorithm, and memory budget. For AI inference, a lower sensor/display stream and separate model input size are usually easier to keep real-time. For expensive classical detectors such as `find_circles`, prefer a dual-channel layout: full-screen `800x480` display on one channel and `400x240` or `320x240` detection on another channel, then scale coordinates back to the LCD.
 
-If camera initialization, frame capture, or FPS is wrong, use `troubleshooting.md#camera-problems`.
+If camera initialization, frame capture, or FPS is wrong, use `references/platform/troubleshooting.md#camera-problems`.
 
-If the default `Sensor(id=2)` path fails on a new firmware/camera, run `scripts/probe_k230_sensor_init.py` from RAM and use only the successful mode as a temporary workaround. Record the result in `maintenance.md` before changing templates globally.
+If the default `Sensor(id=2)` path fails on a new firmware/camera, run `scripts/run_board_probe.py --vision sensor` from RAM and use only the successful mode as a temporary workaround. Record the result in `references/maintenance/maintenance.md` before changing templates globally.
 
 ## Display and 3.1-Inch LCD
 
@@ -150,7 +150,7 @@ For overlay examples, prefer `snapshot -> draw -> Display.show_image(...)`. Cons
 
 If the user reports no backlight, check the screen expansion board connection first: 31P MIPI cable, 6P touch cable, power, and backlight circuit. The expansion board's backlight normally powers on by default because the enable line is pulled up, but brightness control depends on the I2C-to-PWM backlight circuit.
 
-If the LCD is blank, dark, mirrored, or only works in IDE preview, use `troubleshooting.md#lcd-or-display-problems`.
+If the LCD is blank, dark, mirrored, or only works in IDE preview, use `references/platform/troubleshooting.md#lcd-or-display-problems`.
 
 ## YOLO and Image Recognition
 
@@ -166,4 +166,4 @@ For YOLO tasks, collect these inputs before writing final code:
 
 Use the official YOLO module API as the source for class names and constructor arguments. Keep model inference in a function such as `run_detector(img)` and rendering in `draw_result(...)` so the contest control logic can be tested without camera hardware.
 
-If model loading, inference, labels, or result drawing fails, use `troubleshooting.md#yolo-kmodel-or-ai-problems`.
+If model loading, inference, labels, or result drawing fails, use `references/platform/troubleshooting.md#yolo-kmodel-or-ai-problems`.

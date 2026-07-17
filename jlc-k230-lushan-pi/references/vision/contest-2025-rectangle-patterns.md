@@ -2,7 +2,7 @@
 
 Use this reference for K230 vision tasks that find a rectangular target, estimate its center, and publish an actuator-neutral target observation.
 
-For failures, use `troubleshooting.md`: camera, LCD, probe-result, and contest-integration sections.
+For failures, use `references/platform/troubleshooting.md`: camera, LCD, probe-result, and contest-integration sections.
 
 ## Scope
 
@@ -110,7 +110,7 @@ single-class model box
   -> observation output
 ```
 
-The model does not need to provide the final aiming center. It should suppress background candidates, while corner geometry supplies the precise center. Before using a custom `.kmodel`, read `model-vision-pipeline.md` and the relevant YOLO or AnchorBaseDet API reference.
+The model does not need to provide the final aiming center. It should suppress background candidates, while corner geometry supplies the precise center. Before using a custom `.kmodel`, read `references/vision/model-vision-pipeline.md` and the relevant YOLO or AnchorBaseDet API reference.
 
 If refinement misses briefly, hold the last refined center for only one or two frames. A model-box-center fallback should be labeled as coarse, use lower confidence in downstream control, and never masquerade as a refined center.
 
@@ -136,7 +136,7 @@ target_valid, center_x, center_y, error_x, error_y,
 quality, mode, sequence, timestamp
 ```
 
-The vision layer may apply bounded center filtering and mark data stale, but it must not invent motor frames, axis signs, holding behavior, or mechanical limits. Route confirmed ZDT hardware to `zdt-stepper-gimbal-patterns.md`; route other actuators to their own protocol reference. If the actuator is unknown, output coordinates only.
+The vision layer may apply bounded center filtering and mark data stale, but it must not invent motor frames, axis signs, holding behavior, or mechanical limits. Route confirmed ZDT hardware to `references/control/zdt-stepper-gimbal-patterns.md`; route other actuators to their own protocol reference. If the actuator is unknown, output coordinates only.
 
 ## UART Output
 
@@ -154,15 +154,15 @@ e,<err_x>,<err_y>\n
 
 For a fixed packet, define framing, sequence, checksum, stale timeout, and one unambiguous lost-target state. Do not mix human debug text with controller packets on the same channel unless the receiver explicitly supports it.
 
-Use UART2 only after the pin pair is confirmed with `hardware-pin-resource-quickref.md` or `scripts/probe_uart2_loopback.py`.
+Use UART2 only after the pin pair is confirmed with `references/platform/hardware-pin-resource-quickref.md` or `scripts/run_board_probe.py --vision uart-loopback`.
 
 ## Templates and Acceptance
 
 Use these templates in order:
 
-- `assets/contest-template/examples/rectangle_detect.py` for first camera/LCD proof;
-- `assets/contest-template/examples/cvlite_rectangle_target_uart_tracker.py` for the preferred `cv_lite` path;
-- `assets/contest-template/examples/rectangle_target_uart_tracker.py` for the compatibility path.
+- `assets/contest-template/examples/vision/rectangle_detect.py` for first camera/LCD proof;
+- `assets/contest-template/examples/control/cvlite_rectangle_target_uart_tracker.py` for the preferred `cv_lite` path;
+- `assets/contest-template/examples/control/rectangle_target_uart_tracker.py` for the compatibility path.
 
 From the folder containing `SKILL.md`, run the RAM-only target probe:
 
@@ -170,4 +170,4 @@ From the folder containing `SKILL.md`, run the RAM-only target probe:
 python .\scripts\run_board_probe.py --vision rect-target --port COM14
 ```
 
-`ACCEPT_RECT status=pass` means the bounded probe met its hit-rate, FPS, and center-jump gates in the current scene. For `warn` or `fail`, follow `troubleshooting.md#probe-result-actions`; do not enable actuator output from an unaccepted observation stream.
+`ACCEPT_RECT status=pass` means the bounded probe met its hit-rate, FPS, and center-jump gates in the current scene. For `warn` or `fail`, follow `references/platform/troubleshooting.md#probe-result-actions`; do not enable actuator output from an unaccepted observation stream.

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import subprocess
 import sys
 from pathlib import Path
@@ -98,6 +99,47 @@ def run_probe(
     return assessment.returncode
 
 
+def export_probe(
+    probes: tuple[tuple[str, str], ...],
+    probes_dir: Path,
+    evaluator: Path,
+    vision: str,
+    output_text: str,
+    force: bool,
+) -> int:
+    if len(probes) != 1:
+        raise SystemExit(
+            "--export-main requires a single-script mode; %s contains %d probes"
+            % (vision, len(probes))
+        )
+
+    script_name, assessment_kind = probes[0]
+    source = (probes_dir / script_name).resolve()
+    if not source.exists():
+        raise SystemExit("board probe is missing: %s" % source)
+
+    output = Path(output_text).expanduser().resolve()
+    if output.suffix.lower() != ".py":
+        raise SystemExit("--export-main output must end with .py: %s" % output)
+    if output == source:
+        raise SystemExit("refusing to overwrite the bundled probe source: %s" % source)
+    if output.exists() and not force:
+        raise SystemExit("export output already exists: %s; use --force-export to replace it" % output)
+
+    payload = source.read_bytes()
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_bytes(payload)
+    digest = hashlib.sha256(payload).hexdigest()
+
+    print("BOARD_PROBE_EXPORT source=%s" % source)
+    print("BOARD_PROBE_EXPORT output=%s bytes=%d sha256=%s" % (output, len(payload), digest))
+    if assessment_kind:
+        command = [sys.executable, str(evaluator), "--kind", assessment_kind, "probe.log"]
+        print("BOARD_PROBE_EXPORT_ASSESS %s" % command_text(command))
+    print("BOARD_PROBE_EXPORT_OK vision=%s scripts=1 writes_sdcard=0" % vision)
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Run read-only K230 probes through raw REPL without writing /sdcard/main.py."
@@ -110,7 +152,24 @@ def main() -> int:
     parser.add_argument("--list-ports", action="store_true", help="list serial ports and exit")
     parser.add_argument("--strict", action="store_true", help="treat probe assessment warnings as failures")
     parser.add_argument("--dry-run", action="store_true", help="print the planned RAM-only probe commands")
+    parser.add_argument(
+        "--export-main",
+        metavar="PATH",
+        help="export one self-contained probe as a local .py file for manual CanMV IDE or SD-card use",
+    )
+    parser.add_argument(
+        "--force-export",
+        action="store_true",
+        help="allow --export-main to replace an existing local output file",
+    )
     args = parser.parse_args()
+
+    if args.force_export and not args.export_main:
+        parser.error("--force-export requires --export-main")
+    if args.export_main and args.list_ports:
+        parser.error("--export-main cannot be combined with --list-ports")
+    if args.export_main and args.dry_run:
+        parser.error("--export-main cannot be combined with --dry-run")
 
     if args.list_ports:
         if not args.dry_run:
@@ -125,17 +184,28 @@ def main() -> int:
         parser.error("choose --vision or use --list-ports")
 
     scripts_dir = Path(__file__).resolve().parent
+    probes_dir = scripts_dir / "probes"
     raw_runner = scripts_dir / "run_canmv_raw_repl.py"
     evaluator = scripts_dir / "evaluate_probe_log.py"
-    if not raw_runner.exists() or not evaluator.exists():
-        raise SystemExit("installed skill is incomplete: raw runner or evaluator is missing")
+    if not probes_dir.is_dir() or not raw_runner.exists() or not evaluator.exists():
+        raise SystemExit("installed skill is incomplete: probes, raw runner, or evaluator is missing")
+
+    probes = PROBE_MODES[args.vision]
+    if args.export_main:
+        return export_probe(
+            probes,
+            probes_dir,
+            evaluator,
+            args.vision,
+            args.export_main,
+            args.force_export,
+        )
 
     if not args.dry_run:
         ensure_host_python(("serial",), args.host_python, __file__, sys.argv[1:])
 
-    probes = PROBE_MODES[args.vision]
     for script_name, assessment_kind in probes:
-        probe_path = scripts_dir / script_name
+        probe_path = probes_dir / script_name
         if not probe_path.exists():
             raise SystemExit("board probe is missing: %s" % probe_path)
         command = build_raw_command(

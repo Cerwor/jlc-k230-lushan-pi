@@ -60,6 +60,13 @@ def write_valid_model_package(root: Path) -> None:
         "labels_file": "labels.txt",
         "board_kmodel_path": "/sdcard/models/demo.kmodel",
         "model_input_size": [320, 320],
+        "conversion": {
+            "source_format": "onnx",
+            "nncase_version": "2.11.0",
+            "target_chip": "k230",
+            "quantization": "uint8",
+            "target_firmware": "test-firmware",
+        },
         "confidence_threshold": 0.35,
         "nms_threshold": 0.45,
         "labels": ["target"],
@@ -73,6 +80,17 @@ def write_valid_model_package(root: Path) -> None:
 
 
 class ModelPackageTests(unittest.TestCase):
+    def test_example_manifest_declares_conversion_contract(self) -> None:
+        manifest_path = SKILL_ROOT / "assets" / "model-package" / "model_manifest.example.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        conversion = manifest.get("conversion")
+
+        self.assertIsInstance(conversion, dict)
+        self.assertEqual(
+            set(conversion),
+            {"source_format", "nncase_version", "target_chip", "quantization", "target_firmware"},
+        )
+
     def test_valid_model_package_passes(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             package = Path(temp_dir)
@@ -80,7 +98,7 @@ class ModelPackageTests(unittest.TestCase):
             result = run_python(str(SCRIPTS_DIR / "check_model_package.py"), str(package))
 
         self.assertEqual(result.returncode, 0, result.stdout)
-        self.assertIn("MODEL_PACKAGE_OK", result.stdout)
+        self.assertIn("MODEL_PACKAGE_OK warnings=0", result.stdout)
 
     def test_path_traversal_model_package_fails(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -113,6 +131,33 @@ class ModelPackageTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 1, result.stdout)
         self.assertIn("labels file is empty", result.stdout)
+
+    def test_missing_conversion_metadata_warns_but_passes(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            package = Path(temp_dir)
+            write_valid_model_package(package)
+            manifest_path = package / "model_manifest.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            del manifest["conversion"]
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+            result = run_python(str(SCRIPTS_DIR / "check_model_package.py"), str(package))
+
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn("manifest has no conversion metadata", result.stdout)
+        self.assertIn("MODEL_PACKAGE_OK warnings=1", result.stdout)
+
+    def test_invalid_conversion_metadata_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            package = Path(temp_dir)
+            write_valid_model_package(package)
+            manifest_path = package / "model_manifest.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["conversion"] = "nncase-unknown"
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+            result = run_python(str(SCRIPTS_DIR / "check_model_package.py"), str(package))
+
+        self.assertEqual(result.returncode, 1, result.stdout)
+        self.assertIn("conversion must be an object", result.stdout)
 
 
 class ProbeLogTests(unittest.TestCase):
@@ -205,6 +250,55 @@ class ProbeLogTests(unittest.TestCase):
         self.assertEqual(bad.returncode, 1, bad.stdout)
         self.assertIn("ACCEPT_LIFECYCLE status=fail", bad.stdout)
 
+    def test_circle_probe_passes_on_stable_summary(self) -> None:
+        log = (
+            "CIRCLE_PROBE_DONE frames=300 detect_runs=100 raw_hits=80 "
+            "track_hits=70 overlay_frames=290 fps=60 big_jumps=0\n"
+        )
+        result = run_python(
+            str(SCRIPTS_DIR / "evaluate_probe_log.py"),
+            "--kind",
+            "circle",
+            "-",
+            input_text=log,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn("ACCEPT_CIRCLE status=pass", result.stdout)
+
+    def test_yolo_probe_fails_when_wrapper_import_is_missing(self) -> None:
+        log = (
+            "YOLO_PROBE_DONE nncase=1 aicube=1 pipeline=1 "
+            "yolo5=1 yolo8=1 yolo11=0 kmodels=1 examples=1 truncated=0\n"
+        )
+        result = run_python(
+            str(SCRIPTS_DIR / "evaluate_probe_log.py"),
+            "--kind",
+            "yolo",
+            "-",
+            input_text=log,
+        )
+
+        self.assertEqual(result.returncode, 1, result.stdout)
+        self.assertIn("yolo11 import failed", result.stdout)
+
+    def test_uart_probe_passes_with_loopback_and_tx_sweep(self) -> None:
+        log = (
+            "UART2_LOOPBACK_DONE tx_pin=5 rx_pin=6 rx=4 bytes=63\n"
+            "UART_TX_SWEEP_DONE\n"
+            "UART2_LOOPBACK_PROBE_DONE\n"
+        )
+        result = run_python(
+            str(SCRIPTS_DIR / "evaluate_probe_log.py"),
+            "--kind",
+            "uart",
+            "-",
+            input_text=log,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn("ACCEPT_UART status=pass", result.stdout)
+
 
 class RawReplHandshakeTests(unittest.TestCase):
     def test_enter_raw_repl_accepts_banner(self) -> None:
@@ -289,6 +383,13 @@ class MpremoteSnapshotTests(unittest.TestCase):
                 mpremote_snapshot.decode_ksnp(snapshot, None)
 
         self.assertIn("snapshot shape too large", str(raised.exception))
+
+    def test_open_file_uses_xdg_open_on_linux(self) -> None:
+        with patch.object(mpremote_snapshot.sys, "platform", "linux"):
+            with patch.object(mpremote_snapshot.subprocess, "run") as mocked:
+                mpremote_snapshot.open_file(Path("snapshot.jpg"))
+
+        mocked.assert_called_once_with(["xdg-open", "snapshot.jpg"], check=False)
 
 
 class RawReplDeployTests(unittest.TestCase):
@@ -408,6 +509,57 @@ class BoardProbeRunnerTests(unittest.TestCase):
         self.assertIn("ASSESSMENT_PLANNED kind=rect", result.stdout)
         self.assertIn("writes_sdcard=0", result.stdout)
 
+    def test_export_main_needs_no_serial_or_board(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output = Path(temp_dir) / "main.py"
+            result = run_python(
+                str(SCRIPTS_DIR / "run_board_probe.py"),
+                "--vision",
+                "resource-cycle",
+                "--export-main",
+                str(output),
+                "--host-python",
+                "missing-python-is-ignored-for-export",
+            )
+            exported = output.read_bytes()
+
+        source = (SCRIPTS_DIR / "probes" / "probe_resource_lifecycle.py").read_bytes()
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertEqual(exported, source)
+        self.assertIn("BOARD_PROBE_EXPORT_ASSESS", result.stdout)
+        self.assertIn("writes_sdcard=0", result.stdout)
+
+    def test_export_main_refuses_existing_file(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output = Path(temp_dir) / "main.py"
+            output.write_text("user program\n", encoding="utf-8")
+            result = run_python(
+                str(SCRIPTS_DIR / "run_board_probe.py"),
+                "--vision",
+                "smoke",
+                "--export-main",
+                str(output),
+            )
+            retained = output.read_text(encoding="utf-8")
+
+        self.assertEqual(result.returncode, 1, result.stdout)
+        self.assertEqual(retained, "user program\n")
+        self.assertIn("already exists", result.stdout)
+
+    def test_export_main_rejects_multi_probe_mode(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output = Path(temp_dir) / "main.py"
+            result = run_python(
+                str(SCRIPTS_DIR / "run_board_probe.py"),
+                "--vision",
+                "all-core",
+                "--export-main",
+                str(output),
+            )
+
+        self.assertEqual(result.returncode, 1, result.stdout)
+        self.assertIn("single-script mode", result.stdout)
+
 
 class SkillValidatorGuardrailTests(unittest.TestCase):
     def test_current_skill_validation_passes(self) -> None:
@@ -439,8 +591,8 @@ class SkillValidatorGuardrailTests(unittest.TestCase):
     def test_reference_without_scope_fails(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
-            refs = root / "references"
-            refs.mkdir()
+            refs = root / "references" / "platform"
+            refs.mkdir(parents=True)
             lines = ["# Ref", "", "## Contents", "", "- A"]
             (refs / "long.md").write_text("\n".join(lines), encoding="utf-8")
             failures: list[str] = []
@@ -451,10 +603,10 @@ class SkillValidatorGuardrailTests(unittest.TestCase):
     def test_missing_local_document_anchor_fails(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
-            refs = root / "references"
-            refs.mkdir()
+            refs = root / "references" / "platform"
+            refs.mkdir(parents=True)
             (root / "SKILL.md").write_text(
-                "Read `references/topic.md#missing-heading`.\n",
+                "Read `references/platform/topic.md#missing-heading`.\n",
                 encoding="utf-8",
             )
             (refs / "topic.md").write_text(
@@ -465,6 +617,41 @@ class SkillValidatorGuardrailTests(unittest.TestCase):
             validate_skill.check_document_links(root, failures)
 
         self.assertTrue(any("missing anchor" in item for item in failures))
+
+    def test_missing_documented_package_path_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "SKILL.md").write_text(
+                "Use `assets/contest-template/examples/vision/missing.py`.\n",
+                encoding="utf-8",
+            )
+            failures: list[str] = []
+            validate_skill.check_documented_package_paths(root, failures)
+
+        self.assertTrue(any("missing package path" in item for item in failures))
+
+    def test_root_reference_is_rejected_by_classified_layout(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            references = root / "references"
+            references.mkdir()
+            (references / "stray.md").write_text("# Stray\n", encoding="utf-8")
+            failures: list[str] = []
+            validate_skill.check_classified_layout(root, failures)
+
+        self.assertTrue(any("reference must be placed in a category directory" in item for item in failures))
+
+    def test_flat_template_example_is_rejected_by_classified_layout(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "references").mkdir()
+            examples = root / "assets" / "contest-template" / "examples"
+            examples.mkdir(parents=True)
+            (examples / "stray.py").write_text("# @runtime: canmv\n", encoding="utf-8")
+            failures: list[str] = []
+            validate_skill.check_classified_layout(root, failures)
+
+        self.assertTrue(any("template example must be placed in a category directory" in item for item in failures))
 
     def test_canmv_sensor_without_cleanup_fails(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
