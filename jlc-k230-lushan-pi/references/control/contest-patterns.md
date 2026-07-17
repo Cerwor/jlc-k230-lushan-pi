@@ -63,7 +63,7 @@ Current template files:
 When creating a new contest project:
 
 1. Copy `assets/contest-template/` to the user's project folder.
-2. Run `examples/camera_lcd_preview.py` first.
+2. Run `assets/contest-template/examples/hardware/camera_lcd_preview.py` first.
 3. Run only the hardware-specific smoke tests needed by the project.
 4. Edit top-level constants in `main.py`.
 5. Enable optional blocks such as `USE_YOLO`, `ENABLE_UART`, or `ENABLE_PWM_SAFE_OUTPUT`.

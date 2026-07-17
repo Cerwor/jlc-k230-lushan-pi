@@ -85,6 +85,7 @@ Do not maintain a second exhaustive file inventory here. The filesystem and vali
 
 Current reusable baseline:
 
+- Windows 10/11 host with PowerShell and Python 3; cross-platform convenience wrappers are outside the maintained scope;
 - Lushan Pi K230 CanMV with GC2093 camera and 3.1-inch ST7701 `800x480` LCD;
 - raw REPL RAM execution with bounded host-Python/serial discovery;
 - three-cycle camera/display/media resource lifecycle validation through the RAM-only board probe;

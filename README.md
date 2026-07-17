@@ -1,10 +1,12 @@
 # JLC K230 Lushan Pi Codex Skill
 
-面向立创·庐山派 K230-CanMV 的 Codex Skill，服务于电赛视觉、3.1 寸 LCD、外设控制、YOLO/KModel、离线部署和现场排障。
+面向 Windows 主机和立创·庐山派 K230-CanMV 的 Codex Skill，服务于电赛视觉、3.1 寸 LCD、外设控制、YOLO/KModel、离线部署和现场排障。
 
 `CanMV MicroPython` · `ST7701 800x480` · `经典视觉` · `YOLO/KModel` · `UART/云台` · `离线 main.py`
 
 > Codex 的实际入口是 [`jlc-k230-lushan-pi/SKILL.md`](./jlc-k230-lushan-pi/SKILL.md)。README 只负责安装和项目导航，不复制 Skill 内的任务路由。
+
+主机工具以 Windows 10/11、PowerShell 和 Python 3 为维护与验收基线。项目范围聚焦电赛视觉链路，不为覆盖面额外扩展网络、多开发板或通用硬件框架。
 
 ## 核心能力
 
@@ -21,23 +23,12 @@
 
 在仓库根目录执行。
 
-**Windows PowerShell**
-
 ```powershell
 $skills = if ($env:CODEX_HOME) { Join-Path $env:CODEX_HOME "skills" } else { Join-Path $HOME ".codex\skills" }
 $target = Join-Path $skills "jlc-k230-lushan-pi"
 New-Item -ItemType Directory -Force -Path $skills | Out-Null
 Remove-Item -LiteralPath $target -Recurse -Force -ErrorAction SilentlyContinue
 Copy-Item -LiteralPath ".\jlc-k230-lushan-pi" -Destination $target -Recurse
-```
-
-**macOS / Linux**
-
-```bash
-skills="${CODEX_HOME:-$HOME/.codex}/skills"
-mkdir -p "$skills"
-rm -rf "$skills/jlc-k230-lushan-pi"
-cp -R ./jlc-k230-lushan-pi "$skills/"
 ```
 
 安装后重启 Codex，或刷新 Skill 列表。
@@ -55,6 +46,7 @@ Codex 会从 [`SKILL.md`](./jlc-k230-lushan-pi/SKILL.md) 的 `Quick Routing` 选
 
 | 项目 | 默认值或边界 |
 | --- | --- |
+| 主机 | Windows 10/11、PowerShell、Python 3 |
 | 开发板 | 立创·庐山派 K230-CanMV |
 | 显示屏 | 3.1 寸 ST7701 MIPI LCD，`800x480` |
 | 开发方式 | 优先 CanMV MicroPython，最终交付 `main.py` |

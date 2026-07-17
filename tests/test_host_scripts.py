@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import re
 import shutil
 import struct
 import subprocess
@@ -19,6 +20,10 @@ sys.dont_write_bytecode = True
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SKILL_ROOT = REPO_ROOT / "jlc-k230-lushan-pi"
 SCRIPTS_DIR = SKILL_ROOT / "scripts"
+REPOSITORY_DOC_PATH_RE = re.compile(
+    r"(?<![A-Za-z0-9_.-])(?:\.[\\/])?"
+    r"(jlc-k230-lushan-pi(?:[\\/][A-Za-z0-9_.-]+)*)"
+)
 
 sys.path.insert(0, str(SCRIPTS_DIR))
 
@@ -559,6 +564,21 @@ class BoardProbeRunnerTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 1, result.stdout)
         self.assertIn("single-script mode", result.stdout)
+
+
+class RepositoryDocumentationTests(unittest.TestCase):
+    def test_documented_skill_paths_exist(self) -> None:
+        missing: list[str] = []
+
+        for document_name in ("README.md", "AGENT_USAGE.md"):
+            document = REPO_ROOT / document_name
+            for line_number, line in enumerate(document.read_text(encoding="utf-8").splitlines(), start=1):
+                for match in REPOSITORY_DOC_PATH_RE.finditer(line):
+                    relative = match.group(1).replace("\\", "/")
+                    if not (REPO_ROOT / relative).exists():
+                        missing.append("%s:%d: %s" % (document_name, line_number, relative))
+
+        self.assertEqual([], missing, "Repository docs reference missing paths:\n" + "\n".join(missing))
 
 
 class SkillValidatorGuardrailTests(unittest.TestCase):

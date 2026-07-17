@@ -1,6 +1,6 @@
 # Agent Usage Guide
 
-这份文件用于把本仓库交给不一定原生支持 Codex Skills 的 Agent。执行 K230 相关任务时，请把 `jlc-k230-lushan-pi/` 当作知识包和模板包使用。
+这份文件用于把本仓库交给不一定原生支持 Codex Skills 的 Agent。主机侧以 Windows、PowerShell 和 Python 3 为维护基线；执行 K230 相关任务时，请把 `jlc-k230-lushan-pi/` 当作知识包和模板包使用。
 
 ## 必须遵守的加载顺序
 
@@ -103,40 +103,40 @@ python .\scripts\run_board_probe.py --vision uart-loopback --port COM14
 .\tools\test.ps1 -Board -Vision all-core -Port COM14
 ```
 
-只有诊断统一入口本身时，才直接调用底层 raw-REPL 工具：
+诊断优先使用稳定的统一入口：
 
 ```powershell
-python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" --list-ports
+python ".\jlc-k230-lushan-pi\scripts\run_board_probe.py" --list-ports
 ```
 
 运行短摄像头/LCD 测试：
 
 ```powershell
-python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\scripts\smoke_camera_lcd.py"
+python ".\jlc-k230-lushan-pi\scripts\run_board_probe.py" --vision smoke
 ```
 
 如果摄像头 id、构造方式或固件兼容性不确定，先跑：
 
 ```powershell
-python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\scripts\probe_k230_sensor_init.py"
+python ".\jlc-k230-lushan-pi\scripts\run_board_probe.py" --vision sensor
 ```
 
 如果黑白目标阈值需要现场自动校准，先用短跑探针确认 Otsu 链路：
 
 ```powershell
-python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\scripts\probe_otsu_threshold.py"
+python ".\jlc-k230-lushan-pi\scripts\run_board_probe.py" --vision otsu
 ```
 
 如果要做 YOLO/KModel 项目，先确认运行时和板端资源：
 
 ```powershell
-python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\scripts\probe_yolo_runtime.py"
+python ".\jlc-k230-lushan-pi\scripts\run_board_probe.py" --vision yolo
 ```
 
 运行模板时先从 RAM 测试，不要直接保存为板端 `main.py`：
 
 ```powershell
-python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\assets\contest-template\examples\camera_lcd_preview.py"
+python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\assets\contest-template\examples\hardware\camera_lcd_preview.py"
 ```
 
 只有用户明确要求写板端文件时，才使用 `mpremote` 部署：
