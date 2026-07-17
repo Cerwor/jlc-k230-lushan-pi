@@ -4,11 +4,11 @@ These notes distill the official LCKFB/JLC K230 CanMV YOLO module API page. Use 
 
 Official API source: https://wiki.lckfb.com/zh-hans/lushan-pi-k230/api/aidemo/yolo_module_api.html
 
-For self-trained models that the user converts to `.kmodel`, first use `model-vision-pipeline.md` to check the model package, labels, input size, board paths, and validation gates. Then use this file for board-side YOLO code.
+For self-trained models that the user converts to `.kmodel`, first use `references/vision/model-vision-pipeline.md` to check the model package, labels, input size, board paths, and validation gates. Then use this file for board-side YOLO code.
 
-For failures, use `troubleshooting.md#yolo-kmodel-or-ai-problems`. For firmware/API drift, use `maintenance.md#update-policy`.
+For failures, use `references/platform/troubleshooting.md#yolo-kmodel-or-ai-problems`. For firmware/API drift, use `references/maintenance/maintenance.md#update-policy`.
 
-For final contest scripts, also use `canmv-api-known-issues.md#conservative-syntax-and-validation`; desktop Python syntax compatibility does not guarantee CanMV IDE compatibility.
+For final contest scripts, also use `references/platform/canmv-api-known-issues.md#conservative-syntax-and-validation`; desktop Python syntax compatibility does not guarantee CanMV IDE compatibility.
 
 ## Scope
 
@@ -283,9 +283,9 @@ On the tested board, `/data/model/yolov8/yolov8s.kmodel` did not exist. The SD-c
 - `/sdcard/examples/kmodel/yolov8n_seg_320.kmodel`
 - `/sdcard/examples/kmodel/yolov8n-pose.kmodel`
 
-Before assuming a model path, run `scripts/probe_board_resources.py` as a temporary CanMV IDE script or otherwise list board paths.
+Before assuming a model path, run `scripts/run_board_probe.py --vision resources` or otherwise list board paths.
 
-The official `object_detect_yolov8n.py` may default to HDMI and fail on the 3.1-inch LCD with `RuntimeError: init panel failed`. Use `assets/contest-template/examples/yolov8_lcd_official_launcher.py` rather than duplicating its runtime-patching code here.
+The official `object_detect_yolov8n.py` may default to HDMI and fail on the 3.1-inch LCD with `RuntimeError: init panel failed`. Use `assets/contest-template/examples/model/yolov8_lcd_official_launcher.py` rather than duplicating its runtime-patching code here.
 
 The launcher must keep these fail-fast invariants:
 

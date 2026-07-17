@@ -31,8 +31,8 @@ Record confidence explicitly: board-tested on a named firmware, documented by an
 
 1. Identify one owning reference; do not add the same operational fact to several files.
 2. Update `SKILL.md` only when routing or a global invariant changes.
-3. Update a template only when the behavior is reusable, configurable, and accepted by `contest-patterns.md#template-admission-rules`.
-4. Put symptoms and recovery actions in `troubleshooting.md`.
+3. Update a template only when the behavior is reusable, configurable, and accepted by `references/control/contest-patterns.md#template-admission-rules`.
+4. Put symptoms and recovery actions in `references/platform/troubleshooting.md`.
 5. Put detailed run counters, dates, and transient board state in repository `docs/BOARD_TEST_LOG.md`.
 6. For a published behavior change, update the installable `VERSION` and repository `CHANGELOG.md` using semantic `MAJOR.MINOR.PATCH` versioning.
 7. Run the installable validator and system `quick_validate.py`.
@@ -40,7 +40,7 @@ Record confidence explicitly: board-tested on a named firmware, documented by an
 9. Add the smallest relevant RAM-only board probe when hardware evidence is needed.
 10. Recheck the installed copy after synchronization.
 
-Desktop compilation verifies host syntax only. Final CanMV programs must still follow `canmv-api-known-issues.md` and, when practical, run on the target firmware.
+Desktop compilation verifies host syntax only. Final CanMV programs must still follow `references/platform/canmv-api-known-issues.md` and, when practical, run on the target firmware.
 
 ## Test Entrypoints
 
@@ -69,16 +69,15 @@ Root tools are convenience wrappers, not dependencies of the installed skill.
 | --- | --- |
 | Trigger, defaults, and routing | `SKILL.md` |
 | UI metadata | `agents/openai.yaml` |
-| CanMV bring-up and deployment | `canmv-workflows.md`, `offline-run-patterns.md`, `mpremote-debug-workflows.md` |
-| API compatibility and official boundaries | `canmv-api-known-issues.md`, `sources-and-boundaries.md` |
-| Classical vision and contest integration | matching circle/rectangle/basic-image reference plus `contest-patterns.md` |
-| Models | `model-vision-pipeline.md`, then `yolo-module-patterns.md` |
-| Hardware and generic actuators | `hardware-pin-resource-quickref.md`, `contest-patterns.md` |
-| Confirmed ZDT protocol only | `zdt-stepper-gimbal-patterns.md` |
-| Example adaptation | `local-code-examples.md` |
-| Failure diagnosis | `troubleshooting.md` |
-| Executable helpers and probes | `scripts/` |
-| Copyable project starts | `assets/` |
+| Platform setup, API quirks, pins, and failures | `references/platform/` |
+| Classical vision, models, and YOLO | `references/vision/` |
+| Contest integration and actuator protocols | `references/control/` |
+| Offline boot, deployment, and snapshots | `references/deployment/` |
+| Sources, adaptation, and package maintenance | `references/maintenance/` |
+| Stable host CLI and shared helpers | top-level files under `scripts/` |
+| Self-contained CanMV board probes | `scripts/probes/`, registered in `run_board_probe.py` |
+| Copyable hardware, vision, control, and model starts | `assets/contest-template/examples/` category directories |
+| Integrated project skeleton and model package contract | `assets/contest-template/` and `assets/model-package/` |
 
 Do not maintain a second exhaustive file inventory here. The filesystem and validator are the source of truth for package contents.
 
@@ -86,6 +85,7 @@ Do not maintain a second exhaustive file inventory here. The filesystem and vali
 
 Current reusable baseline:
 
+- Windows 10/11 host with PowerShell and Python 3; cross-platform convenience wrappers are outside the maintained scope;
 - Lushan Pi K230 CanMV with GC2093 camera and 3.1-inch ST7701 `800x480` LCD;
 - raw REPL RAM execution with bounded host-Python/serial discovery;
 - three-cycle camera/display/media resource lifecycle validation through the RAM-only board probe;
@@ -101,6 +101,9 @@ See repository `docs/BOARD_TEST_LOG.md` for dates, exact firmware observations, 
 ## Architecture Guardrails
 
 - Keep `SKILL.md` compact and treat its Quick Routing table as the single routing source.
+- Put every reference in exactly one of the five category directories; do not add Markdown files directly under `references/`.
+- Keep public host commands at the top of `scripts/`; keep `# @runtime: canmv` board probes under `scripts/probes/` and register each one in `run_board_probe.py`.
+- Put each example under `hardware`, `vision`, `control`, or `model`; keep only the integrated `main.py` and `boot.py` at the contest-template root.
 - Long references need early `## Scope` and `## Contents` sections.
 - Keep repository-only docs, tests, CI, and root tools outside `jlc-k230-lushan-pi/`.
 - Keep the installed skill's normal commands relative to the folder containing `SKILL.md`.

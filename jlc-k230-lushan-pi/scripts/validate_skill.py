@@ -33,13 +33,22 @@ CANMV_FORBIDDEN_NAMES = {
 
 WINDOWS_ABSOLUTE_PATH_RE = re.compile(r"\b[A-Za-z]:\\[^\s`'\"<>|]+")
 SEMVER_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
+LOCAL_DOC_TARGET = (
+    r"(?:SKILL\.md|references/(?:[A-Za-z0-9_.-]+/)*[A-Za-z0-9_.-]+\.md|"
+    r"[A-Za-z0-9_.-]+\.md)(?:#[A-Za-z0-9_-]+)?"
+)
 INLINE_LOCAL_DOC_RE = re.compile(
-    r"`((?:references/)?(?:SKILL|[A-Za-z0-9_.-]+)\.md(?:#[A-Za-z0-9_-]+)?)`"
+    r"`(" + LOCAL_DOC_TARGET + r")`"
 )
 MARKDOWN_LOCAL_DOC_RE = re.compile(
-    r"\[[^\]]+\]\(((?:references/)?(?:SKILL|[A-Za-z0-9_.-]+)\.md(?:#[A-Za-z0-9_-]+)?)\)"
+    r"\[[^\]]+\]\((" + LOCAL_DOC_TARGET + r")\)"
+)
+DOCUMENTED_PACKAGE_PATH_RE = re.compile(
+    r"`((?:references|scripts|assets)/[A-Za-z0-9_./-]+)(?:#[A-Za-z0-9_-]+)?(?:\s+[^`]*)?`"
 )
 MAX_TEMPLATE_EXAMPLES = 16
+REFERENCE_CATEGORIES = ("platform", "vision", "control", "deployment", "maintenance")
+TEMPLATE_CATEGORIES = ("hardware", "vision", "control", "model")
 REPO_ONLY_NAMES = (
     ".github",
     "docs",
@@ -146,7 +155,7 @@ def check_runtime_contracts(root: Path, py_files: list[Path], failures: list[str
         rel_path = rel(path, root)
         metadata = runtime_metadata(path)
         is_template = rel_path.startswith("assets/contest-template/")
-        is_probe = rel_path.startswith("scripts/probe_") or rel_path == "scripts/smoke_camera_lcd.py"
+        is_probe = rel_path.startswith("scripts/probes/")
 
         if is_template or is_probe:
             if metadata.get("runtime") != "canmv":
@@ -197,12 +206,18 @@ def check_python_documentation_links(root: Path, py_files: list[Path], failures:
     for path in doc_files:
         doc_text_parts.append(read_text(path))
     doc_text = "\n".join(doc_text_parts).replace("\\", "/")
+    probe_runner = root / "scripts" / "run_board_probe.py"
+    probe_registry = read_text(probe_runner) if probe_runner.exists() else ""
 
     for path in py_files:
         rel_path = rel(path, root)
         if rel_path.endswith("/__init__.py"):
             continue
         basename = path.name
+        if rel_path.startswith("scripts/probes/"):
+            if basename not in probe_registry:
+                failures.append("%s is not registered by scripts/run_board_probe.py" % rel_path)
+            continue
         if rel_path not in doc_text and basename not in doc_text:
             failures.append("%s is not referenced by skill docs/metadata" % rel_path)
 
@@ -248,7 +263,7 @@ def resolve_local_doc(root: Path, target: str) -> tuple[Path, str]:
 
 def check_document_links(root: Path, failures: list[str]) -> None:
     docs = [root / "SKILL.md"]
-    docs.extend(sorted((root / "references").glob("*.md")))
+    docs.extend(sorted((root / "references").rglob("*.md")))
     anchors_by_path: dict[Path, set[str]] = {}
 
     for source in docs:
@@ -274,7 +289,7 @@ def check_document_links(root: Path, failures: list[str]) -> None:
 
 
 def check_reference_contents(root: Path, failures: list[str]) -> None:
-    for path in sorted((root / "references").glob("*.md")):
+    for path in sorted((root / "references").rglob("*.md")):
         lines = read_text(path).splitlines()
         head = "\n".join(lines[:40])
         if "## Contents" not in head:
@@ -283,19 +298,27 @@ def check_reference_contents(root: Path, failures: list[str]) -> None:
             failures.append("%s has no Scope section in its first 40 lines" % rel(path, root))
 
 
+def check_documented_package_paths(root: Path, failures: list[str]) -> None:
+    for source in collect_files(root, (".md", ".yaml", ".yml")):
+        for target in DOCUMENTED_PACKAGE_PATH_RE.findall(read_text(source)):
+            path = root / Path(target)
+            if not path.exists():
+                failures.append("%s references missing package path: %s" % (rel(source, root), target))
+
+
 def check_template_inventory(root: Path, warnings: list[str]) -> None:
     examples_dir = root / "assets" / "contest-template" / "examples"
     if not examples_dir.exists():
         return
 
-    examples = sorted(path for path in examples_dir.glob("*.py") if path.is_file())
+    examples = sorted(path for path in examples_dir.rglob("*.py") if path.is_file())
     if len(examples) > MAX_TEMPLATE_EXAMPLES:
         warnings.append(
             "template example count %d exceeds guardrail %d; move one-off patterns to references"
             % (len(examples), MAX_TEMPLATE_EXAMPLES)
         )
 
-    contest_text = read_text(root / "references" / "contest-patterns.md")
+    contest_text = read_text(root / "references" / "control" / "contest-patterns.md")
     skill_text = read_text(root / "SKILL.md")
     combined = contest_text + "\n" + skill_text
     if "Template Admission Rules" not in contest_text:
@@ -312,9 +335,80 @@ def check_installable_boundary(root: Path, failures: list[str]) -> None:
             failures.append("repo-only file or directory must not be inside installable skill: %s" % name)
 
 
+def check_classified_layout(root: Path, failures: list[str]) -> None:
+    references_dir = root / "references"
+    if not references_dir.is_dir():
+        failures.append("references directory is missing")
+        return
+
+    reference_files = sorted(path for path in references_dir.rglob("*.md") if path.is_file())
+    for path in reference_files:
+        parts = path.relative_to(references_dir).parts
+        if len(parts) == 1:
+            failures.append("reference must be placed in a category directory: %s" % rel(path, root))
+        elif len(parts) != 2:
+            failures.append("reference must be exactly one level below references/: %s" % rel(path, root))
+
+    actual_categories = {
+        path.name for path in references_dir.iterdir() if path.is_dir() and path.name != "__pycache__"
+    }
+    expected_categories = set(REFERENCE_CATEGORIES)
+    for name in sorted(expected_categories - actual_categories):
+        failures.append("missing reference category: references/%s" % name)
+    for name in sorted(actual_categories - expected_categories):
+        failures.append("unknown reference category: references/%s" % name)
+    for name in REFERENCE_CATEGORIES:
+        category = references_dir / name
+        if category.is_dir() and not any(category.glob("*.md")):
+            failures.append("reference category is empty: references/%s" % name)
+
+    examples_dir = root / "assets" / "contest-template" / "examples"
+    if not examples_dir.is_dir():
+        failures.append("assets/contest-template/examples directory is missing")
+    else:
+        template_files = sorted(path for path in examples_dir.rglob("*.py") if path.is_file())
+        for path in template_files:
+            parts = path.relative_to(examples_dir).parts
+            if len(parts) == 1:
+                failures.append("template example must be placed in a category directory: %s" % rel(path, root))
+            elif len(parts) != 2:
+                failures.append("template example must be exactly one level below examples/: %s" % rel(path, root))
+
+        actual_template_categories = {
+            path.name for path in examples_dir.iterdir() if path.is_dir() and path.name != "__pycache__"
+        }
+        expected_template_categories = set(TEMPLATE_CATEGORIES)
+        for name in sorted(expected_template_categories - actual_template_categories):
+            failures.append("missing template category: assets/contest-template/examples/%s" % name)
+        for name in sorted(actual_template_categories - expected_template_categories):
+            failures.append("unknown template category: assets/contest-template/examples/%s" % name)
+        for name in TEMPLATE_CATEGORIES:
+            category = examples_dir / name
+            if category.is_dir() and not any(category.glob("*.py")):
+                failures.append("template category is empty: assets/contest-template/examples/%s" % name)
+
+    scripts_dir = root / "scripts"
+    probes_dir = scripts_dir / "probes"
+    if not probes_dir.is_dir():
+        failures.append("scripts/probes directory is missing")
+        return
+
+    probe_files = sorted(path for path in probes_dir.rglob("*.py") if path.is_file())
+    if not probe_files:
+        failures.append("scripts/probes contains no board probes")
+    for path in probe_files:
+        if path.parent != probes_dir:
+            failures.append("board probe must be a direct child of scripts/probes: %s" % rel(path, root))
+        if runtime_metadata(path).get("runtime") != "canmv":
+            failures.append("scripts/probes must contain only CanMV scripts: %s" % rel(path, root))
+    for path in scripts_dir.glob("*.py"):
+        if runtime_metadata(path).get("runtime") == "canmv":
+            failures.append("CanMV board probe must live under scripts/probes: %s" % rel(path, root))
+
+
 def check_actuator_boundaries(root: Path, warnings: list[str]) -> None:
-    contest_text = read_text(root / "references" / "contest-patterns.md")
-    zdt_text = read_text(root / "references" / "zdt-stepper-gimbal-patterns.md")
+    contest_text = read_text(root / "references" / "control" / "contest-patterns.md")
+    zdt_text = read_text(root / "references" / "control" / "zdt-stepper-gimbal-patterns.md")
     if "Do not emit ZDT command frames in final code" not in zdt_text:
         warnings.append("zdt-stepper-gimbal-patterns.md should explicitly forbid ZDT frames before protocol confirmation")
     if "Do not copy motor-specific command frames" not in contest_text:
@@ -323,8 +417,8 @@ def check_actuator_boundaries(root: Path, warnings: list[str]) -> None:
 
 def check_deployment_mode_gate(root: Path, failures: list[str]) -> None:
     skill_text = read_text(root / "SKILL.md")
-    offline_text = read_text(root / "references" / "offline-run-patterns.md")
-    mpremote_text = read_text(root / "references" / "mpremote-debug-workflows.md")
+    offline_text = read_text(root / "references" / "deployment" / "offline-run-patterns.md")
+    mpremote_text = read_text(root / "references" / "deployment" / "mpremote-debug-workflows.md")
 
     if "default to `STANDARD`" not in skill_text:
         failures.append("SKILL.md must keep STANDARD as the default board-write mode")
@@ -334,7 +428,7 @@ def check_deployment_mode_gate(root: Path, failures: list[str]) -> None:
         failures.append("offline-run-patterns.md must require every QUICK_PATCH gate")
     if "Enter `RECOVERY` only after `QUICK_PATCH` or `STANDARD` fails once" not in offline_text:
         failures.append("offline-run-patterns.md must keep RECOVERY failure-triggered")
-    if "offline-run-patterns.md#deployment-mode-gate" not in mpremote_text:
+    if "references/deployment/offline-run-patterns.md#deployment-mode-gate" not in mpremote_text:
         failures.append("mpremote-debug-workflows.md must route board writes through the deployment mode gate")
 
 
@@ -360,7 +454,7 @@ def check_raw_repl_deployer(root: Path, failures: list[str]) -> None:
 
 def check_host_python_resolution(root: Path, failures: list[str]) -> None:
     host_tools = read_text(root / "scripts" / "_host_tools.py")
-    workflow = read_text(root / "references" / "mpremote-debug-workflows.md")
+    workflow = read_text(root / "references" / "deployment" / "mpremote-debug-workflows.md")
 
     required_helpers = (
         "discover_python_candidates",
@@ -417,7 +511,14 @@ def check_board_probe_entry(root: Path, failures: list[str]) -> None:
         return
 
     text = read_text(path)
-    for marker in ("PROBE_MODES", "run_canmv_raw_repl.py", "evaluate_probe_log.py", "writes_sdcard=0"):
+    for marker in (
+        "PROBE_MODES",
+        "run_canmv_raw_repl.py",
+        "evaluate_probe_log.py",
+        "--export-main",
+        "writes_sdcard=0",
+        'scripts_dir / "probes"',
+    ):
         if marker not in text:
             failures.append("run_board_probe.py missing self-contained probe marker: %s" % marker)
 
@@ -433,22 +534,22 @@ def check_board_probe_entry(root: Path, failures: list[str]) -> None:
 
 
 def check_reference_boundaries(root: Path, failures: list[str]) -> None:
-    legacy = root / "references" / "user-example-patterns.md"
-    if legacy.exists():
+    legacy_files = list((root / "references").rglob("user-example-patterns.md"))
+    if legacy_files:
         failures.append("user-example-patterns.md must stay merged into local-code-examples.md")
 
     for doc in collect_files(root, (".md", ".yaml", ".yml")):
         if "user-example-patterns.md" in read_text(doc):
             failures.append("%s references removed user-example-patterns.md" % rel(doc, root))
 
-    rectangle_text = read_text(root / "references" / "contest-2025-rectangle-patterns.md")
+    rectangle_text = read_text(root / "references" / "vision" / "contest-2025-rectangle-patterns.md")
     for marker in ("F6", "F1/FC", "motion ACK"):
         if marker in rectangle_text:
             failures.append("rectangle reference contains motor-protocol marker: %s" % marker)
     if "actuator-neutral observation" not in rectangle_text:
         failures.append("rectangle reference must end at an actuator-neutral observation")
 
-    yolo_text = read_text(root / "references" / "yolo-module-patterns.md")
+    yolo_text = read_text(root / "references" / "vision" / "yolo-module-patterns.md")
     for marker in ("exec(code)", "replacements = ("):
         if marker in yolo_text:
             failures.append("YOLO reference duplicates launcher implementation: %s" % marker)
@@ -519,8 +620,10 @@ def main() -> int:
     check_python_documentation_links(root, py_files, failures)
     check_document_links(root, failures)
     check_reference_contents(root, failures)
+    check_documented_package_paths(root, failures)
     check_template_inventory(root, warnings)
     check_installable_boundary(root, failures)
+    check_classified_layout(root, failures)
     check_actuator_boundaries(root, warnings)
     check_deployment_mode_gate(root, failures)
     check_raw_repl_deployer(root, failures)

@@ -2,11 +2,12 @@
 
 Use this file when K230 CanMV code fails because an API behaves differently from desktop Python, old CanMV examples, or unofficial notes.
 
-This is not a replacement for the official API manual. For unfamiliar classes or function signatures, still route through `sources-and-boundaries.md#api-manual-routing` first.
+This is not a replacement for the official API manual. For unfamiliar classes or function signatures, still route through `references/maintenance/sources-and-boundaries.md#api-manual-routing` first.
 
 ## Contents
 
 - Scope
+- Firmware Capability Evidence
 - High-Value Pitfalls
 - Sensor and Display
 - Pins and Peripherals
@@ -18,6 +19,20 @@ This is not a replacement for the official API manual. For unfamiliar classes or
 ## Scope
 
 These notes are distilled from this skill's board tests plus paraphrased external contest examples that match Lushan Pi K230, GC2093 camera, CanMV MicroPython, and a 3.1-inch ST7701 MIPI screen. Treat version-specific observations as hints, not universal firmware guarantees.
+
+## Firmware Capability Evidence
+
+This table records evidence, not a claimed compatibility range. For a different firmware, run the named probe or use the fallback before changing a reusable template.
+
+| Capability | Evidence on `v1.6-57-gce3418e / nncase 2.11.0` | Confidence boundary | Probe or fallback |
+| --- | --- | --- | --- |
+| GC2093 through `Sensor(id=2)` | Camera snapshots passed at `800x480` and smaller modes. | Board and camera specific. | Run `probe_k230_sensor_init.py`; use only a passing constructor/mode. |
+| Dual camera channels | Display plus lower-resolution detection channels passed in the bundled vision templates. | Confirmed only on the reference firmware/camera. | Fall back to one full-screen channel with ROI, stride, or skipped detection frames. |
+| `cv_lite` grayscale rectangle corners | Import and black-tape rectangle probes passed at useful video rates. | API and result quality are firmware/scene dependent. | Run `probe_cvlite_rectangle_target.py`; fall back to `rectangle_detect.py`. |
+| YOLOv5/YOLOv8/YOLO11 classes | All three wrapper classes imported; YOLOv8 still/video inference passed. | Import success does not prove every model/task tuple. | Run `probe_yolo_runtime.py`, then validate the exact model package and result shape. |
+| `os.exitpoint(...)` cleanup | Camera/LCD smoke and three-cycle resource lifecycle probes completed. | Availability and shutdown behavior may differ by firmware. | Keep cleanup ordered; omit only after the target firmware proves it unavailable. |
+| `Display.bind_layer(...)` | Present in the API/example family, but no cross-firmware guarantee is claimed. | Version-sensitive and not required by default templates. | Prefer `snapshot -> draw -> Display.show_image(...)`. |
+| `sys.print_exception(...)` | It was unavailable in the reference environment used for compatibility fixes. | Standard-library surface may change. | Use `print("error:", e)` in reusable code. |
 
 ## High-Value Pitfalls
 
@@ -32,13 +47,12 @@ These notes are distilled from this skill's board tests plus paraphrased externa
 
 ## Sensor And Display
 
-- For the user's Lushan Pi K230 with the default GC2093 camera, prefer `Sensor()` or `Sensor(id=2)`. Use `scripts/probe_k230_sensor_init.py` when firmware, CSI port, or camera module is uncertain.
+- For the user's Lushan Pi K230 with the default GC2093 camera, prefer `Sensor()` or `Sensor(id=2)`. Use `scripts/run_board_probe.py --vision sensor` when firmware, CSI port, or camera module is uncertain.
 - `Sensor(width=..., height=...)` may work in IDE virtual-display examples but should not replace the board default camera id in final physical-LCD code unless tested.
 - Keep initialization order stable: configure `Sensor`, call `Display.init(...)`, then `MediaManager.init()`, then `sensor.run()`.
 - Deinitialize in the reverse-safe direction: stop the sensor, deinit `Display`, sleep briefly through `os.exitpoint(os.EXITPOINT_ENABLE_SLEEP)` when available, then deinit `MediaManager`.
 - `Display.ST7701`, width `800`, height `480` is the default for the 3.1-inch screen.
-- `Display.bind_layer(...)` is version-sensitive. If used, bind before `Display.init(...)` and pass the dictionary returned by `sensor.bind_info()` carefully. Prefer `snapshot -> draw -> Display.show_image(img)` unless high-FPS video-layer behavior is worth the complexity.
-- Dual-channel camera setups are firmware-dependent. This skill has board-tested dual-channel templates on the user's firmware, while other CanMV builds have reported `snapshot chn(1)` failures. If dual-channel fails, fall back to single-channel full-screen capture plus ROI/stride/skip-frame detection.
+- Before using `Display.bind_layer(...)` or a second camera channel on another firmware, apply the evidence gate and fallback in `Firmware Capability Evidence`; do not treat a bundled template as proof of compatibility.
 - Do not display a low-resolution image centered on the LCD unless it is explicitly a debug view. For final LCD output, use full-screen `800x480` display and scale lower-resolution detection coordinates back to LCD coordinates.
 
 ## Pins And Peripherals
@@ -46,7 +60,7 @@ These notes are distilled from this skill's board tests plus paraphrased externa
 - PWM constructor signatures vary. For contest code, prefer simple construction plus setter methods when uncertain: create the channel, set frequency, then set duty.
 - `Display.init(Display.ST7701, ...)` may occupy backlight/buzzer-related PWM resources. Prefer PWM2 or another verified free PWM channel for servos.
 - Avoid software PWM for servos in the frame loop; a 20 ms servo period needs pulse-width precision that normal vision loops cannot provide.
-- UART pin names, K230 GPIO pad numbers, and 40Pin physical pin numbers are easy to confuse. Use `hardware-pin-resource-quickref.md` and `scripts/probe_uart2_loopback.py` before claiming a UART wiring is wrong.
+- UART pin names, K230 GPIO pad numbers, and 40Pin physical pin numbers are easy to confuse. Use `references/platform/hardware-pin-resource-quickref.md` and `scripts/run_board_probe.py --vision uart-loopback` before claiming a UART wiring is wrong.
 - UART0 is usually not the first choice for user peripherals. Prefer UART2 or UART3 unless the board/firmware and wiring are verified.
 
 ## Image Processing
@@ -55,7 +69,7 @@ These notes are distilled from this skill's board tests plus paraphrased externa
 - `find_rects` and `find_circles` are expensive. Use smaller detection images or strong ROIs unless board testing proves the frame rate is acceptable.
 - `merge=True` in blob detection can cost time and can merge nearby targets. Keep it off unless it solves a real fragmentation problem.
 - `img.to_lab()` and `img.get_pixel(...)` are not safe cross-firmware assumptions. For offline color calibration, prefer ROI `copy(...)` plus `get_statistics()` when available.
-- For black/white targets, Otsu histogram calibration is a useful startup or user-triggered path: sample about 30 frames, discard out-of-range thresholds, average valid thresholds, verify detection for several frames, then fall back to a known-safe default if verification fails. Use `scripts/probe_otsu_threshold.py` as a bounded board-side probe before enabling startup Otsu in a long-running contest template.
+- For black/white targets, Otsu histogram calibration is a useful startup or user-triggered path: sample about 30 frames, discard out-of-range thresholds, average valid thresholds, verify detection for several frames, then fall back to a known-safe default if verification fails. Use `scripts/run_board_probe.py --vision otsu` as a bounded board-side probe before enabling startup Otsu in a long-running contest template.
 - JPEG or image-file save operations are slow. Throttle capture or snapshot saving and keep it out of the per-frame control loop.
 - Periodic `print(...)`, complex text drawing, and frequent `gc.collect()` can dominate the frame loop. Throttle them.
 

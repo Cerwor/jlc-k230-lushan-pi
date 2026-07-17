@@ -2,7 +2,7 @@
 
 Use this file when the user already trains their own model and converts it to `.kmodel`, then wants Codex to package, validate, deploy, or integrate that model on Lushan Pi K230.
 
-This file is intentionally post-conversion focused. Do not turn it into a generic training guide. For board-side YOLO API usage, read `yolo-module-patterns.md`. For uncertain runtime/API signatures, verify through `sources-and-boundaries.md`.
+This file is intentionally post-conversion focused. Do not turn it into a generic training guide. For board-side YOLO API usage, read `references/vision/yolo-module-patterns.md`. For uncertain runtime/API signatures, verify through `references/maintenance/sources-and-boundaries.md`.
 
 ## Scope
 
@@ -55,6 +55,7 @@ Assume the user owns training and `.kmodel` conversion. Before writing final boa
 - Confidence/NMS/mask thresholds used during validation.
 - Preprocess notes that affect board code: RGB/BGR, resize/letterbox, normalization, CHW/HWC.
 - Conversion notes or logs if the `.kmodel` has not yet loaded successfully on a K230.
+- Exact nncase compiler version and intended CanMV firmware when known; do not try to infer them from the `.kmodel` file.
 
 Do not fabricate model paths, labels, input size, conversion success, or output tuple shape. If any of those are unknown, deliver a scaffold that marks the missing artifact clearly.
 
@@ -99,6 +100,7 @@ Required manifest fields:
 
 Recommended manifest fields:
 
+- `conversion`: object containing `source_format`, `nncase_version`, `target_chip`, `quantization`, and `target_firmware`. Keep these exact rather than writing "latest".
 - `rgb888p_size`: camera/PipeLine inference frame size.
 - `display_size`: usually `[800, 480]` for the 3.1-inch LCD.
 - `confidence_threshold`, `nms_threshold`, `mask_threshold`.
@@ -115,7 +117,7 @@ Run the host-side check before board integration:
 python ".\jlc-k230-lushan-pi\scripts\check_model_package.py" ".\model-package"
 ```
 
-The checker verifies file presence, manifest fields, label consistency when inline labels are present, model input size, threshold ranges, and package-relative local file paths.
+The checker verifies file presence, manifest fields, label consistency when inline labels are present, model input size, threshold ranges, package-relative local file paths, and conversion metadata types. Missing conversion metadata remains a warning for backward compatibility, but it must be supplied before diagnosing an nncase/runtime mismatch.
 
 ## Board Bring-Up Gates
 
@@ -196,6 +198,7 @@ For multi-object tasks:
 When asked to build a K230 model-vision solution, deliver or request:
 
 - Converted `.kmodel`, exact labels, input size, task type, and wrapper class.
+- Exact nncase compiler version, target chip, quantization mode, and target firmware when conversion compatibility is in question.
 - A model package with manifest and `labels.txt`.
 - A host-side `check_model_package.py` result.
 - A board-side still-image test path.

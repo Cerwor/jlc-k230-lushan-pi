@@ -7,7 +7,7 @@ Official sources:
 - https://wiki.lckfb.com/zh-hans/lushan-pi-k230/image-recog/img-feature-detect.html
 - https://wiki.lckfb.com/zh-hans/lushan-pi-k230/api/openmv/image_module_api.html
 
-For failures, use `troubleshooting.md#camera-problems` and `troubleshooting.md#contest-integration-problems`.
+For failures, use `references/platform/troubleshooting.md#camera-problems` and `references/platform/troubleshooting.md#contest-integration-problems`.
 
 ## Scope
 
@@ -112,7 +112,7 @@ For extreme frame-rate work, consider `Display.bind_layer(...)` for a video laye
 
 ## Built-In Template
 
-Use `assets/contest-template/examples/circle_detect.py` as the default starting point for circle detection on the 3.1-inch LCD.
+Use `assets/contest-template/examples/vision/circle_detect.py` as the default starting point for circle detection on the 3.1-inch LCD.
 
 ## Acceptance Probe
 

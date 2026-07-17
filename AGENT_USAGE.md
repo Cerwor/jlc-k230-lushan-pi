@@ -1,6 +1,6 @@
 # Agent Usage Guide
 
-这份文件用于把本仓库交给不一定原生支持 Codex Skills 的 Agent。执行 K230 相关任务时，请把 `jlc-k230-lushan-pi/` 当作知识包和模板包使用。
+这份文件用于把本仓库交给不一定原生支持 Codex Skills 的 Agent。主机侧以 Windows、PowerShell 和 Python 3 为维护基线；执行 K230 相关任务时，请把 `jlc-k230-lushan-pi/` 当作知识包和模板包使用。
 
 ## 必须遵守的加载顺序
 
@@ -9,7 +9,7 @@
 3. 按 `SKILL.md` 的 Quick Routing 表选择需要的 `references/` 文件。
 4. 只读取与当前任务相关的参考文件，避免把无关内容混进上下文。
 5. 所有脚本、参考资料、模板路径都相对 `SKILL.md` 所在目录解析。
-6. 写最终 CanMV `main.py` 前，必须阅读 `references/canmv-api-known-issues.md#conservative-syntax-and-validation`。
+6. 写最终 CanMV `main.py` 前，必须阅读 `references/platform/canmv-api-known-issues.md#conservative-syntax-and-validation`。
 7. 优先复用 `assets/contest-template/` 和 `assets/contest-template/examples/` 里的模板。
 
 ## 默认交付策略
@@ -17,10 +17,11 @@
 - 默认交付可复制的 `main.py` 内容或文件。
 - 除非用户明确要求，不主动写入 SD 卡、不通过 IDE 保存到开发板、不覆盖板端文件。
 - 如果需要连接开发板测试，优先使用安装包内的 `scripts/run_board_probe.py`；它从 RAM 调度探针并自动判读，不写 SD 卡。
-- 如果用户明确要求部署到板端或拉取运行中截图，再读取 `references/mpremote-debug-workflows.md`。优先用 `mpremote_deploy.py` / `mpremote_snapshot.py`，握手不兼容时用 `raw_repl_deploy.py` 做单文件回退。
+- 如果 raw REPL 不可用，对单脚本模式使用 `--export-main` 导出本地探针，再交给用户通过 CanMV IDE 或经过授权的 SD 卡流程运行；不要把 IDE 自动化当成可靠部署接口。
+- 如果用户明确要求部署到板端或拉取运行中截图，再读取 `references/deployment/mpremote-debug-workflows.md`。优先用 `mpremote_deploy.py` / `mpremote_snapshot.py`，握手不兼容时用 `raw_repl_deploy.py` 做单文件回退。
 - 对电赛项目，先验证摄像头/LCD，再验证识别，再验证串口，再进入执行器控制。
-- 对通用云台、激光打靶、激光描图或目标跟随任务，先按 `SKILL.md` 路由读取 `references/contest-patterns.md`，确认执行器类型后再进入具体协议。
-- 只有确认是 ZDT XS 系列闭环步进、Emm/ZDT free protocol、固定 `0x6B` 校验或 `F1/FC` 快速位置命令时，才读取并套用 `references/zdt-stepper-gimbal-patterns.md`。
+- 对通用云台、激光打靶、激光描图或目标跟随任务，先按 `SKILL.md` 路由读取 `references/control/contest-patterns.md`，确认执行器类型后再进入具体协议。
+- 只有确认是 ZDT XS 系列闭环步进、Emm/ZDT free protocol、固定 `0x6B` 校验或 `F1/FC` 快速位置命令时，才读取并套用 `references/control/zdt-stepper-gimbal-patterns.md`。
 - 涉及执行器、激光、电机、舵机时，必须先给出安全开关、限幅和失联/丢目标保护。
 - 集成型比赛 `main.py` 应包含安全停机输出、目标丢失状态、连续帧异常预算和可见 `FAULT` 状态。
 
@@ -40,7 +41,7 @@
 
 对黑色胶布贴在白纸上的矩形、2025 风格矩形靶、需要中心点输出的控制题：
 
-1. 如果固件支持 `cv_lite`，优先使用 `assets/contest-template/examples/cvlite_rectangle_target_uart_tracker.py`。
+1. 如果固件支持 `cv_lite`，优先使用 `assets/contest-template/examples/control/cvlite_rectangle_target_uart_tracker.py`。
 2. 默认走 `cv_lite.grayscale_find_rectangles_with_corners`。
 3. 严格参数先检测；严格检测失败时再启用 relaxed fallback。
 4. 多候选时先用面积，稳定后用上一帧中心选择最近候选。
@@ -51,7 +52,7 @@
 
 对瓶盖、圆环、圆形靶：
 
-1. 使用 `assets/contest-template/examples/circle_detect.py`。
+1. 使用 `assets/contest-template/examples/vision/circle_detect.py`。
 2. 避免全帧 `800x480` 直接 `find_circles`。
 3. 用低分辨率检测、合理 stride、结果保持和 LCD 坐标缩放。
 4. 圆形检测对阈值、半径范围、光照很敏感，现场应先跑可视化 smoke test。
@@ -59,8 +60,9 @@
 ### YOLO 和模型
 
 - 不要假设模型路径固定，先探测 `/sdcard/examples/`、`/sdcard/` 或用户给出的路径。
-- 如果用户自己训练并转换 `.kmodel`，优先读取 `references/model-vision-pipeline.md`，要求用户提供 `.kmodel`、标签顺序、输入尺寸、任务类型和转换说明。
+- 如果用户自己训练并转换 `.kmodel`，优先读取 `references/vision/model-vision-pipeline.md`，要求用户提供 `.kmodel`、标签顺序、输入尺寸、任务类型和转换说明。
 - 写板端代码前，先用 `scripts/check_model_package.py` 检查模型包，再跑 YOLO runtime/resource 探针。
+- 模型 manifest 应记录源格式、nncase 版本、目标芯片、量化方式和目标固件；缺失时不要声称已验证运行时兼容性。
 - YOLO 可用于粗 ROI 或多物体分类，但精确中心控制通常还需要几何后处理。
 - 对固定靶标，单类检测器加传统几何精定位往往比纯 YOLO 更稳。
 - 比赛现场光照变化大时，不要只依赖离线阈值；需要 fallback、ROI、曝光/对比度容错或模型辅助。
@@ -101,40 +103,40 @@ python .\scripts\run_board_probe.py --vision uart-loopback --port COM14
 .\tools\test.ps1 -Board -Vision all-core -Port COM14
 ```
 
-只有诊断统一入口本身时，才直接调用底层 raw-REPL 工具：
+诊断优先使用稳定的统一入口：
 
 ```powershell
-python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" --list-ports
+python ".\jlc-k230-lushan-pi\scripts\run_board_probe.py" --list-ports
 ```
 
 运行短摄像头/LCD 测试：
 
 ```powershell
-python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\scripts\smoke_camera_lcd.py"
+python ".\jlc-k230-lushan-pi\scripts\run_board_probe.py" --vision smoke
 ```
 
 如果摄像头 id、构造方式或固件兼容性不确定，先跑：
 
 ```powershell
-python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\scripts\probe_k230_sensor_init.py"
+python ".\jlc-k230-lushan-pi\scripts\run_board_probe.py" --vision sensor
 ```
 
 如果黑白目标阈值需要现场自动校准，先用短跑探针确认 Otsu 链路：
 
 ```powershell
-python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\scripts\probe_otsu_threshold.py"
+python ".\jlc-k230-lushan-pi\scripts\run_board_probe.py" --vision otsu
 ```
 
 如果要做 YOLO/KModel 项目，先确认运行时和板端资源：
 
 ```powershell
-python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\scripts\probe_yolo_runtime.py"
+python ".\jlc-k230-lushan-pi\scripts\run_board_probe.py" --vision yolo
 ```
 
 运行模板时先从 RAM 测试，不要直接保存为板端 `main.py`：
 
 ```powershell
-python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\assets\contest-template\examples\camera_lcd_preview.py"
+python ".\jlc-k230-lushan-pi\scripts\run_canmv_raw_repl.py" ".\jlc-k230-lushan-pi\assets\contest-template\examples\hardware\camera_lcd_preview.py"
 ```
 
 只有用户明确要求写板端文件时，才使用 `mpremote` 部署：
@@ -177,7 +179,7 @@ python ".\jlc-k230-lushan-pi\scripts\raw_repl_deploy.py" main.py --remote /sdcar
 2. 只把可复用结论写入对应 `references/`；日期、计数、耗时和原始输出写入 `docs/BOARD_TEST_LOG.md`。
 3. 影响路由时更新 `SKILL.md`。
 4. 影响可复用代码时更新 `assets/contest-template/`。
-5. 官方链接、API 路由和适用边界写入 `references/sources-and-boundaries.md`。
+5. 官方链接、API 路由和适用边界写入 `references/maintenance/sources-and-boundaries.md`。
 6. 可复用事实写入对应 `references/`；长历史流水账写入仓库根目录 `docs/BOARD_TEST_LOG.md`，不要塞回安装 skill。
 7. 按 `docs/TEST_MATRIX.md` 选择最小有用测试。
 8. 在仓库根目录优先运行 `tools/test.ps1`；只需要纯预检时可直接运行 `tools/validate.ps1`。
@@ -202,7 +204,7 @@ python ".\jlc-k230-lushan-pi\scripts\raw_repl_deploy.py" main.py --remote /sdcar
 - 不要把 ZDT 电机的回零、参数写入、限位、心跳保护和恢复出厂当作已测功能；未装机械限位前只使用已验证的读取、使能、位置、快速增量和急停链路。
 - 不要假设模型、标签、例程路径固定。
 - 不要假设 `cv_lite` 在所有固件都存在；先 probe，不能用时 fallback。
-- 不要假设第三方 K230 速查表中的 API 结论适用于所有固件；先看 `references/canmv-api-known-issues.md` 的边界说明。
+- 不要假设第三方 K230 速查表中的 API 结论适用于所有固件；先看 `references/platform/canmv-api-known-issues.md` 的边界说明。
 - 不要把 RKNN、RK3576、OpenCV/Linux 摄像头代码直接搬进 K230 CanMV。
 - 不要在视觉坐标未稳定前驱动执行器。
 - 不要在用户未授权时写 SD 卡或覆盖板端文件。

@@ -79,7 +79,7 @@ When uncertainty matters, state the uncertainty and give a verification step:
 
 ## Official Source Index
 
-Use these links as the source index for LCKFB/JLC Lushan Pi K230 work. If a link moves or an API page changes meaningfully, update the relevant reference file and record the change in `maintenance.md#tested-baseline`; put long chronological test history in repository-level `docs/BOARD_TEST_LOG.md` when available.
+Use these links as the source index for LCKFB/JLC Lushan Pi K230 work. If a link moves or an API page changes meaningfully, update the relevant reference file and record the change in `references/maintenance/maintenance.md#tested-baseline`; put long chronological test history in repository-level `docs/BOARD_TEST_LOG.md` when available.
 
 ### Board and Setup
 
@@ -199,8 +199,8 @@ Use this section to choose the exact official API page before relying on memory 
 ## Routing Rules
 
 - For any API that has already failed on-board, trust the board error and current firmware over memory; then check the matching API page.
-- For `sys.print_exception`, use the local firmware finding in `troubleshooting.md`: it may be absent, so templates prefer `print("error:", e)`.
-- For image operations such as `find_rects`, `find_blobs`, drawing functions, ROI, thresholding, and image format limits, read the `Image` API page and compare with `official-basic-image-patterns.md`.
-- For display or panel errors, read the `Display` API page and `troubleshooting.md#lcd-or-display-problems`.
+- For `sys.print_exception`, use the local firmware finding in `references/platform/troubleshooting.md`: it may be absent, so templates prefer `print("error:", e)`.
+- For image operations such as `find_rects`, `find_blobs`, drawing functions, ROI, thresholding, and image format limits, read the `Image` API page and compare with `references/vision/official-basic-image-patterns.md`.
+- For display or panel errors, read the `Display` API page and `references/platform/troubleshooting.md#lcd-or-display-problems`.
 - For AI demo code, read both the specific module API and the board's `/sdcard/examples/...` script if available.
-- For final `main.py` syntax style, use `canmv-api-known-issues.md#conservative-syntax-and-validation`; `python -m py_compile` is not a CanMV parser test.
+- For final `main.py` syntax style, use `references/platform/canmv-api-known-issues.md#conservative-syntax-and-validation`; `python -m py_compile` is not a CanMV parser test.

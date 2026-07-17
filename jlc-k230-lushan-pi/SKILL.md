@@ -17,19 +17,19 @@ description: Build, port, debug, and deploy LCKFB/JLC Lushan Pi K230 CanMV proje
 
 ## Quick Routing
 
-Load references in tiers. Always read `SKILL.md` first, then read only the Tier-1 file for the task. Open Tier-2 files only when the task needs that detail or the first attempt fails.
+Load references in tiers. Always read `SKILL.md` first, then read only the Tier-1 file for the task. Open Tier-2 files only when the task needs that detail or the first attempt fails. Do not recursively follow every cross-reference; stop when the current task's required evidence or recovery action is available.
 
 | User task | Read first | Use this result |
 | --- | --- | --- |
-| Bring-up, connected-board smoke tests, camera/LCD, raw REPL, setup facts | Tier-1: `references/canmv-workflows.md`; Tier-2 on failure: `references/troubleshooting.md` | Known firmware/setup facts, safe hardware validation, and failure diagnosis |
-| Final CanMV `main.py`, API quirks, syntax compatibility, unfamiliar API calls | Tier-1: `references/canmv-api-known-issues.md`; Tier-2 for official lookup: `references/sources-and-boundaries.md` | Conservative MicroPython style plus official API page selection |
+| Bring-up, connected-board smoke tests, camera/LCD, raw REPL, setup facts | Tier-1: `references/platform/canmv-workflows.md`; Tier-2 on failure: `references/platform/troubleshooting.md` | Known firmware/setup facts, safe hardware validation, and failure diagnosis |
+| Final CanMV `main.py`, API quirks, syntax compatibility, unfamiliar API calls | Tier-1: `references/platform/canmv-api-known-issues.md`; Tier-2 for official lookup: `references/maintenance/sources-and-boundaries.md` | Conservative MicroPython style plus official API page selection |
 | Classical vision, circles, rectangles, colors, thresholds, template choice | Tier-1: this `Template Selection` table; Tier-2: only the matching task reference | Pick the right tested template before writing new code |
-| Contest integration, UART/control output, pins, power, actuators, generic laser/gimbal target following, runtime recovery | Tier-1: `references/contest-patterns.md`; Tier-2 for pins: `references/hardware-pin-resource-quickref.md`; Tier-2 for basic APIs: `references/official-basic-image-patterns.md` | Safe control architecture, generic actuator boundaries, and verified wiring/resource constraints |
-| Confirmed ZDT XS-series closed-loop stepper, Emm/ZDT free protocol, fixed `0x6B` checksum, `F1/FC` fast position deltas | Tier-1: `references/zdt-stepper-gimbal-patterns.md`; Tier-2 for pins/safety: `references/hardware-pin-resource-quickref.md` and `references/contest-patterns.md` | Tested ZDT-specific command frames, UART2 mapping caveats, fast-position loop, and motor safety strategy |
-| Porting user examples, matching prior project style, training/data-collection patterns | Tier-1: `references/local-code-examples.md`; Tier-2 only for the task domain: the matching vision, model, hardware, or control reference | Reuse portable structure without depending on local paths or importing an unconfirmed actuator protocol |
-| Self-trained `.kmodel`, model package, YOLO/KModel/PipeLine/model paths | Tier-1: `references/model-vision-pipeline.md`; Tier-2 for board code: `references/yolo-module-patterns.md`; Tier-2 if paths are unknown: run `scripts/probe_yolo_runtime.py` or `scripts/probe_board_resources.py` | Model package contract, validation gates, model lifecycle, display adaptation, and board resource probing |
-| Offline boot, TF-card `main.py`, mpremote deploy, runtime snapshot pull | Tier-1: `references/offline-run-patterns.md`; Tier-2 for mpremote/snapshot: `references/mpremote-debug-workflows.md`; Tier-2 on failure: `references/troubleshooting.md` | Deployment path, board-write boundaries, and recovery steps |
-| Skill maintenance, scope, official sources, version drift | Tier-1: `references/maintenance.md`; Tier-2 for boundaries/sources: `references/sources-and-boundaries.md` and `scripts/validate_skill.py` | Update policy, limitations, source links, and preflight checks |
+| Contest integration, UART/control output, pins, power, actuators, generic laser/gimbal target following, runtime recovery | Tier-1: `references/control/contest-patterns.md`; Tier-2 for pins: `references/platform/hardware-pin-resource-quickref.md`; Tier-2 for basic APIs: `references/vision/official-basic-image-patterns.md` | Safe control architecture, generic actuator boundaries, and verified wiring/resource constraints |
+| Confirmed ZDT XS-series closed-loop stepper, Emm/ZDT free protocol, fixed `0x6B` checksum, `F1/FC` fast position deltas | Tier-1: `references/control/zdt-stepper-gimbal-patterns.md`; Tier-2 for pins/safety: `references/platform/hardware-pin-resource-quickref.md` and `references/control/contest-patterns.md` | Tested ZDT-specific command frames, UART2 mapping caveats, fast-position loop, and motor safety strategy |
+| Porting user examples, matching prior project style, training/data-collection patterns | Tier-1: `references/maintenance/local-code-examples.md`; Tier-2 only for the task domain: the matching vision, model, hardware, or control reference | Reuse portable structure without depending on local paths or importing an unconfirmed actuator protocol |
+| Self-trained `.kmodel`, model package, YOLO/KModel/PipeLine/model paths | Tier-1: `references/vision/model-vision-pipeline.md`; Tier-2 for board code: `references/vision/yolo-module-patterns.md`; Tier-2 if paths are unknown: run `scripts/run_board_probe.py --vision yolo` or `--vision resources` | Model package contract, validation gates, model lifecycle, display adaptation, and board resource probing |
+| Offline boot, TF-card `main.py`, mpremote deploy, runtime snapshot pull | Tier-1: `references/deployment/offline-run-patterns.md`; Tier-2 for mpremote/snapshot: `references/deployment/mpremote-debug-workflows.md`; Tier-2 on failure: `references/platform/troubleshooting.md` | Deployment path, board-write boundaries, and recovery steps |
+| Skill maintenance, scope, official sources, version drift | Tier-1: `references/maintenance/maintenance.md`; Tier-2 for boundaries/sources: `references/maintenance/sources-and-boundaries.md` and `scripts/validate_skill.py` | Update policy, limitations, source links, and preflight checks |
 
 ## Template Selection
 
@@ -37,28 +37,28 @@ Prefer this table before browsing every file under `assets/contest-template/exam
 
 | Need | Start with | Read if needed |
 | --- | --- | --- |
-| Camera/LCD sanity check | `scripts/smoke_camera_lcd.py`, then `assets/contest-template/examples/camera_lcd_preview.py` | `references/canmv-workflows.md` |
-| Bottle cap, ring, circle center | `scripts/probe_circle_target.py`, then `assets/contest-template/examples/circle_detect.py` | `references/circle-detection-patterns.md` |
-| Black-tape rectangle target for control | `scripts/probe_cvlite_rectangle_target.py`, then `assets/contest-template/examples/cvlite_rectangle_target_uart_tracker.py` | `references/contest-2025-rectangle-patterns.md` |
-| Rectangle smoke test or no `cv_lite` fallback | `assets/contest-template/examples/rectangle_detect.py`, then `assets/contest-template/examples/rectangle_target_uart_tracker.py` | `references/contest-2025-rectangle-patterns.md` |
-| Field threshold calibration without a PC | `scripts/probe_otsu_threshold.py`, then `assets/contest-template/examples/offline_threshold_tuner.py` | `references/official-basic-image-patterns.md` |
-| Generic UART, servo, laser, PID, unknown gimbal actuator | `assets/contest-template/examples/uart2_loopback.py`, `servo_laser_stepper_patterns.py`, `pid_target_centering.py` | `references/contest-patterns.md` and `references/hardware-pin-resource-quickref.md` |
-| Confirmed ZDT closed-loop stepper gimbal axis | `references/zdt-stepper-gimbal-patterns.md`, then adapt `assets/contest-template/examples/pid_target_centering.py` | `references/contest-patterns.md` |
-| Self-trained `.kmodel` after user conversion | `assets/model-package/model_manifest.example.json`, then `scripts/check_model_package.py` | `references/model-vision-pipeline.md` |
-| YOLO official example on 3.1-inch LCD | `scripts/probe_yolo_runtime.py`, then `assets/contest-template/examples/yolov8_lcd_official_launcher.py` | `references/yolo-module-patterns.md` |
+| Camera/LCD sanity check | `scripts/run_board_probe.py --vision smoke`, then `assets/contest-template/examples/hardware/camera_lcd_preview.py` | `references/platform/canmv-workflows.md` |
+| Bottle cap, ring, circle center | `scripts/run_board_probe.py --vision circle-target`, then `assets/contest-template/examples/vision/circle_detect.py` | `references/vision/circle-detection-patterns.md` |
+| Black-tape rectangle target for control | `scripts/run_board_probe.py --vision rect-target`, then `assets/contest-template/examples/control/cvlite_rectangle_target_uart_tracker.py` | `references/vision/contest-2025-rectangle-patterns.md` |
+| Rectangle smoke test or no `cv_lite` fallback | `assets/contest-template/examples/vision/rectangle_detect.py`, then `assets/contest-template/examples/control/rectangle_target_uart_tracker.py` | `references/vision/contest-2025-rectangle-patterns.md` |
+| Field threshold calibration without a PC | `scripts/run_board_probe.py --vision otsu`, then `assets/contest-template/examples/vision/offline_threshold_tuner.py` | `references/vision/official-basic-image-patterns.md` |
+| Generic UART, servo, laser, PID, unknown gimbal actuator | `assets/contest-template/examples/hardware/uart2_loopback.py`, `assets/contest-template/examples/control/servo_laser_stepper_patterns.py`, `assets/contest-template/examples/control/pid_target_centering.py` | `references/control/contest-patterns.md` and `references/platform/hardware-pin-resource-quickref.md` |
+| Confirmed ZDT closed-loop stepper gimbal axis | `references/control/zdt-stepper-gimbal-patterns.md`, then adapt `assets/contest-template/examples/control/pid_target_centering.py` | `references/control/contest-patterns.md` |
+| Self-trained `.kmodel` after user conversion | `assets/model-package/model_manifest.example.json`, then `scripts/check_model_package.py` | `references/vision/model-vision-pipeline.md` |
+| YOLO official example on 3.1-inch LCD | `scripts/run_board_probe.py --vision yolo`, then `assets/contest-template/examples/model/yolov8_lcd_official_launcher.py` | `references/vision/yolo-module-patterns.md` |
 
-From the folder containing this file, use `python ./scripts/run_board_probe.py --vision <mode>` as the self-contained RAM-only board-test entrypoint. It calls `scripts/evaluate_probe_log.py` automatically for rectangle, circle, YOLO, UART, and resource probes and never writes `/sdcard/main.py`. For `ACCEPT_* status=warn|fail`, read `references/troubleshooting.md#probe-result-actions` before enabling actuators or changing final code.
+From the folder containing this file, use `python ./scripts/run_board_probe.py --vision <mode>` as the self-contained RAM-only board-test entrypoint. It selects the board scripts under `scripts/probes/`, calls `scripts/evaluate_probe_log.py` automatically for rectangle, circle, YOLO, UART, and resource probes, and never writes `/sdcard/main.py`. If raw REPL is unavailable, add `--export-main ./probe-export/main.py` to a single-script mode and run the exported file manually through CanMV IDE or the deployment gate. For `ACCEPT_* status=warn|fail`, read `references/platform/troubleshooting.md#probe-result-actions` before enabling actuators or changing final code.
 
 ## Working Rules
 
 - Treat `agents/openai.yaml` as UI metadata only. The operational instructions live in `SKILL.md`, `references/`, and `assets/`.
 - Resolve all bundled paths relative to the folder that contains this `SKILL.md`; do not rely on the original author's local filesystem paths.
 - Verify board-specific facts through official references before making hardware claims.
-- Check `sources-and-boundaries.md` before high-risk hardware, firmware, model-conversion, unsupported-board work, or unfamiliar official API calls.
+- Check `references/maintenance/sources-and-boundaries.md` before high-risk hardware, firmware, model-conversion, unsupported-board work, or unfamiliar official API calls.
 - Keep constants at the top: display mode, frame size, pins, UART baud rate, thresholds, model path, labels, and control limits.
-- For any board write, default to `STANDARD`; use `QUICK_PATCH` only when every gate in `references/offline-run-patterns.md#deployment-mode-gate` passes, and enter `RECOVERY` only after a deployment attempt fails.
+- For any board write, default to `STANDARD`; use `QUICK_PATCH` only when every gate in `references/deployment/offline-run-patterns.md#deployment-mode-gate` passes, and enter `RECOVERY` only after a deployment attempt fails.
 - For final delivery, provide a ready-to-copy `main.py`; mention SD-card placement, but leave copying/flashing to the user unless explicitly requested.
-- For ready-to-copy CanMV `main.py`, use `references/canmv-api-known-issues.md` conservative syntax rules: avoid f-strings, `lambda`, comprehensions, generator expressions, and complex multi-line inline calls unless the target firmware has been tested with them.
+- For ready-to-copy CanMV `main.py`, use `references/platform/canmv-api-known-issues.md` conservative syntax rules: avoid f-strings, `lambda`, comprehensions, generator expressions, and complex multi-line inline calls unless the target firmware has been tested with them.
 - For user-trained models, assume the user trains and converts to `.kmodel`; request the `.kmodel`, label order, input size, task type, and conversion notes, then validate the package before writing final board code.
-- For contest features similar to the user's training examples, consult `references/local-code-examples.md` and use the corresponding `assets/contest-template/examples/` template before writing final code.
+- For contest features similar to the user's training examples, consult `references/maintenance/local-code-examples.md` and use the corresponding `assets/contest-template/examples/` template before writing final code.
 - After modifying this skill, run `scripts/validate_skill.py` plus the system `quick_validate.py` before publishing or syncing the installed copy.

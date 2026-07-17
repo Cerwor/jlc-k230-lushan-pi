@@ -2,9 +2,9 @@
 
 Use this reference only when a task involves a confirmed ZDT XS-series second-generation closed-loop stepper motor controlled by the Lushan Pi K230, especially the tested Emm/ZDT free-protocol path with fixed `0x6B` checksum.
 
-For generic gimbals, laser aiming, laser drawing, target following, servo/PWM pan-tilt, MCU-controlled motion, CAN/RS485 modules, or unknown smart motors, read `contest-patterns.md` first and treat this file as non-applicable until the actuator is identified as ZDT-compatible.
+For generic gimbals, laser aiming, laser drawing, target following, servo/PWM pan-tilt, MCU-controlled motion, CAN/RS485 modules, or unknown smart motors, read `references/control/contest-patterns.md` first and treat this file as non-applicable until the actuator is identified as ZDT-compatible.
 
-For general actuator safety and K230 UART pin rules, read `contest-patterns.md` and `hardware-pin-resource-quickref.md` first.
+For general actuator safety and K230 UART pin rules, read `references/control/contest-patterns.md` and `references/platform/hardware-pin-resource-quickref.md` first.
 
 ## Contents
 
@@ -34,7 +34,7 @@ Do not use this reference merely because the task says "gimbal", "laser", "targe
 | Actuator situation | Route |
 | --- | --- |
 | Confirmed ZDT XS-series second-generation closed-loop stepper, free protocol, fixed `0x6B` checksum | Use this file. |
-| Servo, PWM pan-tilt, external MCU, unknown smart motor, CAN/RS485 module, or ordinary stepper driver | Use `contest-patterns.md` first. |
+| Servo, PWM pan-tilt, external MCU, unknown smart motor, CAN/RS485 module, or ordinary stepper driver | Use `references/control/contest-patterns.md` first. |
 | Same ZDT motor but different checksum mode, firmware mode, address plan, supply, or mechanical limits | Re-run bring-up; treat only command shapes as hints. |
 | User has not confirmed the actuator protocol | Do not emit ZDT command frames in final code. Output target error/state only. |
 
@@ -276,7 +276,7 @@ This keeps the tested safety behavior while allowing the gimbal to resume after 
 
 ### Self-Trained YOLO Target Gimbal Notes
 
-The same two-axis ZDT gimbal was also tested with the user-trained single-class YOLOv8 model described in `model-vision-pipeline.md`:
+The same two-axis ZDT gimbal was also tested with the user-trained single-class YOLOv8 model described in `references/vision/model-vision-pipeline.md`:
 
 - Model path: `/sdcard/best.kmodel`
 - Label: `Rec`
@@ -361,7 +361,7 @@ small I term: refined modes only, disabled for YOLO fallback
 
 Use this order for a new ZDT gimbal axis:
 
-1. Verify K230 UART2 pin mapping with `scripts/probe_uart2_loopback.py` or user-confirmed wiring.
+1. Verify K230 UART2 pin mapping with `scripts/run_board_probe.py --vision uart-loopback` or user-confirmed wiring.
 2. Read motor position with `01 36 6B`; do not move until a valid response is seen.
 3. Enable motor and read speed/status.
 4. Run a visible low-speed short motion, then stop.

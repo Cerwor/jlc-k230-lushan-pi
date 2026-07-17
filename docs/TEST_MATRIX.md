@@ -9,6 +9,7 @@ This repository-level matrix helps maintainers choose the right test without loa
 | Offline preflight + host tests | Check skill structure, docs, Python syntax, quick validation, deploy safety, and architecture guardrails | `.\tools\test.ps1` | No | No | None | `VALIDATE_SKILL_OK`, unit-test `OK`, `TEST_OK` |
 | Host unit tests only | Run the same host regressions directly while developing a test | `python -m unittest discover -s tests` | No | No | None | `Ran ... tests`, `OK` |
 | Port discovery | Confirm the K230 serial port and auto-detection hint | `python .\jlc-k230-lushan-pi\scripts\run_board_probe.py --list-ports` | Enumerates host ports | No | Board connected by USB | `*` means tested VID:PID match; `?` means fuzzy description match |
+| Manual probe export | Export one self-contained probe when raw REPL is unavailable | `python .\jlc-k230-lushan-pi\scripts\run_board_probe.py --vision smoke --export-main .\probe-export\main.py` | No | No | Choose one single-script probe mode | `BOARD_PROBE_EXPORT_OK... writes_sdcard=0`; then run manually in CanMV IDE or through an authorized SD-card workflow |
 | Smoke | Verify raw REPL, camera, MediaManager, and 3.1-inch LCD | `python .\jlc-k230-lushan-pi\scripts\run_board_probe.py --vision smoke --port COM14` | Yes, raw REPL | No, RAM-only | Board connected, screen attached | `SMOKE_DONE frames=20 fps=...` |
 | Resource lifecycle | Repeat camera/LCD/media initialize and cleanup exactly three times | `python .\jlc-k230-lushan-pi\scripts\run_board_probe.py --vision resource-cycle --port COM14` | Yes, raw REPL | No, RAM-only | Board connected, screen attached | `LIFECYCLE_PROBE_DONE cycles=3 passed=3...` plus `ACCEPT_LIFECYCLE status=pass` |
 | Core vision chain | Verify camera/LCD, Sensor modes, and Otsu threshold chain | `python .\jlc-k230-lushan-pi\scripts\run_board_probe.py --vision all-core --port COM14` | Yes, raw REPL | No, RAM-only | Board connected; black/white target useful for Otsu | `SMOKE_DONE`, `SENSOR_PROBE_DONE`, `OTSU_PROBE_DONE` |
@@ -41,6 +42,6 @@ Use these labels in notes and PR descriptions:
 ## Recording Results
 
 - Put reusable facts into the relevant `jlc-k230-lushan-pi/references/` file.
-- Put failures and recovery rules into `jlc-k230-lushan-pi/references/troubleshooting.md`.
+- Put failures and recovery rules into `jlc-k230-lushan-pi/references/platform/troubleshooting.md`.
 - Put long chronological test history into `docs/BOARD_TEST_LOG.md`, not the installable skill.
-- Keep `jlc-k230-lushan-pi/references/maintenance.md` compact: update policy, architecture baseline, and guardrails only.
+- Keep `jlc-k230-lushan-pi/references/maintenance/maintenance.md` compact: update policy, architecture baseline, and guardrails only.
