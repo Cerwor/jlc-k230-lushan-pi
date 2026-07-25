@@ -109,7 +109,9 @@ See repository `docs/BOARD_TEST_LOG.md` for dates, exact firmware observations, 
 - Keep the installed skill's normal commands relative to the folder containing `SKILL.md`.
 - Keep generic vision output actuator-neutral; motor frames belong only to the confirmed actuator reference.
 - Keep one implementation of host serial, port, reset, and interpreter discovery helpers.
+- Board probes may copy small, stable helper functions when single-file export requires self-containment; host-side transport and deployment helpers must remain shared.
 - Prefer links to executable assets over copying their full code into references.
 - Add a reference or template only when it has a distinct owner and recurring use.
+- Keep native K230 SDK/C and firmware-build work outside the claimed mature scope until it has its own tested workflow.
 - Never hard-code maintainer-local absolute paths into the skill or validator.
 - Never put raw chronology back into task references; summarize reusable conclusions and link to the repository log.

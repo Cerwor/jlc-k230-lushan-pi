@@ -9,6 +9,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.dont_write_bytecode = True
+
 from _host_tools import command_text
 from _host_tools import ensure_host_python
 from _host_tools import print_ports

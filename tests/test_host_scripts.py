@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import ast
 import hashlib
 import io
 import json
+import os
 import re
 import shutil
 import struct
@@ -480,6 +482,49 @@ class HostPythonResolutionTests(unittest.TestCase):
         self.assertIsNone(selected)
         self.assertEqual(len(checked), 1)
         self.assertTrue(checked[0][1])
+
+
+class HostBytecodeHygieneTests(unittest.TestCase):
+    def test_public_host_entrypoints_do_not_create_pycache(self) -> None:
+        entrypoints = tuple(
+            path.name
+            for path in sorted(SCRIPTS_DIR.glob("*.py"))
+            if any(
+                isinstance(node, ast.ImportFrom)
+                and node.module in ("_host_tools", "run_canmv_raw_repl")
+                for node in ast.walk(ast.parse(path.read_text(encoding="utf-8")))
+            )
+        )
+        self.assertTrue(entrypoints)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            scripts = Path(temp_dir) / "scripts"
+            shutil.copytree(
+                SCRIPTS_DIR,
+                scripts,
+                ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+            )
+            env = os.environ.copy()
+            env.pop("PYTHONDONTWRITEBYTECODE", None)
+            env.pop("PYTHONPYCACHEPREFIX", None)
+
+            for name in entrypoints:
+                result = subprocess.run(
+                    [sys.executable, str(scripts / name), "--help"],
+                    cwd=str(scripts),
+                    env=env,
+                    text=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    check=False,
+                )
+                self.assertEqual(result.returncode, 0, "%s\n%s" % (name, result.stdout))
+
+            caches = list(scripts.rglob("__pycache__"))
+            bytecode = list(scripts.rglob("*.pyc"))
+
+        self.assertEqual([], caches)
+        self.assertEqual([], bytecode)
 
 
 class BoardProbeRunnerTests(unittest.TestCase):

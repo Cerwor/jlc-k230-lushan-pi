@@ -19,18 +19,9 @@ This file owns example selection, CanMV porting style, data-collection patterns,
 
 ## Choose the Owning Pattern
 
-| Task | Primary reference | Starting asset |
-| --- | --- | --- |
-| Camera/LCD proof | `references/platform/canmv-workflows.md` | `camera_lcd_preview.py` |
-| Rectangle target | `references/vision/contest-2025-rectangle-patterns.md` | `cvlite_rectangle_target_uart_tracker.py` |
-| Circle target | `references/vision/circle-detection-patterns.md` | `circle_detect.py` |
-| Color/line tracking | `references/control/contest-patterns.md` | `color_line_tracking.py` |
-| Threshold calibration | `references/control/contest-patterns.md` | `offline_threshold_tuner.py` |
-| Model inference | `references/vision/model-vision-pipeline.md`, then `references/vision/yolo-module-patterns.md` | model-specific project code |
-| UART and pins | `references/platform/hardware-pin-resource-quickref.md` | `uart2_loopback.py` |
-| Generic centering | `references/control/contest-patterns.md` | `pid_target_centering.py` |
+Use `SKILL.md` Quick Routing and Template Selection as the only task-to-reference and task-to-asset maps. This file owns adaptation boundaries only; after selecting the domain owner, return here for portability checks and structural reuse.
 
-Do not repeat a domain algorithm here. Read the owner reference and use this file only for adapting the source example's structure.
+Do not repeat a task routing table or domain algorithm here.
 
 ## Porting Boundaries
 

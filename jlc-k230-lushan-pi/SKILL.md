@@ -1,6 +1,6 @@
 ---
 name: jlc-k230-lushan-pi
-description: Build, port, debug, and deploy LCKFB/JLC Lushan Pi K230 CanMV projects for e-contest use. Use for CanMV MicroPython, K230 SDK, camera/LCD/image processing, GPIO/FPIOA/PWM/UART/I2C/SPI, YOLO/KModel, 3.1-inch LCD, offline main.py boot, mpremote deployment/snapshot pulls, ZDT closed-loop stepper gimbals, laser aiming/tracing, official examples, and hardware troubleshooting.
+description: Build, port, debug, and deploy LCKFB/JLC Lushan Pi K230 CanMV MicroPython projects for Windows-based e-contest vision. Use for camera/LCD/image processing, GPIO/FPIOA/PWM/UART/I2C/SPI, YOLO/KModel, 3.1-inch LCD, offline main.py boot, mpremote deployment/snapshot pulls, ZDT closed-loop stepper gimbals, laser aiming/tracing, official CanMV examples, and hardware troubleshooting. Native K230 SDK/C and firmware-build requests are limited to scope triage and official-source routing, not a complete SDK development workflow.
 ---
 
 # JLC K230 Lushan Pi
@@ -11,7 +11,7 @@ description: Build, port, debug, and deploy LCKFB/JLC Lushan Pi K230 CanMV proje
 - Assume the common host is Windows with CanMV IDE K230, but do not assume the IDE path. Ask for or discover `canmvide.exe` when needed.
 - Treat `CanMV_K230_LCKFB_micropython_v1.6-57-gce3418e_nncase_v2.11.0` as a board-tested firmware reference version, not as a universal requirement.
 - Assume the common display is the LCKFB 3.1-inch MIPI LCD expansion board; prefer `Display.ST7701`, `800x480`, and `display_mode = "lcd"`.
-- Prefer CanMV MicroPython unless the user explicitly asks for K230 SDK/C, firmware building, or low-level porting.
+- Use this skill as a CanMV MicroPython and contest-vision workflow. For native K230 SDK/C, firmware building, or low-level porting, establish scope and route to official sources without claiming complete workflow support.
 - Treat work as contest-oriented: prioritize fast bring-up, stable wiring, visible diagnostics, safe fallback behavior, and code that can run offline as `main.py`.
 - By default, provide the final offline program file/content only. The user usually copies `main.py` to the SD card manually; do not save to the board or write the TF card unless explicitly asked.
 
