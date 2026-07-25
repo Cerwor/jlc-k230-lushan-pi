@@ -11,6 +11,8 @@ import sys
 import time
 from pathlib import Path
 
+sys.dont_write_bytecode = True
+
 from _host_tools import ensure_host_python
 from _host_tools import print_ports
 from _host_tools import require_serial

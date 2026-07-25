@@ -206,6 +206,7 @@ python ".\jlc-k230-lushan-pi\scripts\raw_repl_deploy.py" main.py --remote /sdcar
 - 不要假设 `cv_lite` 在所有固件都存在；先 probe，不能用时 fallback。
 - 不要假设第三方 K230 速查表中的 API 结论适用于所有固件；先看 `references/platform/canmv-api-known-issues.md` 的边界说明。
 - 不要把 RKNN、RK3576、OpenCV/Linux 摄像头代码直接搬进 K230 CanMV。
+- 不要把本 Skill 当作完整的原生 K230 SDK/C 或固件构建工作流；此类任务只做范围判断并路由到官方资料。
 - 不要在视觉坐标未稳定前驱动执行器。
 - 不要在用户未授权时写 SD 卡或覆盖板端文件。
 - 不要为了截图自动改写未知 `/sdcard/main.py`；优先使用显式快照钩子。
