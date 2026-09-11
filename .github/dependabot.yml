@@ -9,9 +9,9 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    ignore:
-      # numpy 2.5+ requires Python >=3.12, but host tooling is validated on
-      # Python 3.11, so numpy>=1.25,<3 stays the supported floor and the lower
-      # bound is not raised. Security advisories are unaffected.
-      - dependency-name: "numpy"
-        versions: [">= 2.5.0"]
+    # The lower bounds in requirements-host.txt are feature floors, not
+    # latest-version pins: they stay wide so host tooling installs on the oldest
+    # interpreter it supports. The default strategy raises them regardless, which
+    # only narrows host compatibility, so limit updates to releases the current
+    # range actually excludes.
+    versioning-strategy: increase-if-necessary
