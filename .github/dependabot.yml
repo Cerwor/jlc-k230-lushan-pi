@@ -9,3 +9,9 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    ignore:
+      # numpy 2.5+ requires Python >=3.12, but host tooling is validated on
+      # Python 3.11, so numpy>=1.25,<3 stays the supported floor and the lower
+      # bound is not raised. Security advisories are unaffected.
+      - dependency-name: "numpy"
+        versions: [">= 2.5.0"]
